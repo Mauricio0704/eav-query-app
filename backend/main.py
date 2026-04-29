@@ -1,0 +1,730 @@
+"""
+Encuesta NL — DuckDB Backend
+FastAPI server that connects to your DuckDB database and exposes
+query endpoints for the survey query builder frontend.
+
+Usage:
+  pip install fastapi uvicorn duckdb python-multipart
+  uvicorn main:app --reload --port 8000
+
+Set DB_PATH environment variable to your .duckdb file path.
+Defaults to ./encuesta.duckdb for local development.
+"""
+
+import os
+import json
+import duckdb
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from typing import Optional
+import io
+import csv
+
+from metadata import (
+    AGE_LABELS,
+    AMM_ID,
+    PERIFERIA_ID,
+    ID_TO_CITY_NAME,
+    DESIRED_ORDERS,
+)
+
+DB_PATH = os.getenv("DB_PATH", "./encuesta.duckdb")
+
+# ── Metadata-driven ordering helpers ──────────────────────────────────────────
+# City buckets used when grouping by city_id (mirrors DESIRED_ORDERS["municipio"]).
+_NL_CITY_IDS = {cid for cid in ID_TO_CITY_NAME if cid < 100}
+_AMM_SET     = set(AMM_ID)
+_PERIFERIA   = set(PERIFERIA_ID)
+_RESTO_NL    = _NL_CITY_IDS - _AMM_SET - _PERIFERIA
+
+# Per-attribute mapping to DESIRED_ORDERS keys (used to order pivot columns).
+_ATTRIBUTE_ORDER_KEY = {
+    "sexo": "sexo",
+    "ingreso": "ingreso",
+    "edad_anos": "edad",
+    "tipo_escuela": "tipo_escuela",
+    "tipo_trabajo": "tipo_trabajo",
+    "nivel_max_estudios": "estudios",
+    "nivel_actual_estudios": "estudios",
+}
+
+# Maps a question_id whose option labels follow an ordered domain
+# (used to order pivot rows).
+_QUESTION_ORDER_KEY = {
+    "cp2":  "sexo",
+    "cp8":  "estudios",
+    "cp9":  "estudios",
+    "cp11": "tipo_escuela",
+    "p1":   "tipo_trabajo",
+    "p167": "ingreso",
+}
+
+def _order_by_desired(items, get_label, desired):
+    """Sort `items` so any item whose label appears in `desired` is placed in
+    that exact order; everything else is appended alphabetically."""
+    if not desired:
+        return sorted(items, key=lambda it: get_label(it).lower())
+    rank = {label: i for i, label in enumerate(desired)}
+    return sorted(items, key=lambda it: (
+        rank.get(get_label(it), 10_000),
+        get_label(it).lower(),
+    ))
+
+def _edad_bin_sql(col):
+    """SQL CASE expression that buckets an integer age into the AGE_LABELS
+    bins, preserving sentinel codes as their own labels."""
+    return f"""CASE
+        WHEN {col} = 9999 THEN 'No contesta'
+        WHEN {col} = 8888 THEN 'No sabe'
+        WHEN {col} = 7777 THEN 'No aplica'
+        WHEN {col} <=  5 THEN '0-5'
+        WHEN {col} <= 12 THEN '6-12'
+        WHEN {col} <= 17 THEN '13-17'
+        WHEN {col} <= 24 THEN '18-24'
+        WHEN {col} <= 34 THEN '25-34'
+        WHEN {col} <= 44 THEN '35-44'
+        WHEN {col} <= 54 THEN '45-54'
+        WHEN {col} <= 64 THEN '55-64'
+        WHEN {col} <= 74 THEN '65-74'
+        ELSE '75 o más'
+    END"""
+
+app = FastAPI(title="Encuesta NL API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict to your frontend domain in production
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+def get_conn():
+    """Open a read-only connection to the DuckDB database."""
+    return duckdb.connect(DB_PATH, read_only=True)
+
+
+# ---------------------------------------------------------------------------
+# Schema helpers
+# ---------------------------------------------------------------------------
+
+@app.get("/api/questions")
+def list_questions():
+    """
+    Returns all questions with their type, section, and answer options.
+    Used to populate the question selector in the UI.
+    """
+    conn = get_conn()
+    try:
+        questions = conn.execute("""
+            SELECT
+                q.q_id,
+                q.q_text,
+                q.q_section,
+                q.q_type,
+                q.q_notes
+            FROM questions q
+            ORDER BY q.q_id
+        """).fetchall()
+
+        result = []
+        for q_id, q_text, q_section, q_type, q_notes in questions:
+            # For multiple-choice questions, fetch their options
+            options = []
+            if q_type != 'numerica':
+                opts = conn.execute("""
+                    SELECT option_id, option_label
+                    FROM options
+                    WHERE question_id = ?
+                    ORDER BY option_id
+                """, [q_id]).fetchall()
+                options = [{"option_id": oid, "label": lbl} for oid, lbl in opts]
+
+            result.append({
+                "q_id": q_id,
+                "q_text": q_text,
+                "q_section": q_section,
+                "q_type": q_type,
+                "q_notes": q_notes,
+                "options": options,
+            })
+
+        return result
+    finally:
+        conn.close()
+
+
+@app.get("/api/attributes")
+def list_attributes():
+    """
+    Returns all distinct attribute names from respondent_attributes,
+    along with their possible values (joined through options table).
+
+    respondent_attributes.attribute  → question_id in options table
+    respondent_attributes.value      → option_id in options table
+    """
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT
+                ra.attribute,
+                ra.value,
+                o.option_label
+            FROM (
+                SELECT DISTINCT question_id, attribute, value
+                FROM respondent_attributes
+            ) ra
+            LEFT JOIN options o
+                ON o.question_id = ra.question_id
+                AND o.option_id   = ra.value
+            ORDER BY ra.attribute, ra.value
+        """).fetchall()
+
+        # Group by attribute
+        attrs: dict = {}
+        for attr, val, label in rows:
+            if attr not in attrs:
+                attrs[attr] = []
+            attrs[attr].append({
+                "value": val,
+                "label": label or str(val),
+            })
+
+        return [{"attribute": k, "values": v} for k, v in attrs.items()]
+    finally:
+        conn.close()
+
+
+@app.get("/api/cities")
+def list_cities():
+    """Returns distinct city_id values from responses for use as a filter."""
+    conn = get_conn()
+    try:
+        rows = conn.execute("""
+            SELECT DISTINCT city_id
+            FROM responses
+            WHERE city_id IS NOT NULL
+            ORDER BY city_id
+        """).fetchall()
+        return [{"city_id": r[0]} for r in rows]
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Query endpoint
+# ---------------------------------------------------------------------------
+
+class QueryRequest(BaseModel):
+    question_id: str
+    # Each filter: {"attribute": "sexo", "value": 1}
+    # For city filter use attribute="city_id"
+    filters: list[dict] = []
+    # Group results by: "answer" | "city_id" | any attribute name
+    group_by: str = "answer"
+
+
+@app.post("/api/query")
+def run_query(req: QueryRequest):
+    """
+    Core query endpoint. Builds and executes a SQL query against DuckDB.
+
+    For multiple-choice questions: returns counts + percentages per option.
+    For numeric questions: returns avg, min, max, stddev, and a histogram.
+    """
+    conn = get_conn()
+    try:
+        # Determine question type
+        q_info = conn.execute(
+            "SELECT q_type, q_text FROM questions WHERE q_id = ?",
+            [req.question_id]
+        ).fetchone()
+
+        if not q_info:
+            raise HTTPException(status_code=404, detail="Question not found")
+
+        q_type, q_text = q_info
+
+        # Build the respondent filter subquery using respondent_attributes
+        # Each attribute filter becomes an INNER JOIN
+        attr_filters = [f for f in req.filters if f["attribute"] != "city_id"]
+        city_filter = next((f for f in req.filters if f["attribute"] == "city_id"), None)
+
+        join_clauses = ""
+        for i, f in enumerate(attr_filters):
+            alias = f"ra{i}"
+            join_clauses += f"""
+            INNER JOIN respondent_attributes {alias}
+                ON {alias}.respondent_id = r.respondent_id
+                AND {alias}.attribute = '{f["attribute"]}'
+                AND {alias}.value = {int(f["value"])}"""
+
+        city_where = ""
+        if city_filter:
+            city_where = f"AND r.city_id = {int(city_filter['value'])}"
+
+        # Total respondents for this query (sentinel-filtered for numerica).
+        sentinel_filter = "AND a.value NOT IN (7777, 8888, 9999)" if q_type == "numerica" else ""
+        total_sql = f"""
+            SELECT COUNT(DISTINCT a.respondent_id)
+            FROM answers a
+            INNER JOIN responses r ON r.respondent_id = a.respondent_id
+            {join_clauses}
+            WHERE a.question_id = '{req.question_id}'
+              {sentinel_filter}
+              {city_where}
+        """
+        total_respondents = conn.execute(total_sql).fetchone()[0]
+
+        # ── group_by="answer" → flat shape (no pivot) ─────────────────────
+        if req.group_by == "answer":
+            if q_type == "numerica":
+                sql = f"""
+                    SELECT
+                        NULL AS grupo,
+                        COUNT(*)                            AS total,
+                        ROUND(AVG(a.value)::NUMERIC, 2)     AS promedio,
+                        ROUND(MIN(a.value)::NUMERIC, 2)     AS minimo,
+                        ROUND(MAX(a.value)::NUMERIC, 2)     AS maximo,
+                        ROUND(STDDEV(a.value)::NUMERIC, 2)  AS desv_std
+                    FROM answers a
+                    INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                    {join_clauses}
+                    WHERE a.question_id = '{req.question_id}'
+                      AND a.value NOT IN (7777, 8888, 9999)
+                      {city_where}
+                """
+                rows = conn.execute(sql).fetchall()
+                col_labels = ["Respuesta", "Respuestas", "Promedio", "Mínimo", "Máximo", "Desv. estándar"]
+            else:
+                sql = f"""
+                    WITH base AS (
+                        SELECT o.option_label AS respuesta, COUNT(*) AS cnt
+                        FROM answers a
+                        INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                        INNER JOIN options o
+                            ON o.question_id = a.question_id
+                            AND o.option_id = a.option_id
+                        {join_clauses}
+                        WHERE a.question_id = '{req.question_id}'
+                          {city_where}
+                        GROUP BY respuesta
+                    ),
+                    totals AS (SELECT SUM(cnt) AS total FROM base)
+                    SELECT b.respuesta,
+                           b.cnt                                AS total,
+                           ROUND(b.cnt * 100.0 / t.total, 1)    AS pct
+                    FROM base b CROSS JOIN totals t
+                    ORDER BY b.cnt DESC
+                """
+                rows = conn.execute(sql).fetchall()
+                col_labels = ["Respuesta", "Total", "%"]
+
+            return {
+                "format": "flat",
+                "question": {"q_id": req.question_id, "q_text": q_text, "q_type": q_type},
+                "filters_applied": req.filters,
+                "group_by": req.group_by,
+                "total_respondents": total_respondents,
+                "column_labels": col_labels,
+                "rows": [list(r) for r in rows],
+                "sql": sql.strip(),
+            }
+
+        # ── pivot mode (group_by != "answer") ─────────────────────────────
+        if req.group_by == "city_id":
+            group_expr = "r.city_id::TEXT"
+        elif req.group_by == "edad_anos":
+            # Bucket integer ages into AGE_LABELS instead of producing one
+            # column per integer year (would yield ~80 cols).
+            group_expr = f"""(
+                SELECT {_edad_bin_sql('rg.value')}
+                FROM respondent_attributes rg
+                WHERE rg.respondent_id = r.respondent_id
+                  AND rg.attribute = 'edad_anos'
+                LIMIT 1
+            )"""
+        else:
+            # `respondent_attributes` stores the survey question_id (e.g. 'cp2')
+            # alongside the friendly attribute name (e.g. 'sexo'). The option
+            # label lives in `options` keyed by that question_id + value, NOT
+            # by the attribute name. Fall back to the raw value when the
+            # attribute has no entries in `options` (e.g. edad_anos).
+            group_expr = f"""(
+                SELECT COALESCE(o2.option_label, rg.value::TEXT)
+                FROM respondent_attributes rg
+                LEFT JOIN options o2
+                  ON o2.question_id = rg.question_id
+                 AND o2.option_id   = rg.value
+                WHERE rg.respondent_id = r.respondent_id
+                  AND rg.attribute = '{req.group_by}'
+                LIMIT 1
+            )"""
+
+        # Per-group totals INCLUDING sentinels — these are the column denominators
+        # for the percentage table and the "Total" row in the count table.
+        per_group_total_sql = f"""
+            SELECT {group_expr} AS grupo, COUNT(*) AS total
+            FROM answers a
+            INNER JOIN responses r ON r.respondent_id = a.respondent_id
+            {join_clauses}
+            WHERE a.question_id = '{req.question_id}'
+              {city_where}
+            GROUP BY grupo
+            HAVING grupo IS NOT NULL
+        """
+        group_totals_raw = {row[0]: row[1] for row in conn.execute(per_group_total_sql).fetchall()}
+        grand_total_incl = sum(group_totals_raw.values())
+
+        # Initial group_keys keep the raw shape returned by the SQL (city_ids
+        # for city_id grouping, attribute labels otherwise). For non-city
+        # groupings we already apply the metadata-driven order here. For
+        # `city_id` we keep raw ids for now; cell_map / stats are remapped
+        # to metadata labels (11 AMM cities + 4 aggregates) further down.
+        if req.group_by == "city_id":
+            label_to_city_ids = {
+                ID_TO_CITY_NAME[cid]: {str(cid)} for cid in AMM_ID
+            }
+            label_to_city_ids["AMM"]        = {str(c) for c in AMM_ID}
+            label_to_city_ids["Periferia"]  = {str(c) for c in PERIFERIA_ID}
+            label_to_city_ids["Resto NL"]   = {str(c) for c in _RESTO_NL}
+            label_to_city_ids["Nuevo León"] = {str(c) for c in _NL_CITY_IDS}
+            group_keys   = list(group_totals_raw.keys())
+            group_labels = group_keys  # placeholder, replaced below
+        else:
+            def display(g):
+                return str(g)
+            order_key = _ATTRIBUTE_ORDER_KEY.get(req.group_by)
+            desired   = DESIRED_ORDERS.get(order_key) if order_key else None
+            group_keys = _order_by_desired(
+                list(group_totals_raw.keys()), display, desired
+            )
+            group_labels = [display(g) for g in group_keys]
+            label_to_city_ids = None
+
+        # Option-id → option-label lookup for the "Respuesta" column.
+        opt_lookup = {
+            row[0]: row[1]
+            for row in conn.execute(
+                "SELECT option_id, option_label FROM options WHERE question_id = ?",
+                [req.question_id],
+            ).fetchall()
+        }
+
+        if q_type == "numerica":
+            freq_sql = f"""
+                SELECT a.value AS id_respuesta,
+                       {group_expr} AS grupo,
+                       COUNT(*) AS cnt
+                FROM answers a
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                {join_clauses}
+                WHERE a.question_id = '{req.question_id}'
+                  AND a.value IS NOT NULL
+                  {city_where}
+                GROUP BY id_respuesta, grupo
+                ORDER BY id_respuesta
+            """
+            freq_rows = conn.execute(freq_sql).fetchall()
+
+            stats_sql = f"""
+                SELECT {group_expr} AS grupo,
+                       ROUND(AVG(a.value)::NUMERIC, 2)     AS promedio,
+                       ROUND(MIN(a.value)::NUMERIC, 2)     AS minimo,
+                       ROUND(MAX(a.value)::NUMERIC, 2)     AS maximo,
+                       ROUND(STDDEV(a.value)::NUMERIC, 2)  AS desv_std
+                FROM answers a
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                {join_clauses}
+                WHERE a.question_id = '{req.question_id}'
+                  AND a.value NOT IN (7777, 8888, 9999)
+                  {city_where}
+                GROUP BY grupo
+                HAVING grupo IS NOT NULL
+            """
+            stats_per_group = {row[0]: list(row[1:]) for row in conn.execute(stats_sql).fetchall()}
+
+            overall_stats_sql = f"""
+                SELECT ROUND(AVG(a.value)::NUMERIC, 2),
+                       ROUND(MIN(a.value)::NUMERIC, 2),
+                       ROUND(MAX(a.value)::NUMERIC, 2),
+                       ROUND(STDDEV(a.value)::NUMERIC, 2)
+                FROM answers a
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                {join_clauses}
+                WHERE a.question_id = '{req.question_id}'
+                  AND a.value NOT IN (7777, 8888, 9999)
+                  {city_where}
+            """
+            overall_stats = list(conn.execute(overall_stats_sql).fetchone() or [None] * 4)
+
+            distinct_values = sorted({r[0] for r in freq_rows}, key=lambda v: (v is None, v))
+            cell_map = {(r[0], r[1]): r[2] for r in freq_rows}
+
+            # Collapse raw city_ids into the curated metadata buckets (11 AMM
+            # cities + AMM/Periferia/Resto NL/Nuevo León aggregates). Stats
+            # for the four aggregates are recomputed via SQL because they
+            # don't compose from per-city pre-aggregated stats.
+            if req.group_by == "city_id":
+                new_cell_map = {}
+                new_totals   = {}
+                for label in DESIRED_ORDERS["municipio"]:
+                    ids = label_to_city_ids.get(label, set())
+                    new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
+                    for v in distinct_values:
+                        s = sum(cell_map.get((v, c), 0) for c in ids)
+                        if s:
+                            new_cell_map[(v, label)] = s
+                cell_map         = new_cell_map
+                group_totals_raw = new_totals
+                grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
+                group_keys       = list(DESIRED_ORDERS["municipio"])
+                group_labels     = list(group_keys)
+
+                # Per-bucket stats: rename the 11 AMM cities, run fresh SQL
+                # for the 4 aggregates.
+                new_stats = {}
+                for cid in AMM_ID:
+                    raw = stats_per_group.get(str(cid))
+                    if raw:
+                        new_stats[ID_TO_CITY_NAME[cid]] = raw
+                for label, ids in [
+                    ("AMM",        AMM_ID),
+                    ("Periferia",  PERIFERIA_ID),
+                    ("Resto NL",   sorted(_RESTO_NL)),
+                    ("Nuevo León", sorted(_NL_CITY_IDS)),
+                ]:
+                    if not ids:
+                        continue
+                    in_clause = ",".join(str(i) for i in ids)
+                    agg_row = conn.execute(f"""
+                        SELECT ROUND(AVG(a.value)::NUMERIC, 2),
+                               ROUND(MIN(a.value)::NUMERIC, 2),
+                               ROUND(MAX(a.value)::NUMERIC, 2),
+                               ROUND(STDDEV(a.value)::NUMERIC, 2)
+                        FROM answers a
+                        INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                        {join_clauses}
+                        WHERE a.question_id = '{req.question_id}'
+                          AND a.value NOT IN (7777, 8888, 9999)
+                          AND r.city_id IN ({in_clause})
+                          {city_where}
+                    """).fetchone()
+                    if agg_row and agg_row[0] is not None:
+                        new_stats[label] = list(agg_row)
+                stats_per_group = new_stats
+
+            def label_for(value):
+                key = int(value) if value is not None and float(value).is_integer() else value
+                lbl = opt_lookup.get(key)
+                return lbl if lbl is not None else (str(value) if value is not None else "")
+
+            counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]
+            pct_columns    = list(counts_columns)
+
+            # When grouping by city_id, the column list includes overlapping
+            # aggregate buckets (AMM ⊃ the 11 cities, Nuevo León ⊃ everything).
+            # Sum only over the mutually-exclusive subset for the row total.
+            atomic_keys = [g for g in group_keys if g not in ("AMM", "Nuevo León")] \
+                          if req.group_by == "city_id" else list(group_keys)
+
+            counts_rows = []
+            pct_rows    = []
+            for v in distinct_values:
+                row_total = sum(cell_map.get((v, g), 0) for g in atomic_keys)
+                count_row = [v, label_for(v)]
+                pct_row   = [v, label_for(v)]
+                for g in group_keys:
+                    cnt = cell_map.get((v, g), 0)
+                    grp_t = group_totals_raw.get(g, 0)
+                    count_row.append(cnt if cnt else "")
+                    pct_row.append(round(cnt * 100.0 / grp_t, 1) if grp_t else "")
+                count_row.append(row_total if row_total else "")
+                pct_row.append(round(row_total * 100.0 / grand_total_incl, 1) if grand_total_incl else "")
+                counts_rows.append(count_row)
+                pct_rows.append(pct_row)
+
+            # Total row
+            counts_rows.append(
+                ["Total", ""] + [group_totals_raw.get(g, 0) for g in group_keys] + [grand_total_incl]
+            )
+            pct_rows.append(
+                ["Total", ""]
+                + [100.0 if group_totals_raw.get(g, 0) else "" for g in group_keys]
+                + [100.0 if grand_total_incl else ""]
+            )
+
+            # Stat rows (counts table only — they aren't percentages)
+            stat_names = ["Promedio", "Mínimo", "Máximo", "Desv. estándar"]
+            for i, name in enumerate(stat_names):
+                row = [name, ""]
+                for g in group_keys:
+                    v = stats_per_group.get(g, [None] * 4)[i]
+                    row.append(v if v is not None else "")
+                row.append(overall_stats[i] if overall_stats[i] is not None else "")
+                counts_rows.append(row)
+
+            return {
+                "format": "pivot",
+                "question": {"q_id": req.question_id, "q_text": q_text, "q_type": q_type},
+                "filters_applied": req.filters,
+                "group_by": req.group_by,
+                "total_respondents": total_respondents,
+                "counts":      {"columns": counts_columns, "rows": counts_rows},
+                "percentages": {"columns": pct_columns,    "rows": pct_rows},
+                "sql": freq_sql.strip(),
+            }
+
+        # categórica + non-answer pivot
+        freq_sql = f"""
+            SELECT a.option_id AS id_respuesta,
+                   o.option_label AS respuesta,
+                   {group_expr} AS grupo,
+                   COUNT(*) AS cnt
+            FROM answers a
+            INNER JOIN responses r ON r.respondent_id = a.respondent_id
+            LEFT JOIN options o
+                ON o.question_id = a.question_id
+                AND o.option_id = a.option_id
+            {join_clauses}
+            WHERE a.question_id = '{req.question_id}'
+              {city_where}
+            GROUP BY id_respuesta, respuesta, grupo
+            ORDER BY id_respuesta
+        """
+        freq_rows = conn.execute(freq_sql).fetchall()
+
+        # Distinct (option_id, label) ordered by id
+        seen = {}
+        for r in freq_rows:
+            key = r[0]
+            if key not in seen:
+                seen[key] = r[1]
+        option_keys = sorted(seen.keys(), key=lambda k: (k is None, k))
+        cell_map = {(r[0], r[2]): r[3] for r in freq_rows}
+
+        # Same metadata-driven collapse for city groupings as in the numérica
+        # branch — sum per-city counts into the AMM/Periferia/RestoNL/NL buckets.
+        if req.group_by == "city_id":
+            new_cell_map = {}
+            new_totals   = {}
+            for label in DESIRED_ORDERS["municipio"]:
+                ids = label_to_city_ids.get(label, set())
+                new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
+                for opt_id in option_keys:
+                    s = sum(cell_map.get((opt_id, c), 0) for c in ids)
+                    if s:
+                        new_cell_map[(opt_id, label)] = s
+            cell_map         = new_cell_map
+            group_totals_raw = new_totals
+            grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
+            group_keys       = list(DESIRED_ORDERS["municipio"])
+            group_labels     = list(group_keys)
+
+        # If the question itself maps to an ordered domain (e.g. p167 → ingreso),
+        # sort the data rows so the canonical order shows up first; unknown
+        # labels (e.g. "No contesta" for sexo) fall through to alphabetical.
+        question_order_key = _QUESTION_ORDER_KEY.get(req.question_id)
+        if question_order_key:
+            desired_rows = DESIRED_ORDERS.get(question_order_key, [])
+            row_rank = {label: i for i, label in enumerate(desired_rows)}
+            def opt_sort(opt_id):
+                lbl = opt_lookup.get(opt_id, str(opt_id))
+                return (row_rank.get(lbl, 10_000), str(lbl).lower())
+            option_keys = sorted(option_keys, key=opt_sort)
+
+        counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]
+        pct_columns    = list(counts_columns)
+
+        atomic_keys = [g for g in group_keys if g not in ("AMM", "Nuevo León")] \
+                      if req.group_by == "city_id" else list(group_keys)
+
+        counts_rows = []
+        pct_rows    = []
+        for opt_id in option_keys:
+            label_in_opts = opt_lookup.get(opt_id)
+            label = label_in_opts if label_in_opts is not None else (
+                str(opt_id) if opt_id is not None else ""
+            )
+            row_total = sum(cell_map.get((opt_id, g), 0) for g in atomic_keys)
+            count_row = [opt_id, label]
+            pct_row   = [opt_id, label]
+            for g in group_keys:
+                cnt = cell_map.get((opt_id, g), 0)
+                grp_t = group_totals_raw.get(g, 0)
+                count_row.append(cnt if cnt else "")
+                pct_row.append(round(cnt * 100.0 / grp_t, 1) if grp_t else "")
+            count_row.append(row_total if row_total else "")
+            pct_row.append(round(row_total * 100.0 / grand_total_incl, 1) if grand_total_incl else "")
+            counts_rows.append(count_row)
+            pct_rows.append(pct_row)
+
+        # Total row
+        counts_rows.append(
+            ["Total", ""] + [group_totals_raw.get(g, 0) for g in group_keys] + [grand_total_incl]
+        )
+        pct_rows.append(
+            ["Total", ""] + [100.0 if group_totals_raw.get(g, 0) else "" for g in group_keys]
+            + [100.0 if grand_total_incl else ""]
+        )
+
+        return {
+            "format": "pivot",
+            "question": {"q_id": req.question_id, "q_text": q_text, "q_type": q_type},
+            "filters_applied": req.filters,
+            "group_by": req.group_by,
+            "total_respondents": total_respondents,
+            "counts":      {"columns": counts_columns, "rows": counts_rows},
+            "percentages": {"columns": pct_columns,    "rows": pct_rows},
+            "sql": freq_sql.strip(),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+
+@app.post("/api/query/csv")
+def export_csv(req: QueryRequest):
+    """Same as /api/query but returns a CSV file download.
+
+    Pivot mode emits two tables in a single CSV: a Conteos block and a
+    Porcentajes block, separated by a blank line.
+    """
+    data = run_query(req)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    if data.get("format") == "pivot":
+        writer.writerow(["Conteos"])
+        writer.writerow(data["counts"]["columns"])
+        for row in data["counts"]["rows"]:
+            writer.writerow(row)
+        writer.writerow([])
+        writer.writerow(["Porcentajes"])
+        writer.writerow(data["percentages"]["columns"])
+        for row in data["percentages"]["rows"]:
+            writer.writerow(row)
+    else:
+        writer.writerow(data["column_labels"])
+        for row in data["rows"]:
+            writer.writerow(row)
+
+    output.seek(0)
+    filename = f"encuesta_p{req.question_id}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "db": DB_PATH}
