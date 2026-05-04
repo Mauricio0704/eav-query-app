@@ -1,1 +1,5 @@
 node_modules/
+extra/
+.pyc
+.editorconfig
+__pycache__/
