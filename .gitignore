@@ -3,3 +3,4 @@ extra/
 .pyc
 .editorconfig
 __pycache__/
+dist/

@@ -7,7 +7,7 @@
 
   /* Cómo Vamos Nuevo León — paleta de marca */
   --color-bg:            #fcefe4;  /* piel */
-  --color-surface:       #fffffd;  /* blanco */
+  --color-surface:       #e2e8f0;  /* blanco */
   --color-border:        #f1ddc9;
   --color-border-strong: #d9c1a7;
   --color-ink:           #303030;  /* gris oscuro */
@@ -17,7 +17,7 @@
   --color-accent-light:  #d4f1e8;
   --color-accent2:       #7e34c3;  /* morado */
   --color-accent2-light: #ebddf7;
-  --color-warm:          #fb7e50;  /* salmón */
+  --color-warm:          #e2e8f0;  /* salmón */
   --color-highlight:     #ffba00;  /* mostaza */
   --color-code-fg:       #5feaba;  /* aqua brillante para código */
 }
@@ -41,66 +41,6 @@
 }
 
 @layer components {
-  /* Select with custom SVG arrow */
-  .field-select {
-    width: 100%;
-    padding: 8px 28px 8px 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background-color: var(--color-bg);
-    font-family: var(--font-sans);
-    font-size: 13px;
-    color: var(--color-ink);
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A7568' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    cursor: pointer;
-    transition: border-color 0.15s;
-  }
-  .field-select:focus { outline: none; border-color: var(--color-accent); }
-
-  /* Tab buttons */
-  .tab-btn {
-    font-size: 12px;
-    padding: 8px 16px;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    color: var(--color-muted);
-    transition: all 0.15s;
-    margin-bottom: -1px;
-  }
-  .tab-btn.active { color: var(--color-accent); border-bottom-color: var(--color-accent); font-weight: 500; }
-  .tab-btn:not(.active):hover { color: var(--color-ink); }
-
-  /* Topbar question (JS toggles .empty) */
-  .topbar-q {
-    font-family: var(--font-serif);
-    font-size: 16px;
-    font-weight: 300;
-    color: var(--color-ink);
-    max-width: 600px;
-    line-height: 1.4;
-  }
-  .topbar-q.empty { color: var(--color-faint); font-style: italic; }
-
-  /* Data table — handles row hover and last-child border */
-  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .data-table th {
-    text-align: left;
-    padding: 8px 12px;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--color-faint);
-    border-bottom: 1px solid var(--color-border);
-    white-space: nowrap;
-  }
-  .data-table td { padding: 9px 12px; border-bottom: 1px solid var(--color-border); }
-  .data-table tr:last-child td { border-bottom: none; }
-  .data-table tr:hover td { background: var(--color-bg); }
-
   /* Loading spinner */
   .spinner {
     width: 20px;
