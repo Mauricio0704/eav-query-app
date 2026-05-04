@@ -50,17 +50,6 @@ _ATTRIBUTE_ORDER_KEY = {
     "nivel_actual_estudios": "estudios",
 }
 
-# Maps a question_id whose option labels follow an ordered domain
-# (used to order pivot rows).
-_QUESTION_ORDER_KEY = {
-    "cp2":  "sexo",
-    "cp8":  "estudios",
-    "cp9":  "estudios",
-    "cp11": "tipo_escuela",
-    "p1":   "tipo_trabajo",
-    "p167": "ingreso",
-}
-
 def _order_by_desired(items, get_label, desired):
     """Sort `items` so any item whose label appears in `desired` is placed in
     that exact order; everything else is appended alphabetically."""
@@ -247,6 +236,18 @@ def run_query(req: QueryRequest):
 
         q_type, q_text = q_info
 
+        # Question IDs that don't start with "cp" represent opinion/behaviour
+        # questions whose counts must be projected to the population using
+        # responses.factor_cvnl. "cp*" questions are demographics about the
+        # respondent itself and stay unweighted.
+        weighted = not req.question_id.lower().startswith("cp")
+        count_expr = "SUM(r.factor_cvnl)" if weighted else "COUNT(*)"
+        count_int  = f"ROUND({count_expr})::BIGINT" if weighted else "COUNT(*)"
+        avg_expr   = (
+            "ROUND((SUM(a.value * r.factor_cvnl) / NULLIF(SUM(r.factor_cvnl), 0))::NUMERIC, 2)"
+            if weighted else "ROUND(AVG(a.value)::NUMERIC, 2)"
+        )
+
         # Build the respondent filter subquery using respondent_attributes
         # Each attribute filter becomes an INNER JOIN
         attr_filters = [f for f in req.filters if f["attribute"] != "city_id"]
@@ -266,16 +267,30 @@ def run_query(req: QueryRequest):
             city_where = f"AND r.city_id = {int(city_filter['value'])}"
 
         # Total respondents for this query (sentinel-filtered for numerica).
-        sentinel_filter = "AND a.value NOT IN (7777, 8888, 9999)" if q_type == "numerica" else ""
-        total_sql = f"""
-            SELECT COUNT(DISTINCT a.respondent_id)
-            FROM answers a
-            INNER JOIN responses r ON r.respondent_id = a.respondent_id
-            {join_clauses}
-            WHERE a.question_id = '{req.question_id}'
-              {sentinel_filter}
-              {city_where}
-        """
+        # Weighted form sums factor_cvnl over distinct (respondent, factor) rows.
+        sentinel_filter = "AND a.value NOT IN (7777, 8888, 9999)"
+        if weighted:
+            total_sql = f"""
+                SELECT ROUND(SUM(factor_cvnl))::BIGINT FROM (
+                    SELECT DISTINCT a.respondent_id, r.factor_cvnl
+                    FROM answers a
+                    INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                    {join_clauses}
+                    WHERE a.question_id = '{req.question_id}'
+                      {sentinel_filter}
+                      {city_where}
+                )
+            """
+        else:
+            total_sql = f"""
+                SELECT COUNT(DISTINCT a.respondent_id)
+                FROM answers a
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                {join_clauses}
+                WHERE a.question_id = '{req.question_id}'
+                  {sentinel_filter}
+                  {city_where}
+            """
         total_respondents = conn.execute(total_sql).fetchone()[0]
 
         # ── group_by="answer" → flat shape (no pivot) ─────────────────────
@@ -284,8 +299,8 @@ def run_query(req: QueryRequest):
                 sql = f"""
                     SELECT
                         NULL AS grupo,
-                        COUNT(*)                            AS total,
-                        ROUND(AVG(a.value)::NUMERIC, 2)     AS promedio,
+                        {count_int}                         AS total,
+                        {avg_expr}                          AS promedio,
                         ROUND(MIN(a.value)::NUMERIC, 2)     AS minimo,
                         ROUND(MAX(a.value)::NUMERIC, 2)     AS maximo,
                         ROUND(STDDEV(a.value)::NUMERIC, 2)  AS desv_std
@@ -301,7 +316,9 @@ def run_query(req: QueryRequest):
             else:
                 sql = f"""
                     WITH base AS (
-                        SELECT o.option_label AS respuesta, COUNT(*) AS cnt
+                        SELECT a.option_id     AS id_respuesta,
+                               o.option_label  AS respuesta,
+                               {count_expr}    AS cnt
                         FROM answers a
                         INNER JOIN responses r ON r.respondent_id = a.respondent_id
                         INNER JOIN options o
@@ -310,17 +327,18 @@ def run_query(req: QueryRequest):
                         {join_clauses}
                         WHERE a.question_id = '{req.question_id}'
                           {city_where}
-                        GROUP BY respuesta
+                        GROUP BY id_respuesta, respuesta
                     ),
                     totals AS (SELECT SUM(cnt) AS total FROM base)
-                    SELECT b.respuesta,
-                           b.cnt                                AS total,
+                    SELECT b.id_respuesta,
+                           b.respuesta,
+                           ROUND(b.cnt)::BIGINT                 AS total,
                            ROUND(b.cnt * 100.0 / t.total, 1)    AS pct
                     FROM base b CROSS JOIN totals t
-                    ORDER BY b.cnt DESC
+                    ORDER BY b.id_respuesta ASC
                 """
                 rows = conn.execute(sql).fetchall()
-                col_labels = ["Respuesta", "Total", "%"]
+                col_labels = ["id_respuesta", "Respuesta", "Total", "%"]
 
             return {
                 "format": "flat",
@@ -366,7 +384,7 @@ def run_query(req: QueryRequest):
         # Per-group totals INCLUDING sentinels — these are the column denominators
         # for the percentage table and the "Total" row in the count table.
         per_group_total_sql = f"""
-            SELECT {group_expr} AS grupo, COUNT(*) AS total
+            SELECT {group_expr} AS grupo, {count_int} AS total
             FROM answers a
             INNER JOIN responses r ON r.respondent_id = a.respondent_id
             {join_clauses}
@@ -417,7 +435,7 @@ def run_query(req: QueryRequest):
             freq_sql = f"""
                 SELECT a.value AS id_respuesta,
                        {group_expr} AS grupo,
-                       COUNT(*) AS cnt
+                       {count_int} AS cnt
                 FROM answers a
                 INNER JOIN responses r ON r.respondent_id = a.respondent_id
                 {join_clauses}
@@ -431,7 +449,7 @@ def run_query(req: QueryRequest):
 
             stats_sql = f"""
                 SELECT {group_expr} AS grupo,
-                       ROUND(AVG(a.value)::NUMERIC, 2)     AS promedio,
+                       {avg_expr}                          AS promedio,
                        ROUND(MIN(a.value)::NUMERIC, 2)     AS minimo,
                        ROUND(MAX(a.value)::NUMERIC, 2)     AS maximo,
                        ROUND(STDDEV(a.value)::NUMERIC, 2)  AS desv_std
@@ -447,7 +465,7 @@ def run_query(req: QueryRequest):
             stats_per_group = {row[0]: list(row[1:]) for row in conn.execute(stats_sql).fetchall()}
 
             overall_stats_sql = f"""
-                SELECT ROUND(AVG(a.value)::NUMERIC, 2),
+                SELECT {avg_expr},
                        ROUND(MIN(a.value)::NUMERIC, 2),
                        ROUND(MAX(a.value)::NUMERIC, 2),
                        ROUND(STDDEV(a.value)::NUMERIC, 2)
@@ -500,7 +518,7 @@ def run_query(req: QueryRequest):
                         continue
                     in_clause = ",".join(str(i) for i in ids)
                     agg_row = conn.execute(f"""
-                        SELECT ROUND(AVG(a.value)::NUMERIC, 2),
+                        SELECT {avg_expr},
                                ROUND(MIN(a.value)::NUMERIC, 2),
                                ROUND(MAX(a.value)::NUMERIC, 2),
                                ROUND(STDDEV(a.value)::NUMERIC, 2)
@@ -582,7 +600,7 @@ def run_query(req: QueryRequest):
             SELECT a.option_id AS id_respuesta,
                    o.option_label AS respuesta,
                    {group_expr} AS grupo,
-                   COUNT(*) AS cnt
+                   {count_int} AS cnt
             FROM answers a
             INNER JOIN responses r ON r.respondent_id = a.respondent_id
             LEFT JOIN options o
@@ -622,18 +640,6 @@ def run_query(req: QueryRequest):
             grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
             group_keys       = list(DESIRED_ORDERS["municipio"])
             group_labels     = list(group_keys)
-
-        # If the question itself maps to an ordered domain (e.g. p167 → ingreso),
-        # sort the data rows so the canonical order shows up first; unknown
-        # labels (e.g. "No contesta" for sexo) fall through to alphabetical.
-        question_order_key = _QUESTION_ORDER_KEY.get(req.question_id)
-        if question_order_key:
-            desired_rows = DESIRED_ORDERS.get(question_order_key, [])
-            row_rank = {label: i for i, label in enumerate(desired_rows)}
-            def opt_sort(opt_id):
-                lbl = opt_lookup.get(opt_id, str(opt_id))
-                return (row_rank.get(lbl, 10_000), str(lbl).lower())
-            option_keys = sorted(option_keys, key=opt_sort)
 
         counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]
         pct_columns    = list(counts_columns)
