@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { Table2, BarChart3 } from "lucide-vue-next";
+import { Table2, BarChart3, Database } from "lucide-vue-next";
 import { state } from "../store.js";
 import DataTable from "./DataTable.vue";
 import PivotTables from "./PivotTables.vue";
@@ -48,13 +48,106 @@ function setTab(t) {
             v-else-if="!state.lastResult"
             class="flex flex-col items-center justify-center h-full text-[#94a3b8] text-center gap-3"
         >
-            <div class="text-[42px] opacity-80">◈</div>
-            <div class="font-['Manrope'] font-semibold text-lg text-[#1e293b]">
-                Sin resultados aún
+           <div class="flex-1 overflow-auto p-8">
+            <div class="max-w-[900px] mx-auto">
+              <div class="grid grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-lg border border-[#e2e8f0] p-6">
+                  <div class="flex items-start gap-4">
+                    <div class="bg-[#0d9488]/10 rounded-lg p-3 shrink-0">
+                      <svg class="size-6 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="font-semibold text-[#1e293b] mb-2">Sobre los Datos</h3>
+                      <p class="text-sm text-[#64748b] leading-relaxed mb-3">
+                        Los datos provienen de las encuestas de percepción ciudadana realizadas por
+                        <span class="font-medium text-[#0d9488]"> Cómo Vamos Nuevo León</span>,
+                        organización que monitorea la calidad de vida en el área metropolitana de Monterrey.
+                      </p>
+                      <p class="text-xs text-[#64748b]">
+                        Actualización: Trimestral | Última actualización: Mayo 2026
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-lg border border-[#e2e8f0] p-6">
+                  <div class="flex items-start gap-4">
+                    <div class="bg-[#0d9488]/10 rounded-lg p-3 shrink-0">
+                      <svg class="size-6 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="font-semibold text-[#1e293b] mb-2">Metodología</h3>
+                      <p class="text-sm text-[#64748b] leading-relaxed mb-3">
+                        Encuestas aplicadas mediante metodología probabilística con muestreo estratificado
+                        por nivel socioeconómico, edad y zona geográfica.
+                      </p>
+                      <ul class="text-xs text-[#64748b] space-y-1">
+                        <li>• Tamaño de muestra: ~3,000 respondentes</li>
+                        <li>• Margen de error: ±2.5%</li>
+                        <li>• Nivel de confianza: 95%</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-gradient-to-r from-[#0d9488] to-[#14b8a6] rounded-lg p-8 text-white">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <h3 class="font-['Manrope'] font-bold text-xl mb-2">Acceso a Base de Datos Completa</h3>
+                    <p class="text-white/90 mb-4 max-w-[600px]">
+                      ¿Necesitas acceso a los datos en bruto o realizar análisis personalizados?
+                      Puedes solicitar la base de datos completa o reportes especializados.
+                    </p>
+                    <div class="flex gap-3">
+                      <button class="bg-white text-[#0d9488] px-4 py-2 rounded-lg font-medium hover:bg-white/90 transition-colors text-sm">
+                        Solicitar Acceso
+                      </button>
+                      <button class="bg-white/20 text-white px-4 py-2 rounded-lg font-medium hover:bg-white/30 transition-colors text-sm border border-white/30">
+                        Ver Documentación
+                      </button>
+                    </div>
+                  </div>
+                  <div class="hidden lg:block">
+                    <svg class="size-32 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-8 bg-[#f8fafc] rounded-lg p-6 border border-[#e2e8f0]">
+                <h3 class="font-semibold text-[#1e293b] mb-3 flex items-center gap-2">
+                  <svg class="size-5 text-[#0d9488]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  ¿Cómo usar esta herramienta?
+                </h3>
+                <ol class="space-y-2 text-sm text-[#64748b]">
+                  <li class="flex gap-3">
+                    <span class="font-bold text-[#0d9488] shrink-0">1.</span>
+                    <span>Selecciona una pregunta de la encuesta en el panel izquierdo</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="font-bold text-[#0d9488] shrink-0">2.</span>
+                    <span>Elige cómo agrupar los resultados (por edad, zona, nivel socioeconómico, etc.)</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="font-bold text-[#0d9488] shrink-0">3.</span>
+                    <span>Haz clic en "Ejecutar consulta" para ver los resultados</span>
+                  </li>
+                  <li class="flex gap-3">
+                    <span class="font-bold text-[#0d9488] shrink-0">4.</span>
+                    <span>Visualiza los datos en formato de tabla o gráfica y descarga en CSV si lo necesitas</span>
+                  </li>
+                </ol>
+              </div>
             </div>
-            <div class="text-sm">
-                Configura los filtros y presiona "Ejecutar consulta"
-            </div>
+           </div>
         </div>
 
         <!-- Results -->
