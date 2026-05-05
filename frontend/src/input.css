@@ -4,22 +4,6 @@
   --font-sans:  'DM Sans', sans-serif;
   --font-serif: 'Fraunces', serif;
   --font-mono:  'DM Mono', monospace;
-
-  /* Cómo Vamos Nuevo León — paleta de marca */
-  --color-bg:            #fcefe4;  /* piel */
-  --color-surface:       #e2e8f0;  /* blanco */
-  --color-border:        #f1ddc9;
-  --color-border-strong: #d9c1a7;
-  --color-ink:           #303030;  /* gris oscuro */
-  --color-muted:         #6b6058;
-  --color-faint:         #a89e93;
-  --color-accent:        #28c19b;  /* verde aqua */
-  --color-accent-light:  #d4f1e8;
-  --color-accent2:       #7e34c3;  /* morado */
-  --color-accent2-light: #ebddf7;
-  --color-warm:          #e2e8f0;  /* salmón */
-  --color-highlight:     #ffba00;  /* mostaza */
-  --color-code-fg:       #5feaba;  /* aqua brillante para código */
 }
 
 /* keyframes must live outside @layer */

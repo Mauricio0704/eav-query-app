@@ -4,8 +4,13 @@ import * as api from './api.js'
 export const state = reactive({
   questions: [],
   attributes: [],
+  recodes: [],
+  presets: [],
   questionId: '',
   groupBy: 'answer',
+  filters: [],
+  initialOnly: true,
+  appliedPreset: '',
   lastResult: null,
   activeTab: 'table',
   loading: false,
@@ -16,38 +21,78 @@ export const selectedQuestion = computed(() =>
   state.questions.find(q => q.q_id === state.questionId) || null
 )
 
-export const sqlPreview = computed(() => {
-  if (!state.questionId) return '-- Selecciona una pregunta'
-  const groupExpr = state.groupBy === 'answer'
-    ? 'o.option_label'
-    : state.groupBy === 'city_id'
-      ? 'r.city_id'
-      : `(SELECT COALESCE(o2.option_label, rg.value::TEXT)\n      FROM respondent_attributes rg\n      LEFT JOIN options o2 ON o2.question_id = rg.question_id AND o2.option_id = rg.value\n      WHERE rg.respondent_id = r.respondent_id AND rg.attribute = '${state.groupBy}' LIMIT 1)`
+const attributeValueMap = computed(() => {
+  const m = new Map()
+  for (const a of state.attributes) {
+    const inner = new Map()
+    for (const v of a.values) inner.set(v.value, v.label)
+    m.set(a.attribute, inner)
+  }
+  return m
+})
 
-  return `SELECT ${groupExpr} AS grupo,\n  o.option_label AS respuesta,\n  COUNT(*) AS total\nFROM answers a\nJOIN responses r ON r.respondent_id = a.respondent_id\nLEFT JOIN options o ON o.question_id = a.question_id AND o.option_id = a.option_id\nWHERE a.question_id = '${state.questionId}'\nGROUP BY grupo, respuesta\nORDER BY grupo, total DESC`
+export function filterValueLabel(filter) {
+  const inner = attributeValueMap.value.get(filter.attribute)
+  const v = filter.value
+  if (Array.isArray(v)) {
+    return v.map(x => inner?.get(x) ?? String(x)).join(', ')
+  }
+  return inner?.get(v) ?? String(v)
+}
+
+export const sqlPreview = computed(() => {
+  if (state.lastResult?.sql) return state.lastResult.sql
+  if (!state.questionId) return '-- Selecciona una pregunta'
+  return '-- Ejecuta la consulta para ver el SQL generado'
 })
 
 export const canRun = computed(() => !!state.questionId && !state.loading)
 
 export async function init() {
   try {
-    const [qs, attrs] = await Promise.all([
+    const [qs, attrs, recodes, presets] = await Promise.all([
       api.fetchQuestions(),
       api.fetchAttributes(),
+      api.fetchRecodes(),
+      api.fetchPresets(),
     ])
     state.questions = qs
     state.attributes = attrs
+    state.recodes = recodes
+    state.presets = presets
   } catch (e) {
     state.error = 'Error conectando al servidor'
     console.error(e)
   }
 }
 
+export function applyPreset(key) {
+  const p = state.presets.find(x => x.key === key)
+  if (!p) {
+    state.appliedPreset = ''
+    return
+  }
+  state.groupBy = p.group_by
+  state.filters = JSON.parse(JSON.stringify(p.filters || []))
+  state.appliedPreset = key
+}
+
+export function clearPreset() {
+  state.filters = []
+  state.appliedPreset = ''
+}
+
+export function removeFilter(idx) {
+  state.filters.splice(idx, 1)
+  state.appliedPreset = ''
+}
+
 function buildBody() {
   return {
     question_id: state.questionId,
-    filters: [],
+    filters: state.filters,
     group_by: state.groupBy,
+    initial_only: state.initialOnly,
   }
 }
 

@@ -12,6 +12,18 @@ export async function fetchAttributes() {
   return res.json()
 }
 
+export async function fetchRecodes() {
+  const res = await fetch(`${API}/recodes`)
+  if (!res.ok) throw new Error('Error al cargar recodes')
+  return res.json()
+}
+
+export async function fetchPresets() {
+  const res = await fetch(`${API}/presets`)
+  if (!res.ok) throw new Error('Error al cargar presets')
+  return res.json()
+}
+
 export async function runQuery(body) {
   const res = await fetch(`${API}/query`, {
     method: 'POST',

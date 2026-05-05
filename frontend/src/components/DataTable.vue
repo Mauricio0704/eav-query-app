@@ -1,7 +1,18 @@
 <script setup>
-defineProps({
+const props = defineProps({
     data: { type: Object, required: true },
 })
+
+const TOTAL_LABEL_RE = /^(Total|Respuestas|Mínimo|Máximo)$/i
+
+function formatCell(cell, ci) {
+    if (typeof cell !== "number") return cell ?? ""
+    const label = props.data?.column_labels?.[ci]
+    if (label && TOTAL_LABEL_RE.test(label)) {
+        return cell.toLocaleString("en-US")
+    }
+    return cell
+}
 </script>
 
 <template>
@@ -34,7 +45,7 @@ defineProps({
                                 ? 'font-mono text-[#475569]'
                                 : 'text-[#1e293b] font-medium'"
                         >
-                            {{ cell ?? '' }}
+                            {{ formatCell(cell, ci) }}
                         </td>
                     </tr>
                 </tbody>
