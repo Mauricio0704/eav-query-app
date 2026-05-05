@@ -61,12 +61,11 @@ function setTab(t) {
                     <div>
                       <h3 class="font-semibold text-[#1e293b] mb-2">Sobre los Datos</h3>
                       <p class="text-sm text-[#64748b] leading-relaxed mb-3">
-                        Los datos provienen de las encuestas de percepción ciudadana realizadas por
-                        <span class="font-medium text-[#0d9488]"> Cómo Vamos Nuevo León</span>,
-                        organización que monitorea la calidad de vida en el área metropolitana de Monterrey.
+                        Los datos provienen de la encuesta de percepción ciudadana realizada por
+                        <span class="font-medium text-[#0d9488]"> Cómo Vamos Nuevo León</span>.
                       </p>
                       <p class="text-xs text-[#64748b]">
-                        Actualización: Trimestral | Última actualización: Mayo 2026
+                        Edición 2025: Datos recolectados de Agosto 2025 - Septiembre 2025
                       </p>
                     </div>
                   </div>
@@ -86,7 +85,7 @@ function setTab(t) {
                         por nivel socioeconómico, edad y zona geográfica.
                       </p>
                       <ul class="text-xs text-[#64748b] space-y-1">
-                        <li>• Tamaño de muestra: ~3,000 respondentes</li>
+                        <li>• Tamaño de muestra: 4,955 respondentes</li>
                         <li>• Margen de error: ±2.5%</li>
                         <li>• Nivel de confianza: 95%</li>
                       </ul>
@@ -101,14 +100,11 @@ function setTab(t) {
                     <h3 class="font-['Manrope'] font-bold text-xl mb-2">Acceso a Base de Datos Completa</h3>
                     <p class="text-white/90 mb-4 max-w-[600px]">
                       ¿Necesitas acceso a los datos en bruto o realizar análisis personalizados?
-                      Puedes solicitar la base de datos completa o reportes especializados.
+                      Aquí puedes descargar la base de datos.
                     </p>
-                    <div class="flex gap-3">
+                    <div class="flex gap-3 justify-center">
                       <button class="bg-white text-[#0d9488] px-4 py-2 rounded-lg font-medium hover:bg-white/90 transition-colors text-sm">
-                        Solicitar Acceso
-                      </button>
-                      <button class="bg-white/20 text-white px-4 py-2 rounded-lg font-medium hover:bg-white/30 transition-colors text-sm border border-white/30">
-                        Ver Documentación
+                        Descargar BD
                       </button>
                     </div>
                   </div>
