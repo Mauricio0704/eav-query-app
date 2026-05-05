@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: encuesta-nl
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: |
+      pip install -r requirements.txt
+      cd frontend
+      npm install
+      npm run build
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DB_PATH
+        value: /opt/render/project/src/data/encuesta.duckdb
+      - key: STATIC_DIR
+        value: /opt/render/project/src/frontend/dist
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: NODE_VERSION
+        value: "20"
