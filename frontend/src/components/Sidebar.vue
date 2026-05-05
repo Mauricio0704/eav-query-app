@@ -1,7 +1,16 @@
 <script setup>
 import { ref } from 'vue'
-import { Database, Eye, Copy, Check, Play } from 'lucide-vue-next'
-import { state, sqlPreview, canRun, runCurrentQuery } from '../store.js'
+import { Database, Eye, Copy, Check, Play, X } from 'lucide-vue-next'
+import {
+    state,
+    sqlPreview,
+    canRun,
+    runCurrentQuery,
+    applyPreset,
+    clearPreset,
+    removeFilter,
+    filterValueLabel,
+} from '../store.js'
 
 const sqlCopied = ref(false)
 const showSQL = ref(false)
@@ -19,10 +28,19 @@ async function copySQL() {
 function truncate(text, n) {
     return text.length > n ? text.slice(0, n) + '…' : text
 }
+
+function onPresetChange(e) {
+    applyPreset(e.target.value)
+}
+
+function onGroupByChange(e) {
+    state.groupBy = e.target.value
+    state.appliedPreset = ''
+}
 </script>
 
 <template>
-    <aside class="w-[280px] shrink-0 bg-white border-r border-[#e2e8f0] flex flex-col">
+    <aside class="w-70 shrink-0 bg-white border-r border-[#e2e8f0] flex flex-col">
         <!-- Logo -->
         <div class="p-4 border-b border-[#e2e8f0]">
             <div class="flex items-center gap-3 px-2 py-2">
@@ -73,20 +91,20 @@ function truncate(text, n) {
                 </div>
             </div>
 
-            <!-- Group By -->
+            <!-- Análisis predefinido -->
             <div>
                 <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2 block">
-                    Agrupar resultados por
+                    Análisis predefinido
                 </label>
                 <div class="relative">
                     <select
-                        v-model="state.groupBy"
+                        :value="state.appliedPreset"
+                        @change="onPresetChange"
                         class="w-full bg-[#f1f5f9] border-0 rounded px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
                     >
-                        <option value="answer">Respuesta</option>
-                        <option value="city_id">Ciudad</option>
-                        <option v-for="a in state.attributes" :key="a.attribute" :value="a.attribute">
-                            {{ a.attribute }}
+                        <option value="">— Ninguno (configura manualmente) —</option>
+                        <option v-for="p in state.presets" :key="p.key" :value="p.key">
+                            {{ p.label }}
                         </option>
                     </select>
                     <svg
@@ -94,15 +112,95 @@ function truncate(text, n) {
                         fill="none"
                         viewBox="0 0 12 7.4"
                     >
-                        <path
-                            d="M1 1L6 6L11 1"
-                            stroke="#94A3B8"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
+                        <path d="M1 1L6 6L11 1" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </div>
+            </div>
+
+            <!-- Group By -->
+            <div>
+                <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2 block">
+                    Agrupar resultados por
+                </label>
+                <div class="relative">
+                    <select
+                        :value="state.groupBy"
+                        @change="onGroupByChange"
+                        class="w-full bg-[#f1f5f9] border-0 rounded px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
+                    >
+                        <option value="answer">Respuesta</option>
+                        <option value="city_id">Ciudad</option>
+                        <optgroup label="Atributos">
+                            <option v-for="a in state.attributes" :key="a.attribute" :value="a.attribute">
+                                {{ a.attribute }}
+                            </option>
+                        </optgroup>
+                        <optgroup v-if="state.recodes.length" label="Recodes">
+                            <option v-for="r in state.recodes" :key="r.key" :value="r.key">
+                                {{ r.label }}
+                            </option>
+                        </optgroup>
+                    </select>
+                    <svg
+                        class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-2 pointer-events-none"
+                        fill="none"
+                        viewBox="0 0 12 7.4"
+                    >
+                        <path d="M1 1L6 6L11 1" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Filtros aplicados -->
+            <div v-if="state.filters.length">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+                        Filtros
+                    </label>
+                    <button
+                        @click="clearPreset"
+                        class="text-xs text-[#94a3b8] hover:text-[#0d9488] font-medium"
+                    >
+                        Limpiar
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                    <span
+                        v-for="(f, i) in state.filters"
+                        :key="i"
+                        class="inline-flex items-center gap-1 bg-[#f0fdfa] text-[#0d9488] text-xs font-medium px-2 py-1 rounded"
+                    >
+                        <span>{{ f.attribute }}: {{ filterValueLabel(f) }}</span>
+                        <button
+                            @click="removeFilter(i)"
+                            class="hover:text-[#00685f]"
+                            aria-label="Quitar filtro"
+                        >
+                            <X class="size-3" />
+                        </button>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Initial only toggle -->
+            <div>
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        v-model="state.initialOnly"
+                        class="mt-0.5 size-4 accent-[#0d9488] cursor-pointer"
+                    />
+                    <span class="flex-1">
+                        <span class="text-sm font-medium text-[#1e293b] block">
+                            Proyectar a la población
+                        </span>
+                        <span class="text-xs text-[#64748b] block leading-snug mt-0.5">
+                            Restringe a respondientes iniciales y aplica
+                            <code class="text-[10px]">factor_cvnl</code>.
+                            Apaga para ver conteos crudos del muestreo.
+                        </span>
+                    </span>
+                </label>
             </div>
 
             <!-- SQL Preview Toggle -->
@@ -134,7 +232,7 @@ function truncate(text, n) {
                         </button>
                     </div>
                     <div class="bg-[#0f172a] rounded-lg p-4 border border-[#1e293b] shadow-inner">
-                        <pre class="text-xs font-mono leading-relaxed text-[#5feaba] whitespace-pre-wrap break-all m-0">{{ sqlPreview }}</pre>
+                        <pre class="text-xs font-mono leading-relaxed text-code-fg whitespace-pre-wrap break-all m-0 text-[rgba(45,212,191,0.9)]">{{ sqlPreview }}</pre>
                     </div>
                 </div>
             </div>

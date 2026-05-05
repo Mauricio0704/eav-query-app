@@ -17,6 +17,7 @@ import duckdb
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 import io
@@ -28,9 +29,11 @@ from metadata import (
     PERIFERIA_ID,
     ID_TO_CITY_NAME,
     DESIRED_ORDERS,
+    RECODES,
+    PRESETS,
 )
 
-DB_PATH = os.getenv("DB_PATH", "./encuesta.duckdb")
+DB_PATH = os.getenv("DB_PATH", "../data/encuesta.duckdb")
 
 # ── Metadata-driven ordering helpers ──────────────────────────────────────────
 # City buckets used when grouping by city_id (mirrors DESIRED_ORDERS["municipio"]).
@@ -60,6 +63,34 @@ def _order_by_desired(items, get_label, desired):
         rank.get(get_label(it), 10_000),
         get_label(it).lower(),
     ))
+
+def _recode_case_sql(recode_key: str, value_col: str) -> str:
+    """Build a SQL CASE expression that maps `value_col` into the bucket labels
+    of a recode definition. The catch-all bucket (values=None) absorbs anything
+    not in the explicit lists."""
+    recode = RECODES[recode_key]
+    cases = []
+    catch_all = None
+    for label, values in recode["buckets"]:
+        safe_label = label.replace("'", "''")
+        if values is None:
+            catch_all = safe_label
+            continue
+        vals = ",".join(str(int(v)) for v in values)
+        cases.append(f"WHEN {value_col} IN ({vals}) THEN '{safe_label}'")
+    if catch_all is not None:
+        cases.append(f"WHEN {value_col} IS NOT NULL THEN '{catch_all}'")
+    return "CASE\n        " + "\n        ".join(cases) + "\n    END"
+
+
+def _value_clause(col: str, value) -> str:
+    """SQL clause matching `col` against either a single int or a list of ints."""
+    if isinstance(value, list):
+        if not value:
+            return "FALSE"
+        return f"{col} IN ({','.join(str(int(v)) for v in value)})"
+    return f"{col} = {int(value)}"
+
 
 def _edad_bin_sql(col):
     """SQL CASE expression that buckets an integer age into the AGE_LABELS
@@ -186,6 +217,37 @@ def list_attributes():
         conn.close()
 
 
+@app.get("/api/recodes")
+def list_recodes():
+    """
+    Returns recode definitions: ways of collapsing the values of an attribute
+    into named buckets (e.g., tipo_trabajo → Remunerado / No remunerado / Otro).
+    Recodes can be used as `group_by` values in /api/query.
+    """
+    return [
+        {
+            "key": k,
+            "label": v["label"],
+            "source_attribute": v["source_attribute"],
+            "buckets": [
+                {"label": lbl, "values": vals} for lbl, vals in v["buckets"]
+            ],
+            "order": v.get("order"),
+        }
+        for k, v in RECODES.items()
+    ]
+
+
+@app.get("/api/presets")
+def list_presets():
+    """
+    Returns named preset configurations (group_by + filters combinations) that
+    the UI can apply as one-click "analysis recipes". Each preset returns a
+    payload directly compatible with the /api/query body (minus question_id).
+    """
+    return PRESETS
+
+
 @app.get("/api/cities")
 def list_cities():
     """Returns distinct city_id values from responses for use as a filter."""
@@ -208,11 +270,14 @@ def list_cities():
 
 class QueryRequest(BaseModel):
     question_id: str
-    # Each filter: {"attribute": "sexo", "value": 1}
+    # Each filter: {"attribute": "sexo", "value": 1} or {"attribute": "tipo_trabajo", "value": [1, 4, 6]}
     # For city filter use attribute="city_id"
     filters: list[dict] = []
-    # Group results by: "answer" | "city_id" | any attribute name
+    # Group results by: "answer" | "city_id" | any attribute name | recode key
     group_by: str = "answer"
+    # When True, restrict to is_initial_respondent=1 and weight by factor_cvnl
+    # (population projection). When False, count every row unweighted.
+    initial_only: bool = True
 
 
 @app.post("/api/query")
@@ -236,11 +301,12 @@ def run_query(req: QueryRequest):
 
         q_type, q_text = q_info
 
-        # Question IDs that don't start with "cp" represent opinion/behaviour
-        # questions whose counts must be projected to the population using
-        # responses.factor_cvnl. "cp*" questions are demographics about the
-        # respondent itself and stay unweighted.
-        weighted = not req.question_id.lower().startswith("cp")
+        # `initial_only` controls both the cohort and the weighting:
+        #  - True  → restrict to is_initial_respondent=1, project to population
+        #            via factor_cvnl (this is the canonical CVNL methodology)
+        #  - False → count every respondent row unweighted (raw sample counts)
+        weighted = req.initial_only
+        initial_filter = "AND r.is_initial_respondent = 1" if req.initial_only else ""
         count_expr = "SUM(r.factor_cvnl)" if weighted else "COUNT(*)"
         count_int  = f"ROUND({count_expr})::BIGINT" if weighted else "COUNT(*)"
         avg_expr   = (
@@ -256,19 +322,25 @@ def run_query(req: QueryRequest):
         join_clauses = ""
         for i, f in enumerate(attr_filters):
             alias = f"ra{i}"
+            value_clause = _value_clause(f"{alias}.value", f["value"])
             join_clauses += f"""
             INNER JOIN respondent_attributes {alias}
                 ON {alias}.respondent_id = r.respondent_id
                 AND {alias}.attribute = '{f["attribute"]}'
-                AND {alias}.value = {int(f["value"])}"""
+                AND {value_clause}"""
 
         city_where = ""
         if city_filter:
-            city_where = f"AND r.city_id = {int(city_filter['value'])}"
+            city_where = "AND " + _value_clause("r.city_id", city_filter["value"])
 
         # Total respondents for this query (sentinel-filtered for numerica).
         # Weighted form sums factor_cvnl over distinct (respondent, factor) rows.
-        sentinel_filter = "AND a.value NOT IN (7777, 8888, 9999)"
+        # Categorical answers store the response in `option_id` and leave
+        # `a.value` NULL, so applying the sentinel filter there would drop
+        # every row (NULL NOT IN (...) is NULL/falsy).
+        sentinel_filter = (
+            "AND a.value NOT IN (7777, 8888, 9999)" if q_type == "numerica" else ""
+        )
         if weighted:
             total_sql = f"""
                 SELECT ROUND(SUM(factor_cvnl))::BIGINT FROM (
@@ -278,6 +350,7 @@ def run_query(req: QueryRequest):
                     {join_clauses}
                     WHERE a.question_id = '{req.question_id}'
                       {sentinel_filter}
+                      {initial_filter}
                       {city_where}
                 )
             """
@@ -289,6 +362,7 @@ def run_query(req: QueryRequest):
                 {join_clauses}
                 WHERE a.question_id = '{req.question_id}'
                   {sentinel_filter}
+                  {initial_filter}
                   {city_where}
             """
         total_respondents = (conn.execute(total_sql).fetchone() or (0,))[0]
@@ -309,6 +383,7 @@ def run_query(req: QueryRequest):
                     {join_clauses}
                     WHERE a.question_id = '{req.question_id}'
                       AND a.value NOT IN (7777, 8888, 9999)
+                      {initial_filter}
                       {city_where}
                 """
                 rows = conn.execute(sql).fetchall()
@@ -326,6 +401,7 @@ def run_query(req: QueryRequest):
                             AND o.option_id = a.option_id
                         {join_clauses}
                         WHERE a.question_id = '{req.question_id}'
+                          {initial_filter}
                           {city_where}
                         GROUP BY id_respuesta, respuesta
                     ),
@@ -364,6 +440,15 @@ def run_query(req: QueryRequest):
                   AND rg.attribute = 'edad_anos'
                 LIMIT 1
             )"""
+        elif req.group_by in RECODES:
+            recode_src = RECODES[req.group_by]["source_attribute"]
+            group_expr = f"""(
+                SELECT {_recode_case_sql(req.group_by, 'rg.value')}
+                FROM respondent_attributes rg
+                WHERE rg.respondent_id = r.respondent_id
+                  AND rg.attribute = '{recode_src}'
+                LIMIT 1
+            )"""
         else:
             # `respondent_attributes` stores the survey question_id (e.g. 'cp2')
             # alongside the friendly attribute name (e.g. 'sexo'). The option
@@ -389,6 +474,7 @@ def run_query(req: QueryRequest):
             INNER JOIN responses r ON r.respondent_id = a.respondent_id
             {join_clauses}
             WHERE a.question_id = '{req.question_id}'
+              {initial_filter}
               {city_where}
             GROUP BY grupo
             HAVING grupo IS NOT NULL
@@ -414,8 +500,11 @@ def run_query(req: QueryRequest):
         else:
             def display(g):
                 return str(g)
-            order_key = _ATTRIBUTE_ORDER_KEY.get(req.group_by)
-            desired   = DESIRED_ORDERS.get(order_key) if order_key else None
+            if req.group_by in RECODES:
+                desired = RECODES[req.group_by].get("order")
+            else:
+                order_key = _ATTRIBUTE_ORDER_KEY.get(req.group_by)
+                desired   = DESIRED_ORDERS.get(order_key) if order_key else None
             group_keys = _order_by_desired(
                 list(group_totals_raw.keys()), display, desired
             )
@@ -441,6 +530,7 @@ def run_query(req: QueryRequest):
                 {join_clauses}
                 WHERE a.question_id = '{req.question_id}'
                   AND a.value IS NOT NULL
+                  {initial_filter}
                   {city_where}
                 GROUP BY id_respuesta, grupo
                 ORDER BY id_respuesta
@@ -458,6 +548,7 @@ def run_query(req: QueryRequest):
                 {join_clauses}
                 WHERE a.question_id = '{req.question_id}'
                   AND a.value NOT IN (7777, 8888, 9999)
+                  {initial_filter}
                   {city_where}
                 GROUP BY grupo
                 HAVING grupo IS NOT NULL
@@ -474,6 +565,7 @@ def run_query(req: QueryRequest):
                 {join_clauses}
                 WHERE a.question_id = '{req.question_id}'
                   AND a.value NOT IN (7777, 8888, 9999)
+                  {initial_filter}
                   {city_where}
             """
             overall_stats = list(conn.execute(overall_stats_sql).fetchone() or [None] * 4)
@@ -528,6 +620,7 @@ def run_query(req: QueryRequest):
                         WHERE a.question_id = '{req.question_id}'
                           AND a.value NOT IN (7777, 8888, 9999)
                           AND r.city_id IN ({in_clause})
+                          {initial_filter}
                           {city_where}
                     """).fetchone()
                     if agg_row and agg_row[0] is not None:
@@ -609,6 +702,7 @@ def run_query(req: QueryRequest):
                 AND o.option_id = a.option_id
             {join_clauses}
             WHERE a.question_id = '{req.question_id}'
+              {initial_filter}
               {city_where}
             GROUP BY id_respuesta, respuesta, grupo
             ORDER BY id_respuesta
@@ -735,3 +829,14 @@ def export_csv(req: QueryRequest):
 @app.get("/api/health")
 def health():
     return {"status": "ok", "db": DB_PATH}
+
+
+# ---------------------------------------------------------------------------
+# Static frontend (production)
+# ---------------------------------------------------------------------------
+# When STATIC_DIR is set and points to a built Vite output (frontend/dist),
+# serve it at the root path. Must run AFTER all /api/* routes are registered
+# so they take precedence over the catch-all static mount.
+STATIC_DIR = os.getenv("STATIC_DIR", "../frontend/dist")
+if os.path.isdir(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

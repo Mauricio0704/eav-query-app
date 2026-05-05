@@ -145,6 +145,139 @@ DESIRED_ORDERS = {
     "tipo_trabajo": ["Trabajo remunerado", "Trabajo no remunerado", "Otro"],
 }
 
+RECODES: dict = {
+    "tipo_trabajo_remunerado": {
+        "source_attribute": "tipo_trabajo",
+        "label": "Tipo de trabajo (remunerado)",
+        "buckets": [
+            ("Trabajo remunerado", [1, 4, 6]),
+            ("Trabajo no remunerado", [5]),
+            ("Otro", None),
+        ],
+        "order": ["Trabajo remunerado", "Trabajo no remunerado", "Otro"],
+    },
+    "tipo_servicio_salud_publico_privado": {
+        "source_attribute": "servicio_salud_donde_se_atendio",
+        "label": "Tipo de servicio de salud (público/privado)",
+        "buckets": [
+            ("Públicos", [1, 4, 5, 6, 11]),
+            ("Privados", [2, 3, 7, 8, 9, 10, 12, 13]),
+        ],
+        "order": ["Públicos", "Privados"],
+    },
+    "particion_modal_agregada": {
+        "source_attribute": "modo_transporte",
+        "label": "Partición modal agregada",
+        "buckets": [
+            ("Medios motorizados no colectivos", [3, 4, 5, 9]),
+            ("Medios no motorizados", [1, 6, 7]),
+            ("Transporte público colectivo", [2, 8, 10]),
+            ("Transporte privado colectivo", [11, 12, 13]),
+            ("Otros", [14, 15]),
+            ("No sabe", [8888]),
+            ("No contesta", [9999]),
+        ],
+        "order": [
+            "Medios no motorizados",
+            "Transporte público colectivo",
+            "Transporte privado colectivo",
+            "Medios motorizados no colectivos",
+            "Otros",
+            "No sabe",
+            "No contesta",
+        ],
+    },
+}
+
+
+PRESETS: list = [
+    {
+        "key": "por_municipio_hombres",
+        "label": "Por municipio · solo hombres",
+        "group_by": "city_id",
+        "filters": [{"attribute": "sexo", "value": 0}],
+    },
+    {
+        "key": "por_municipio_mujeres",
+        "label": "Por municipio · solo mujeres",
+        "group_by": "city_id",
+        "filters": [{"attribute": "sexo", "value": 1}],
+    },
+    {
+        "key": "por_municipio_trabajo_remunerado",
+        "label": "Por municipio · trabajo remunerado",
+        "group_by": "city_id",
+        "filters": [{"attribute": "tipo_trabajo", "value": [1, 4, 6]}],
+    },
+    {
+        "key": "por_municipio_trabajo_remunerado_hombres",
+        "label": "Por municipio · trabajo remunerado (hombres)",
+        "group_by": "city_id",
+        "filters": [
+            {"attribute": "tipo_trabajo", "value": [1, 4, 6]},
+            {"attribute": "sexo", "value": 0},
+        ],
+    },
+    {
+        "key": "por_municipio_trabajo_remunerado_mujeres",
+        "label": "Por municipio · trabajo remunerado (mujeres)",
+        "group_by": "city_id",
+        "filters": [
+            {"attribute": "tipo_trabajo", "value": [1, 4, 6]},
+            {"attribute": "sexo", "value": 1},
+        ],
+    },
+    {
+        "key": "por_municipio_estudios_primaria",
+        "label": "Por municipio · estudia primaria",
+        "group_by": "city_id",
+        "filters": [{"attribute": "nivel_actual_estudios", "value": [2]}],
+    },
+    {
+        "key": "por_municipio_estudios_secundaria",
+        "label": "Por municipio · estudia secundaria",
+        "group_by": "city_id",
+        "filters": [{"attribute": "nivel_actual_estudios", "value": [3]}],
+    },
+    {
+        "key": "por_municipio_estudios_media_superior",
+        "label": "Por municipio · estudia media superior",
+        "group_by": "city_id",
+        "filters": [{"attribute": "nivel_actual_estudios", "value": [4, 5]}],
+    },
+    {
+        "key": "por_municipio_escuela_publica",
+        "label": "Por municipio · escuela pública",
+        "group_by": "city_id",
+        "filters": [{"attribute": "tipo_escuela", "value": 1}],
+    },
+    {
+        "key": "por_municipio_escuela_privada",
+        "label": "Por municipio · escuela privada",
+        "group_by": "city_id",
+        "filters": [{"attribute": "tipo_escuela", "value": 2}],
+    },
+    {
+        "key": "por_tipo_trabajo_remunerado",
+        "label": "Por tipo de trabajo (remunerado / no)",
+        "group_by": "tipo_trabajo_remunerado",
+        "filters": [],
+    },
+    {
+        "key": "por_servicio_salud_publico_privado",
+        "label": "Por tipo de servicio de salud (público / privado)",
+        "group_by": "tipo_servicio_salud_publico_privado",
+        "filters": [],
+    },
+    {
+        "key": "por_particion_modal_agregada",
+        "label": "Por partición modal agregada",
+        "group_by": "particion_modal_agregada",
+        "filters": [],
+    },
+]
+
+
 DERIVED_NEXT: list[tuple[str, str]] = [
     ("tiempo_trabajo", "p3_1"),
     ("prestaciones", "p5_1"),
