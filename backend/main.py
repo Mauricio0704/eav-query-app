@@ -291,7 +291,7 @@ def run_query(req: QueryRequest):
                   {sentinel_filter}
                   {city_where}
             """
-        total_respondents = conn.execute(total_sql).fetchone()[0]
+        total_respondents = (conn.execute(total_sql).fetchone() or (0,))[0]
 
         # ── group_by="answer" → flat shape (no pivot) ─────────────────────
         if req.group_by == "answer":
@@ -420,7 +420,7 @@ def run_query(req: QueryRequest):
                 list(group_totals_raw.keys()), display, desired
             )
             group_labels = [display(g) for g in group_keys]
-            label_to_city_ids = None
+            label_to_city_ids = {}
 
         # Option-id → option-label lookup for the "Respuesta" column.
         opt_lookup = {
@@ -508,15 +508,15 @@ def run_query(req: QueryRequest):
                     raw = stats_per_group.get(str(cid))
                     if raw:
                         new_stats[ID_TO_CITY_NAME[cid]] = raw
-                for label, ids in [
+                for label, agg_ids in [
                     ("AMM",        AMM_ID),
                     ("Periferia",  PERIFERIA_ID),
                     ("Resto NL",   sorted(_RESTO_NL)),
                     ("Nuevo León", sorted(_NL_CITY_IDS)),
                 ]:
-                    if not ids:
+                    if not agg_ids:
                         continue
-                    in_clause = ",".join(str(i) for i in ids)
+                    in_clause = ",".join(str(i) for i in agg_ids)
                     agg_row = conn.execute(f"""
                         SELECT {avg_expr},
                                ROUND(MIN(a.value)::NUMERIC, 2),
@@ -581,7 +581,8 @@ def run_query(req: QueryRequest):
                 for g in group_keys:
                     v = stats_per_group.get(g, [None] * 4)[i]
                     row.append(v if v is not None else "")
-                row.append(overall_stats[i] if overall_stats[i] is not None else "")
+                stat_val = overall_stats[i]
+                row.append(stat_val if stat_val is not None else "")
                 counts_rows.append(row)
 
             return {
