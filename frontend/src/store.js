@@ -21,6 +21,38 @@ export const selectedQuestion = computed(() =>
   state.questions.find(q => q.q_id === state.questionId) || null
 )
 
+const SECTION_LABELS = {
+  generales: 'Generales',
+  economia_y_trabajo: 'Economía y trabajo',
+  educacion: 'Educación',
+  salud: 'Salud',
+  seguridad: 'Seguridad',
+  movilidad: 'Movilidad',
+  desarrollo_urbano: 'Desarrollo urbano',
+  medio_ambiente: 'Medio ambiente',
+  gobierno: 'Gobierno',
+  migracion_y_discriminacion: 'Migración y discriminación',
+}
+
+export function sectionLabel(key) {
+  return SECTION_LABELS[key] || key
+}
+
+export const questionsBySection = computed(() => {
+  const groups = new Map()
+  for (const k of Object.keys(SECTION_LABELS)) groups.set(k, [])
+  for (const q of state.questions) {
+    const k = q.q_section || 'otros'
+    if (!groups.has(k)) groups.set(k, [])
+    groups.get(k).push(q)
+  }
+  const out = []
+  for (const [k, qs] of groups) {
+    if (qs.length) out.push({ key: k, label: sectionLabel(k), questions: qs })
+  }
+  return out
+})
+
 const attributeValueMap = computed(() => {
   const m = new Map()
   for (const a of state.attributes) {

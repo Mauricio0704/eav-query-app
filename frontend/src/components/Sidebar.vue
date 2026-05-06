@@ -10,6 +10,7 @@ import {
     clearPreset,
     removeFilter,
     filterValueLabel,
+    questionsBySection,
 } from '../store.js'
 
 const sqlCopied = ref(false)
@@ -71,9 +72,15 @@ function onGroupByChange(e) {
                         class="w-full bg-[#f1f5f9] border-0 rounded px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
                     >
                         <option value="">— Selecciona una pregunta —</option>
-                        <option v-for="q in state.questions" :key="q.q_id" :value="q.q_id">
-                            {{ q.q_id }} — {{ truncate(q.q_text, 60) }}
-                        </option>
+                        <optgroup
+                            v-for="g in questionsBySection"
+                            :key="g.key"
+                            :label="g.label"
+                        >
+                            <option v-for="q in g.questions" :key="q.q_id" :value="q.q_id">
+                                {{ q.q_id }} — {{ truncate(q.q_text, 60) }}
+                            </option>
+                        </optgroup>
                     </select>
                     <svg
                         class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-2 pointer-events-none"
