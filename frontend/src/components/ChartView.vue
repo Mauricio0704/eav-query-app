@@ -219,7 +219,7 @@ onBeforeUnmount(destroy)
                 <div
                     v-for="(label, i) in pieGroupLabels"
                     :key="label"
-                    class="bg-white border border-surface rounded-lg p-4"
+                    class="bg-white border border-gray-300 rounded-lg p-4"
                 >
                     <p class="text-xs font-bold text-[#64748b] uppercase tracking-wider mb-2 text-center">
                         {{ label }}

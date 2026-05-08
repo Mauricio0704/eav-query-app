@@ -12,11 +12,12 @@ const exportDisabled = computed(() => !state.lastResult)
 
 <template>
     <header class="bg-white border-b border-[#e2e8f0] px-8 py-4 flex items-center justify-between gap-6">
-        <div class="flex items-center gap-4 min-w-0">
-            <Database class="size-5 text-[#94a3b8] shrink-0" />
+        <div class="flex items-center gap-2 min-w-0">
+            <div class="rounded-full">
+                <img src="/minilogo.webp" class="size-8">
+            </div>
             <h2
-                class="font-['Manrope'] text-xl truncate"
-                :class="isEmpty ? 'text-[#94a3b8] italic font-light' : 'font-semibold text-[#1e293b]'"
+                class="font-['Poppins'] text-lg truncate uppercase text-[#fb7e50] font-extrabold"
             >
                 {{ questionText }}
             </h2>

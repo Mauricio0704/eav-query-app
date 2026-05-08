@@ -21,7 +21,9 @@ function setTab(t) {
 </script>
 
 <template>
-    <div class="flex-1 overflow-auto p-8">
+    <div
+        class="flex-1 overflow-auto p-8 bg-linear-to-r from-[#fcf0e4] to-[#7e34c35a]"
+    >
         <!-- Loading -->
         <div
             v-if="state.loading"
@@ -83,15 +85,20 @@ function setTab(t) {
                                     >
                                         Los datos provienen de la encuesta de
                                         percepción ciudadana realizada por
-                                        <span
-                                            class="font-medium text-[#0d9488]"
+                                        <a
+                                            href="https://comovamosnl.org/"
+                                            target="_blank"
                                         >
-                                            Cómo Vamos Nuevo León</span
-                                        >.
+                                            <span
+                                                class="font-medium underline text-[#0d9488]"
+                                            >
+                                                Cómo Vamos Nuevo León</span
+                                            >.
+                                        </a>
                                     </p>
                                     <p class="text-xs text-[#64748b]">
-                                        Edición 2025: Datos recolectados de
-                                        Agosto 2025 - Septiembre 2025
+                                        • Datos recolectados de Agosto 2025 -
+                                        Septiembre 2025
                                     </p>
                                 </div>
                             </div>
@@ -139,8 +146,6 @@ function setTab(t) {
                                             • Tamaño de muestra: 4,955
                                             respondientes
                                         </li>
-                                        <li>• Margen de error: ±2.5%</li>
-                                        <li>• Nivel de confianza: 95%</li>
                                     </ul>
                                 </div>
                             </div>
@@ -148,7 +153,7 @@ function setTab(t) {
                     </div>
 
                     <div
-                        class="bg-linear-to-r from-[#0d9488] to-[#14b8a6] rounded-lg p-8 text-white"
+                        class="bg-[#7e34c3] rounded-lg p-8 text-white"
                     >
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
@@ -157,96 +162,58 @@ function setTab(t) {
                                 >
                                     Acceso a Base de Datos Completa
                                 </h3>
-                                <p class="text-white/90 mb-4 max-w-150">
+                                <div class="w-full justify-center">
+                                <p class="text-white/90 mb-4 text-center">
                                     ¿Necesitas acceso a los datos en bruto o
                                     realizar análisis personalizados? Aquí
                                     puedes descargar la base de datos.
                                 </p>
+                                </div>
                                 <div class="flex gap-3 justify-center">
                                     <a
                                         href="https://drive.google.com/drive/folders/1_Ksr-u7sE1SrwrEGRbYUG1Pe_8yEmLqo?usp=sharing"
                                         target="_blank"
                                     >
                                         <button
-                                            class="bg-white text-[#0d9488] px-4 py-2 rounded-lg font-medium hover:bg-white/90 hover:cursor-pointer transition-colors text-sm"
+                                            class="bg-white text-[#303030] px-4 py-2 rounded-lg font-medium hover:bg-white/90 hover:cursor-pointer transition-colors text-sm"
                                         >
                                             Descargar BD
                                         </button>
                                     </a>
                                 </div>
                             </div>
-                            <div class="hidden lg:block">
-                                <svg
-                                    class="size-32 opacity-20"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="1"
-                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
-                                    />
-                                </svg>
-                            </div>
                         </div>
                     </div>
 
                     <div
-                        class="mt-8 bg-[#f8fafc] rounded-lg p-6 border border-[#e2e8f0]"
+                        class="mt-8 bg-[#fb7e50] rounded-4xl p-6 border border-[#e2e8f0] font-['Poppins'] text-center"
                     >
                         <h3
-                            class="font-semibold text-[#1e293b] mb-3 flex items-center gap-2"
+                            class="font-['Poppins'] font-extrabold text-[#ffba00] text-lg mb-3 flex items-center justify-center gap-2"
                         >
-                            <svg
-                                class="size-5 text-[#0d9488]"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
-                            ¿Cómo usar esta herramienta?
+                            ¿CÓMO USAR ESTA HERRAMIENTA?
                         </h3>
-                        <ol class="space-y-2 text-sm text-[#64748b]">
-                            <li class="flex gap-3">
-                                <span class="font-bold text-[#0d9488] shrink-0"
-                                    >1.</span
-                                >
+                        <ol class="space-y-2 text-sm text-[#303030]">
+                            <li class="flex justify-center gap-3">
                                 <span
                                     >Selecciona una pregunta de la encuesta en
                                     el panel izquierdo</span
                                 >
                             </li>
-                            <li class="flex gap-3">
-                                <span class="font-bold text-[#0d9488] shrink-0"
-                                    >2.</span
-                                >
+                            <li class="flex justify-center gap-3">
                                 <span
                                     >Elige cómo agrupar los resultados (por
                                     edad, zona, nivel socioeconómico,
                                     etc.)</span
                                 >
                             </li>
-                            <li class="flex gap-3">
-                                <span class="font-bold text-[#0d9488] shrink-0"
-                                    >3.</span
-                                >
+                            <li class="flex justify-center gap-3">
                                 <span
                                     >Haz clic en "Ejecutar consulta" para ver
                                     los resultados</span
                                 >
                             </li>
-                            <li class="flex gap-3">
-                                <span class="font-bold text-[#0d9488] shrink-0"
-                                    >4.</span
-                                >
+                            <li class="flex justify-center gap-3">
                                 <span
                                     >Visualiza los datos en formato de tabla o
                                     gráfica y descarga en CSV si lo

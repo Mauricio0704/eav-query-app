@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Database, Eye, Copy, Check, Play, X } from 'lucide-vue-next'
+import { Eye, Copy, Check, Play, X } from 'lucide-vue-next'
 import {
     state,
     sqlPreview,
@@ -45,12 +45,10 @@ function onGroupByChange(e) {
         <!-- Logo -->
         <div class="p-4 border-b border-[#e2e8f0]">
             <div class="flex items-center gap-3 px-2 py-2">
-                <div class="bg-[#008378] rounded-lg size-10 flex items-center justify-center">
-                    <Database class="size-4 text-white" />
-                </div>
+                <img src="/logo.webp" alt="Logo" class="size-22 object-contain" />
                 <div>
-                    <h1 class="font-['Manrope'] font-extrabold text-[#0d9488] text-lg tracking-tight">
-                        Encuesta NL
+                    <h1 class="font-['Manrope'] font-extrabold text-[#7e34c3] text-center text-[20px] tracking-tight">
+                        Encuesta
                     </h1>
                     <p class="text-[10px] text-[#94a3b8] font-bold tracking-wider uppercase">
                         Así Vamos · 2025
@@ -69,7 +67,7 @@ function onGroupByChange(e) {
                 <div class="relative">
                     <select
                         v-model="state.questionId"
-                        class="w-full bg-[#f1f5f9] border-0 rounded px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
+                        class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
                     >
                         <option value="">— Selecciona una pregunta —</option>
                         <optgroup
@@ -107,7 +105,7 @@ function onGroupByChange(e) {
                     <select
                         :value="state.appliedPreset"
                         @change="onPresetChange"
-                        class="w-full bg-[#f1f5f9] border-0 rounded px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
+                        class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
                     >
                         <option value="">— Ninguno (configura manualmente) —</option>
                         <option v-for="p in state.presets" :key="p.key" :value="p.key">
@@ -133,7 +131,7 @@ function onGroupByChange(e) {
                     <select
                         :value="state.groupBy"
                         @change="onGroupByChange"
-                        class="w-full bg-[#f1f5f9] border-0 rounded px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
+                        class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
                     >
                         <option value="answer">Respuesta</option>
                         <option value="city_id">Ciudad</option>
