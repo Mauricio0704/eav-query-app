@@ -46,3 +46,16 @@ export async function exportCSV(body) {
   if (!res.ok) throw new Error('Error al exportar CSV')
   return res.blob()
 }
+
+export async function chat(body) {
+  const res = await fetch(`${API}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || res.statusText)
+  }
+  return res.json()
+}

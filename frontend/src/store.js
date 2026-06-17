@@ -15,6 +15,10 @@ export const state = reactive({
   activeTab: 'table',
   loading: false,
   error: null,
+  // 'manual' = query builder, 'ai' = natural-language chat
+  queryMode: 'manual',
+  chatMessages: [],
+  chatLoading: false,
 })
 
 export const selectedQuestion = computed(() =>
@@ -139,6 +143,36 @@ export async function runCurrentQuery() {
     state.error = e.message
   } finally {
     state.loading = false
+  }
+}
+
+export function setQueryMode(mode) {
+  state.queryMode = mode
+}
+
+export async function sendChatMessage(text) {
+  const msg = (text || '').trim()
+  if (!msg || state.chatLoading) return
+  // History = prior turns (text only) before this new message.
+  const history = state.chatMessages.map(m => ({ role: m.role, text: m.text }))
+  state.chatMessages.push({ role: 'user', text: msg })
+  state.chatLoading = true
+  try {
+    const res = await api.chat({ message: msg, history })
+    state.chatMessages.push({
+      role: 'assistant',
+      text: res.reply,
+      data: res.data || null,
+      toolCalls: res.tool_calls || [],
+    })
+  } catch (e) {
+    state.chatMessages.push({
+      role: 'assistant',
+      text: `Lo siento, ocurrió un error: ${e.message}`,
+      error: true,
+    })
+  } finally {
+    state.chatLoading = false
   }
 }
 

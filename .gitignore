@@ -1,6 +1,7 @@
 node_modules/
-extra/
 .pyc
 .editorconfig
 __pycache__/
 dist/
+.venv
+.mypy_cache

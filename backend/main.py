@@ -832,6 +832,15 @@ def health():
 
 
 # ---------------------------------------------------------------------------
+# AI chat (text-to-query via Gemini function-calling)
+# ---------------------------------------------------------------------------
+# Imported last so the lazy `from main import ...` calls inside chat.py resolve
+# against a fully-loaded module (no circular import at load time).
+from chat import router as chat_router  # noqa: E402
+app.include_router(chat_router)
+
+
+# ---------------------------------------------------------------------------
 # Static frontend (production)
 # ---------------------------------------------------------------------------
 # When STATIC_DIR is set and points to a built Vite output (frontend/dist),
