@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Eye, Copy, Check, Play, X } from 'lucide-vue-next'
+import { Eye, Copy, Check, Play, X, SlidersHorizontal, Sparkles } from 'lucide-vue-next'
 import {
     state,
     sqlPreview,
@@ -11,6 +11,7 @@ import {
     removeFilter,
     filterValueLabel,
     questionsBySection,
+    setQueryMode,
 } from '../store.js'
 
 const sqlCopied = ref(false)
@@ -59,6 +60,37 @@ function onGroupByChange(e) {
 
         <!-- Query Controls -->
         <div class="flex-1 p-4 space-y-6 overflow-y-auto">
+            <!-- Modo de Consulta -->
+            <div>
+                <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2 block">
+                    Modo de Consulta
+                </label>
+                <div class="grid grid-cols-2 gap-2 bg-[#f1f5f9] p-1 rounded-2xl">
+                    <button
+                        @click="setQueryMode('manual')"
+                        class="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-colors"
+                        :class="state.queryMode === 'manual'
+                            ? 'bg-white text-[#0d9488] shadow-sm'
+                            : 'text-[#94a3b8] hover:text-[#64748b]'"
+                    >
+                        <SlidersHorizontal class="size-4" />
+                        Manual
+                    </button>
+                    <button
+                        @click="setQueryMode('ai')"
+                        class="flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-colors"
+                        :class="state.queryMode === 'ai'
+                            ? 'bg-white text-[#7e34c3] shadow-sm'
+                            : 'text-[#94a3b8] hover:text-[#64748b]'"
+                    >
+                        <Sparkles class="size-4" />
+                        IA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Manual query builder controls -->
+            <template v-if="state.queryMode === 'manual'">
             <!-- Pregunta -->
             <div>
                 <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2 block">
@@ -241,10 +273,11 @@ function onGroupByChange(e) {
                     </div>
                 </div>
             </div>
+            </template>
         </div>
 
-        <!-- Execute Button -->
-        <div class="p-4 border-t border-[#e2e8f0]">
+        <!-- Execute Button (manual mode only) -->
+        <div v-if="state.queryMode === 'manual'" class="p-4 border-t border-[#e2e8f0]">
             <button
                 @click="runCurrentQuery"
                 :disabled="!canRun"
