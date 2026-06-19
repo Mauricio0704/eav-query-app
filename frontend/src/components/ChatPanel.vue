@@ -2,8 +2,7 @@
 import { ref, nextTick, watch } from "vue";
 import { Send, Sparkles } from "lucide-vue-next";
 import { state, sendChatMessage } from "../store.js";
-import DataTable from "./DataTable.vue";
-import PivotTables from "./PivotTables.vue";
+import ResultView from "./ResultView.vue";
 
 const input = ref("");
 const scroller = ref(null);
@@ -89,7 +88,7 @@ watch(
                 </div>
 
                 <!-- Conversation -->
-                <template v-for="(m, i) in state.chatMessages" :key="i">
+                <template v-for="m in state.chatMessages" :key="m.id">
                     <!-- User bubble -->
                     <div v-if="m.role === 'user'" class="flex justify-end">
                         <div
@@ -116,16 +115,12 @@ watch(
                             </p>
                         </div>
 
-                        <!-- Result table for this answer -->
+                        <!-- Result for this answer (toggle table / chart) -->
                         <div
                             v-if="m.data"
-                            class="bg-white rounded-lg border border-[#e2e8f0] shadow-sm p-5 space-y-6 overflow-hidden"
+                            class="bg-white rounded-lg border border-[#e2e8f0] shadow-sm overflow-hidden"
                         >
-                            <PivotTables
-                                v-if="m.data.format === 'pivot'"
-                                :data="m.data"
-                            />
-                            <DataTable v-else :data="m.data" />
+                            <ResultView :data="m.data" />
                         </div>
                     </div>
                 </template>

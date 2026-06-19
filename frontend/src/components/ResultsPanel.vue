@@ -1,12 +1,13 @@
 <script setup>
 import { computed } from "vue";
-import { Table2, BarChart3, Database } from "lucide-vue-next";
-import { state } from "../store.js";
+import { Table2, BarChart3, Database, Download } from "lucide-vue-next";
+import { state, exportCurrentCSV } from "../store.js";
 import DataTable from "./DataTable.vue";
 import PivotTables from "./PivotTables.vue";
 import ChartView from "./ChartView.vue";
 
 const isPivot = computed(() => state.lastResult?.format === "pivot");
+const exportDisabled = computed(() => !state.lastResult || state.loading);
 const totalRespondents = computed(
     () => state.lastResult?.total_respondents?.toLocaleString("es-MX") ?? "—",
 );
@@ -307,6 +308,14 @@ function setTab(t) {
                             <span class="font-bold text-sm">Gráfica</span>
                         </button>
                     </div>
+                    <button
+                        @click="exportCurrentCSV"
+                        :disabled="exportDisabled"
+                        class="flex items-center gap-2 py-1.5 px-2 border border-[#e2e8f0] rounded hover:bg-[#f8fafc] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    >
+                        <Download class="size-3.5 text-[#475569]" />
+                        <span class="font-semibold text-sm text-[#475569]">Descargar CSV</span>
+                    </button>
                 </div>
 
                 <div v-show="state.activeTab === 'table'" class="p-6 space-y-8">

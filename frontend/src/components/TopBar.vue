@@ -1,13 +1,12 @@
 <script setup>
 import { computed } from 'vue'
-import { Database, Download } from 'lucide-vue-next'
-import { state, selectedQuestion, exportCurrentCSV } from '../store.js'
+import { Database } from 'lucide-vue-next'
+import { state, selectedQuestion } from '../store.js'
 
 const questionText = computed(
     () => selectedQuestion.value?.q_text || 'Selecciona una pregunta en el panel izquierdo'
 )
 const isEmpty = computed(() => !selectedQuestion.value)
-const exportDisabled = computed(() => !state.lastResult)
 </script>
 
 <template>
@@ -22,13 +21,5 @@ const exportDisabled = computed(() => !state.lastResult)
                 {{ questionText }}
             </h2>
         </div>
-        <button
-            @click="exportCurrentCSV"
-            :disabled="exportDisabled"
-            class="flex items-center gap-2 px-4 py-2 border border-[#e2e8f0] rounded hover:bg-[#f8fafc] transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-        >
-            <Download class="size-4 text-[#475569]" />
-            <span class="font-semibold text-sm text-[#475569]">Descargar CSV</span>
-        </button>
     </header>
 </template>
