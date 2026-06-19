@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Eye, Copy, Check, Play, X, SlidersHorizontal, Sparkles } from 'lucide-vue-next'
+import { Eye, Copy, Check, Play, X, SlidersHorizontal, Sparkles, Plus, MessageSquare, Trash2 } from 'lucide-vue-next'
 import {
     state,
     sqlPreview,
@@ -12,7 +12,22 @@ import {
     filterValueLabel,
     questionsBySection,
     setQueryMode,
+    newConversation,
+    loadConversation,
+    deleteConversation,
 } from '../store.js'
+
+function relativeTime(ts) {
+    const diff = Date.now() - ts
+    const min = Math.floor(diff / 60000)
+    if (min < 1) return 'ahora'
+    if (min < 60) return `hace ${min} min`
+    const h = Math.floor(min / 60)
+    if (h < 24) return `hace ${h} h`
+    const d = Math.floor(h / 24)
+    if (d === 1) return 'ayer'
+    return `hace ${d} d`
+}
 
 const sqlCopied = ref(false)
 const showSQL = ref(false)
@@ -273,6 +288,56 @@ function onGroupByChange(e) {
                     </div>
                 </div>
             </div>
+            </template>
+
+            <!-- AI mode: conversation history -->
+            <template v-else>
+                <button
+                    @click="newConversation"
+                    class="w-full flex items-center justify-center gap-2 bg-[#7e34c3] hover:bg-[#5e2494] text-white rounded-2xl px-4 py-2.5 text-sm font-bold shadow-sm transition-colors"
+                >
+                    <Plus class="size-4" />
+                    Nueva conversación
+                </button>
+
+                <div>
+                    <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2 block">
+                        Conversaciones recientes
+                    </label>
+
+                    <p
+                        v-if="!state.conversations.length"
+                        class="text-xs text-[#94a3b8] leading-snug"
+                    >
+                        Tus conversaciones aparecerán aquí. Se guardan las 5 más
+                        recientes en este navegador.
+                    </p>
+
+                    <div v-else class="space-y-1">
+                        <div
+                            v-for="c in state.conversations"
+                            :key="c.id"
+                            @click="loadConversation(c.id)"
+                            class="group flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors"
+                            :class="c.id === state.currentConversationId
+                                ? 'bg-[#7e34c3]/10 text-[#7e34c3]'
+                                : 'text-[#475569] hover:bg-[#f1f5f9]'"
+                        >
+                            <MessageSquare class="size-4 shrink-0" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium truncate">{{ c.title }}</p>
+                                <p class="text-[10px] text-[#94a3b8]">{{ relativeTime(c.updatedAt) }}</p>
+                            </div>
+                            <button
+                                @click.stop="deleteConversation(c.id)"
+                                class="opacity-0 group-hover:opacity-100 text-[#94a3b8] hover:text-[#b91c1c] transition-opacity shrink-0"
+                                aria-label="Eliminar conversación"
+                            >
+                                <Trash2 class="size-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </template>
         </div>
 

@@ -3,6 +3,7 @@ Encuesta NL — AI chat (text-to-query) module.
 """
 
 import os
+import time
 import logging
 from functools import lru_cache
 
@@ -15,6 +16,7 @@ logger = logging.getLogger("encuesta.chat")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 MAX_TOOL_ROUNDS = 4  # safety cap on function-call/answer iterations
+GENERATE_RETRIES = 3  # extra attempts when Gemini returns a transient 503/overload
 
 router = APIRouter()
 
@@ -275,6 +277,34 @@ def _history_to_contents(history):
     return out
 
 
+def _is_overloaded(e: Exception) -> bool:
+    """True for transient Gemini server overload (503 / UNAVAILABLE)."""
+    code = getattr(e, "code", None)
+    text = str(e)
+    return code == 503 or "UNAVAILABLE" in text or "overloaded" in text.lower()
+
+
+def _generate(client, contents, config):
+    """Call generate_content, retrying transient 503/overload with backoff."""
+    last_exc = None
+    for attempt in range(GENERATE_RETRIES):
+        try:
+            return client.models.generate_content(
+                model=GEMINI_MODEL, contents=contents, config=config
+            )
+        except Exception as e:  # noqa: BLE001 — re-raised below if not transient
+            if not _is_overloaded(e) or attempt == GENERATE_RETRIES - 1:
+                raise
+            last_exc = e
+            delay = 1.5 * (2**attempt)  # 1.5s, 3s, …
+            logger.warning(
+                "Gemini overloaded (attempt %d/%d), retrying in %.1fs: %s",
+                attempt + 1, GENERATE_RETRIES, delay, e,
+            )
+            time.sleep(delay)
+    raise last_exc  # pragma: no cover
+
+
 def _run_chat(message: str, history: list) -> dict:
     from google.genai import types
 
@@ -293,9 +323,7 @@ def _run_chat(message: str, history: list) -> dict:
     reply_text = ""
 
     for _ in range(MAX_TOOL_ROUNDS):
-        resp = client.models.generate_content(
-            model=GEMINI_MODEL, contents=contents, config=config
-        )
+        resp = _generate(client, contents, config)
         candidate = resp.candidates[0]
         parts = candidate.content.parts or []
         fcalls = [p.function_call for p in parts if getattr(p, "function_call", None)]
@@ -347,6 +375,11 @@ def _friendly_error(e: Exception) -> tuple[int, str]:
         )
     if code in (401, 403) or "API key" in text or "PERMISSION_DENIED" in text:
         return 502, "Problema de autenticación con la API de Gemini. Revisa GEMINI_API_KEY."
+    if _is_overloaded(e):
+        return 503, (
+            "El modelo de IA está temporalmente saturado por alta demanda. "
+            "Espera unos segundos e intenta de nuevo."
+        )
     return 502, "El asistente no pudo procesar la solicitud. Intenta de nuevo."
 
 

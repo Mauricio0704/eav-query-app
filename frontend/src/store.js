@@ -19,7 +19,13 @@ export const state = reactive({
   queryMode: 'manual',
   chatMessages: [],
   chatLoading: false,
+  // Persisted chat history (most recent first, capped to MAX_CONVERSATIONS).
+  conversations: [],
+  currentConversationId: null,
 })
+
+const CHAT_STORAGE_KEY = 'eav-chat-conversations'
+const MAX_CONVERSATIONS = 5
 
 export const selectedQuestion = computed(() =>
   state.questions.find(q => q.q_id === state.questionId) || null
@@ -96,6 +102,7 @@ export async function init() {
     state.attributes = attrs
     state.recodes = recodes
     state.presets = presets
+    loadConversations()
   } catch (e) {
     state.error = 'Error conectando al servidor'
     console.error(e)
@@ -150,12 +157,92 @@ export function setQueryMode(mode) {
   state.queryMode = mode
 }
 
+// ── Chat history (localStorage) ────────────────────────────────────────────
+
+function conversationTitle(messages) {
+  const firstUser = messages.find(m => m.role === 'user')
+  const t = (firstUser?.text || 'Conversación').trim()
+  return t.length > 48 ? t.slice(0, 48) + '…' : t
+}
+
+function persistConversations() {
+  // Keep only the most recently updated conversations.
+  state.conversations.sort((a, b) => b.updatedAt - a.updatedAt)
+  if (state.conversations.length > MAX_CONVERSATIONS) {
+    state.conversations.splice(MAX_CONVERSATIONS)
+  }
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(state.conversations))
+  } catch (e) {
+    console.error('No se pudo guardar el historial de chats:', e)
+  }
+}
+
+export function loadConversations() {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      state.conversations = parsed
+        .filter(c => c && c.id && Array.isArray(c.messages))
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, MAX_CONVERSATIONS)
+    }
+  } catch (e) {
+    console.error('No se pudo leer el historial de chats:', e)
+  }
+}
+
+// Snapshot the active chat into the conversation list and persist it.
+function syncCurrentConversation() {
+  if (!state.chatMessages.length) return
+  const now = Date.now()
+  let conv = state.conversations.find(c => c.id === state.currentConversationId)
+  if (!conv) {
+    conv = {
+      id: (crypto.randomUUID && crypto.randomUUID()) || String(now),
+      createdAt: now,
+      updatedAt: now,
+      title: '',
+      messages: [],
+    }
+    state.currentConversationId = conv.id
+    state.conversations.unshift(conv)
+  }
+  conv.messages = JSON.parse(JSON.stringify(state.chatMessages))
+  conv.title = conversationTitle(state.chatMessages)
+  conv.updatedAt = now
+  persistConversations()
+}
+
+export function newConversation() {
+  state.chatMessages = []
+  state.currentConversationId = null
+}
+
+export function loadConversation(id) {
+  const conv = state.conversations.find(c => c.id === id)
+  if (!conv) return
+  state.currentConversationId = id
+  state.chatMessages = JSON.parse(JSON.stringify(conv.messages))
+}
+
+export function deleteConversation(id) {
+  const idx = state.conversations.findIndex(c => c.id === id)
+  if (idx === -1) return
+  state.conversations.splice(idx, 1)
+  if (state.currentConversationId === id) newConversation()
+  persistConversations()
+}
+
 export async function sendChatMessage(text) {
   const msg = (text || '').trim()
   if (!msg || state.chatLoading) return
   // History = prior turns (text only) before this new message.
   const history = state.chatMessages.map(m => ({ role: m.role, text: m.text }))
   state.chatMessages.push({ role: 'user', text: msg })
+  syncCurrentConversation() // surface the conversation in the list right away
   state.chatLoading = true
   try {
     const res = await api.chat({ message: msg, history })
@@ -173,6 +260,7 @@ export async function sendChatMessage(text) {
     })
   } finally {
     state.chatLoading = false
+    syncCurrentConversation()
   }
 }
 

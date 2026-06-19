@@ -161,7 +161,7 @@ watch(
                     :disabled="!input.trim() || state.chatLoading"
                     class="bg-[#7e34c3] hover:bg-[#5e2494] disabled:opacity-45 disabled:cursor-not-allowed text-white rounded-2xl px-5 py-3 flex items-center gap-2 font-bold shadow-lg shadow-[#7e34c3]/20 transition-colors shrink-0"
                 >
-                    <Send class="size-4" />
+                    <Send class="size-4 justify-center" />
                 </button>
             </form>
         </div>
