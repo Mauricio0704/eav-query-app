@@ -1,7 +1,7 @@
 <script setup>
 import { ref, nextTick, watch } from "vue";
 import { Send, Sparkles } from "lucide-vue-next";
-import { state, sendChatMessage } from "../store.js";
+import { state, sendChatMessage, filterValueLabel } from "../store.js";
 import ResultView from "./ResultView.vue";
 
 const input = ref("");
@@ -34,7 +34,14 @@ function toolSummary(calls) {
                 !c.group_by || c.group_by === "answer"
                     ? ""
                     : ` · agrupado por ${c.group_by}`;
-            return `${c.question_id}${g}`;
+            const f =
+                c.filters && c.filters.length
+                    ? " · filtros: " +
+                      c.filters
+                          .map((fl) => `${fl.attribute}=${filterValueLabel(fl)}`)
+                          .join(", ")
+                    : "";
+            return `${c.question_id}${g}${f}`;
         })
         .join("  |  ");
 }

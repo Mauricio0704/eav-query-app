@@ -159,6 +159,11 @@ export function setQueryMode(mode) {
 
 // ── Chat history (localStorage) ────────────────────────────────────────────
 
+let _msgSeq = 0
+function msgId() {
+  return (crypto.randomUUID && crypto.randomUUID()) || `m${Date.now()}_${_msgSeq++}`
+}
+
 function conversationTitle(messages) {
   const firstUser = messages.find(m => m.role === 'user')
   const t = (firstUser?.text || 'Conversación').trim()
@@ -225,7 +230,9 @@ export function loadConversation(id) {
   const conv = state.conversations.find(c => c.id === id)
   if (!conv) return
   state.currentConversationId = id
-  state.chatMessages = JSON.parse(JSON.stringify(conv.messages))
+  // Backfill ids for messages saved before ids existed, so each renders as a
+  // distinct component (independent table/chart toggle).
+  state.chatMessages = conv.messages.map(m => ({ ...m, id: m.id || msgId() }))
 }
 
 export function deleteConversation(id) {
@@ -241,12 +248,13 @@ export async function sendChatMessage(text) {
   if (!msg || state.chatLoading) return
   // History = prior turns (text only) before this new message.
   const history = state.chatMessages.map(m => ({ role: m.role, text: m.text }))
-  state.chatMessages.push({ role: 'user', text: msg })
+  state.chatMessages.push({ id: msgId(), role: 'user', text: msg })
   syncCurrentConversation() // surface the conversation in the list right away
   state.chatLoading = true
   try {
     const res = await api.chat({ message: msg, history })
     state.chatMessages.push({
+      id: msgId(),
       role: 'assistant',
       text: res.reply,
       data: res.data || null,
@@ -254,6 +262,7 @@ export async function sendChatMessage(text) {
     })
   } catch (e) {
     state.chatMessages.push({
+      id: msgId(),
       role: 'assistant',
       text: `Lo siento, ocurrió un error: ${e.message}`,
       error: true,

@@ -5,6 +5,7 @@ Encuesta NL — AI chat (text-to-query) module.
 import os
 import time
 import logging
+from decimal import Decimal
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
@@ -73,6 +74,19 @@ def _schema_context() -> str:
             "RECODES válidos como group_by (agrupan un atributo en categorías): "
             + ", ".join(RECODES.keys())
         )
+        lines.append(
+            "Para FILTRAR a una de esas categorías NO uses el nombre del recode: "
+            "filtra su atributo base con los ids de la categoría. Mapeo:"
+        )
+        for key, rc in RECODES.items():
+            src = rc["source_attribute"]
+            cats = [
+                f"{label} → {{\"attribute\": \"{src}\", \"value\": {ids}}}"
+                for label, ids in rc["buckets"]
+                if ids  # 'Otro'/None (resto) no se puede expresar como ids
+            ]
+            if cats:
+                lines.append(f"- {key} (base: {src}): " + "; ".join(cats))
 
     lines.append("")
     lines.append(
@@ -246,6 +260,21 @@ def _norm_city_value(v):
     return out
 
 
+def _jsonable(obj):
+    """Recursively coerce a value into plain JSON types. DuckDB returns some
+    numbers (e.g. means/stats of numeric questions) as Decimal, which the
+    google-genai SDK can't json.dumps when we feed a tool result back to the
+    model — that raises TypeError and surfaces as a 502. Converting Decimal→float
+    here keeps the round-trip serializable."""
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, dict):
+        return {k: _jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonable(x) for x in obj]
+    return obj
+
+
 def _summarize(result: dict) -> dict:
     """Compact view of a query result to feed back to the model (drops SQL)."""
     out = {
@@ -260,7 +289,7 @@ def _summarize(result: dict) -> dict:
     else:
         out["counts"] = result.get("counts")
         out["percentages"] = result.get("percentages")
-    return out
+    return _jsonable(out)
 
 
 # ── Conversation ─────────────────────────────────────────────────────────────
