@@ -60,10 +60,6 @@ function destroy() {
 }
 
 function buildFlat(data) {
-  // Both shapes chart as a distribution (one bar per row): categorical
-  // [id, label, conteo, %] and numeric [valor, conteo, %]. The % is always the
-  // LAST column; the readable x label is the value (numeric → col 0) or the
-  // option label (categorical → col 1).
   const isNumerica = data.question.q_type === 'numerica'
   const labelIdx = isNumerica ? 0 : 1
   return {

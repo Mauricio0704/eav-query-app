@@ -1,30 +1,19 @@
 """
 Encuesta NL — DuckDB Backend
-FastAPI server that connects to your DuckDB database and exposes
-query endpoints for the survey query builder frontend.
-
-Usage:
-  pip install fastapi uvicorn duckdb python-multipart
-  uvicorn main:app --reload --port 8000
-
-Set DB_PATH environment variable to your .duckdb file path.
-Defaults to ./encuesta.duckdb for local development.
+Usage:  uvicorn main:app --reload --port 8000
 """
 
 import os
-import json
 import duckdb
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Optional
 import io
 import csv
 
 from metadata import (
-    AGE_LABELS,
     AMM_ID,
     PERIFERIA_ID,
     ID_TO_CITY_NAME,
@@ -38,9 +27,9 @@ DB_PATH = os.getenv("DB_PATH", "../data/encuesta.duckdb")
 # ── Metadata-driven ordering helpers ──────────────────────────────────────────
 # City buckets used when grouping by city_id (mirrors DESIRED_ORDERS["municipio"]).
 _NL_CITY_IDS = {cid for cid in ID_TO_CITY_NAME if cid < 100}
-_AMM_SET     = set(AMM_ID)
-_PERIFERIA   = set(PERIFERIA_ID)
-_RESTO_NL    = _NL_CITY_IDS - _AMM_SET - _PERIFERIA
+_AMM_SET = set(AMM_ID)
+_PERIFERIA = set(PERIFERIA_ID)
+_RESTO_NL = _NL_CITY_IDS - _AMM_SET - _PERIFERIA
 
 # Per-attribute mapping to DESIRED_ORDERS keys (used to order pivot columns).
 _ATTRIBUTE_ORDER_KEY = {
@@ -53,16 +42,21 @@ _ATTRIBUTE_ORDER_KEY = {
     "nivel_actual_estudios": "estudios",
 }
 
+
 def _order_by_desired(items, get_label, desired):
     """Sort `items` so any item whose label appears in `desired` is placed in
     that exact order; everything else is appended alphabetically."""
     if not desired:
         return sorted(items, key=lambda it: get_label(it).lower())
     rank = {label: i for i, label in enumerate(desired)}
-    return sorted(items, key=lambda it: (
-        rank.get(get_label(it), 10_000),
-        get_label(it).lower(),
-    ))
+    return sorted(
+        items,
+        key=lambda it: (
+            rank.get(get_label(it), 10_000),
+            get_label(it).lower(),
+        ),
+    )
+
 
 def _recode_case_sql(recode_key: str, value_col: str) -> str:
     """Build a SQL CASE expression that maps `value_col` into the bucket labels
@@ -111,6 +105,7 @@ def _edad_bin_sql(col):
         ELSE '75 o más'
     END"""
 
+
 app = FastAPI(title="Encuesta NL API", version="1.0.0")
 
 app.add_middleware(
@@ -129,6 +124,7 @@ def get_conn():
 # ---------------------------------------------------------------------------
 # Schema helpers
 # ---------------------------------------------------------------------------
+
 
 @app.get("/api/questions")
 def list_questions():
@@ -153,23 +149,28 @@ def list_questions():
         for q_id, q_text, q_section, q_type, q_notes in questions:
             # For multiple-choice questions, fetch their options
             options = []
-            if q_type != 'numerica':
-                opts = conn.execute("""
+            if q_type != "numerica":
+                opts = conn.execute(
+                    """
                     SELECT option_id, option_label
                     FROM options
                     WHERE question_id = ?
                     ORDER BY option_id
-                """, [q_id]).fetchall()
+                """,
+                    [q_id],
+                ).fetchall()
                 options = [{"option_id": oid, "label": lbl} for oid, lbl in opts]
 
-            result.append({
-                "q_id": q_id,
-                "q_text": q_text,
-                "q_section": q_section,
-                "q_type": q_type,
-                "q_notes": q_notes,
-                "options": options,
-            })
+            result.append(
+                {
+                    "q_id": q_id,
+                    "q_text": q_text,
+                    "q_section": q_section,
+                    "q_type": q_type,
+                    "q_notes": q_notes,
+                    "options": options,
+                }
+            )
 
         return result
     finally:
@@ -207,10 +208,12 @@ def list_attributes():
         for attr, val, label in rows:
             if attr not in attrs:
                 attrs[attr] = []
-            attrs[attr].append({
-                "value": val,
-                "label": label or str(val),
-            })
+            attrs[attr].append(
+                {
+                    "value": val,
+                    "label": label or str(val),
+                }
+            )
 
         return [{"attribute": k, "values": v} for k, v in attrs.items()]
     finally:
@@ -229,9 +232,7 @@ def list_recodes():
             "key": k,
             "label": v["label"],
             "source_attribute": v["source_attribute"],
-            "buckets": [
-                {"label": lbl, "values": vals} for lbl, vals in v["buckets"]
-            ],
+            "buckets": [{"label": lbl, "values": vals} for lbl, vals in v["buckets"]],
             "order": v.get("order"),
         }
         for k, v in RECODES.items()
@@ -272,6 +273,7 @@ def list_cities():
 # Query endpoint
 # ---------------------------------------------------------------------------
 
+
 class QueryRequest(BaseModel):
     question_id: str
     # Each filter: {"attribute": "sexo", "value": 1} or {"attribute": "tipo_trabajo", "value": [1, 4, 6]}
@@ -301,8 +303,7 @@ def run_query(req: QueryRequest):
     try:
         # Determine question type
         q_info = conn.execute(
-            "SELECT q_type, q_text FROM questions WHERE q_id = ?",
-            [req.question_id]
+            "SELECT q_type, q_text FROM questions WHERE q_id = ?", [req.question_id]
         ).fetchone()
 
         if not q_info:
@@ -317,16 +318,19 @@ def run_query(req: QueryRequest):
         weighted = req.initial_only
         initial_filter = "AND r.is_initial_respondent = 1" if req.initial_only else ""
         count_expr = "SUM(r.factor_cvnl)" if weighted else "COUNT(*)"
-        count_int  = f"ROUND({count_expr})::BIGINT" if weighted else "COUNT(*)"
-        avg_expr   = (
+        count_int = f"ROUND({count_expr})::BIGINT" if weighted else "COUNT(*)"
+        avg_expr = (
             "ROUND((SUM(a.value * r.factor_cvnl) / NULLIF(SUM(r.factor_cvnl), 0))::NUMERIC, 2)"
-            if weighted else "ROUND(AVG(a.value)::NUMERIC, 2)"
+            if weighted
+            else "ROUND(AVG(a.value)::NUMERIC, 2)"
         )
 
         # Build the respondent filter subquery using respondent_attributes
         # Each attribute filter becomes an INNER JOIN
         attr_filters = [f for f in req.filters if f["attribute"] != "city_id"]
-        city_filter = next((f for f in req.filters if f["attribute"] == "city_id"), None)
+        city_filter = next(
+            (f for f in req.filters if f["attribute"] == "city_id"), None
+        )
 
         join_clauses = ""
         for i, f in enumerate(attr_filters):
@@ -434,7 +438,11 @@ def run_query(req: QueryRequest):
 
             return {
                 "format": "flat",
-                "question": {"q_id": req.question_id, "q_text": q_text, "q_type": q_type},
+                "question": {
+                    "q_id": req.question_id,
+                    "q_text": q_text,
+                    "q_type": q_type,
+                },
                 "filters_applied": req.filters,
                 "group_by": req.group_by,
                 "total_respondents": total_respondents,
@@ -495,7 +503,9 @@ def run_query(req: QueryRequest):
             GROUP BY grupo
             HAVING grupo IS NOT NULL
         """
-        group_totals_raw = {row[0]: row[1] for row in conn.execute(per_group_total_sql).fetchall()}
+        group_totals_raw = {
+            row[0]: row[1] for row in conn.execute(per_group_total_sql).fetchall()
+        }
         grand_total_incl = sum(group_totals_raw.values())
 
         # Initial group_keys keep the raw shape returned by the SQL (city_ids
@@ -523,29 +533,30 @@ def run_query(req: QueryRequest):
                     key=lambda l: (muni_rank.get(l, 10_000), l.lower()),
                 )
             else:
-                label_to_city_ids = {
-                    ID_TO_CITY_NAME[cid]: {str(cid)} for cid in AMM_ID
-                }
-                label_to_city_ids["AMM"]        = {str(c) for c in AMM_ID}
-                label_to_city_ids["Periferia"]  = {str(c) for c in PERIFERIA_ID}
-                label_to_city_ids["Resto NL"]   = {str(c) for c in _RESTO_NL}
+                label_to_city_ids = {ID_TO_CITY_NAME[cid]: {str(cid)} for cid in AMM_ID}
+                label_to_city_ids["AMM"] = {str(c) for c in AMM_ID}
+                label_to_city_ids["Periferia"] = {str(c) for c in PERIFERIA_ID}
+                label_to_city_ids["Resto NL"] = {str(c) for c in _RESTO_NL}
                 label_to_city_ids["Nuevo León"] = {str(c) for c in _NL_CITY_IDS}
                 city_bucket_labels = list(DESIRED_ORDERS["municipio"])
-            group_keys   = list(group_totals_raw.keys())
+            group_keys = list(group_totals_raw.keys())
             group_labels = group_keys  # placeholder, replaced below
         else:
+
             def display(g):
                 return str(g)
+
             if req.group_by in RECODES:
                 desired = RECODES[req.group_by].get("order")
             else:
                 order_key = _ATTRIBUTE_ORDER_KEY.get(req.group_by)
-                desired   = DESIRED_ORDERS.get(order_key) if order_key else None
+                desired = DESIRED_ORDERS.get(order_key) if order_key else None
             group_keys = _order_by_desired(
                 list(group_totals_raw.keys()), display, desired
             )
             group_labels = [display(g) for g in group_keys]
             label_to_city_ids = {}
+            city_bucket_labels = []  # only used in the city_id branch below
 
         # Option-id → option-label lookup for the "Respuesta" column.
         opt_lookup = {
@@ -589,7 +600,9 @@ def run_query(req: QueryRequest):
                 GROUP BY grupo
                 HAVING grupo IS NOT NULL
             """
-            stats_per_group = {row[0]: list(row[1:]) for row in conn.execute(stats_sql).fetchall()}
+            stats_per_group = {
+                row[0]: list(row[1:]) for row in conn.execute(stats_sql).fetchall()
+            }
 
             overall_stats_sql = f"""
                 SELECT {avg_expr},
@@ -604,9 +617,13 @@ def run_query(req: QueryRequest):
                   {initial_filter}
                   {city_where}
             """
-            overall_stats = list(conn.execute(overall_stats_sql).fetchone() or [None] * 4)
+            overall_stats = list(
+                conn.execute(overall_stats_sql).fetchone() or [None] * 4
+            )
 
-            distinct_values = sorted({r[0] for r in freq_rows}, key=lambda v: (v is None, v))
+            distinct_values = sorted(
+                {r[0] for r in freq_rows}, key=lambda v: (v is None, v)
+            )
             cell_map = {(r[0], r[1]): r[2] for r in freq_rows}
 
             # Collapse raw city_ids into the curated metadata buckets (11 AMM
@@ -615,7 +632,7 @@ def run_query(req: QueryRequest):
             # don't compose from per-city pre-aggregated stats.
             if req.group_by == "city_id":
                 new_cell_map = {}
-                new_totals   = {}
+                new_totals = {}
                 for label in city_bucket_labels:
                     ids = label_to_city_ids.get(label, set())
                     new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
@@ -623,11 +640,11 @@ def run_query(req: QueryRequest):
                         s = sum(cell_map.get((v, c), 0) for c in ids)
                         if s:
                             new_cell_map[(v, label)] = s
-                cell_map         = new_cell_map
+                cell_map = new_cell_map
                 group_totals_raw = new_totals
                 grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
-                group_keys       = list(city_bucket_labels)
-                group_labels     = list(group_keys)
+                group_keys = list(city_bucket_labels)
+                group_labels = list(group_keys)
 
                 # Per-bucket stats: a single-city bucket reuses the precomputed
                 # per-city stats; an aggregate bucket (>1 city) is recomputed via
@@ -662,38 +679,55 @@ def run_query(req: QueryRequest):
                 stats_per_group = new_stats
 
             def label_for(value):
-                key = int(value) if value is not None and float(value).is_integer() else value
+                key = (
+                    int(value)
+                    if value is not None and float(value).is_integer()
+                    else value
+                )
                 lbl = opt_lookup.get(key)
-                return lbl if lbl is not None else (str(value) if value is not None else "")
+                return (
+                    lbl
+                    if lbl is not None
+                    else (str(value) if value is not None else "")
+                )
 
             counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]
-            pct_columns    = list(counts_columns)
+            pct_columns = list(counts_columns)
 
             # When grouping by city_id, the column list includes overlapping
             # aggregate buckets (AMM ⊃ the 11 cities, Nuevo León ⊃ everything).
             # Sum only over the mutually-exclusive subset for the row total.
-            atomic_keys = [g for g in group_keys if g not in ("AMM", "Nuevo León")] \
-                          if req.group_by == "city_id" else list(group_keys)
+            atomic_keys = (
+                [g for g in group_keys if g not in ("AMM", "Nuevo León")]
+                if req.group_by == "city_id"
+                else list(group_keys)
+            )
 
             counts_rows = []
-            pct_rows    = []
+            pct_rows = []
             for v in distinct_values:
                 row_total = sum(cell_map.get((v, g), 0) for g in atomic_keys)
                 count_row = [v, label_for(v)]
-                pct_row   = [v, label_for(v)]
+                pct_row = [v, label_for(v)]
                 for g in group_keys:
                     cnt = cell_map.get((v, g), 0)
                     grp_t = group_totals_raw.get(g, 0)
                     count_row.append(cnt if cnt else "")
                     pct_row.append(round(cnt * 100.0 / grp_t, 1) if grp_t else "")
                 count_row.append(row_total if row_total else "")
-                pct_row.append(round(row_total * 100.0 / grand_total_incl, 1) if grand_total_incl else "")
+                pct_row.append(
+                    round(row_total * 100.0 / grand_total_incl, 1)
+                    if grand_total_incl
+                    else ""
+                )
                 counts_rows.append(count_row)
                 pct_rows.append(pct_row)
 
             # Total row
             counts_rows.append(
-                ["Total", ""] + [group_totals_raw.get(g, 0) for g in group_keys] + [grand_total_incl]
+                ["Total", ""]
+                + [group_totals_raw.get(g, 0) for g in group_keys]
+                + [grand_total_incl]
             )
             pct_rows.append(
                 ["Total", ""]
@@ -714,12 +748,16 @@ def run_query(req: QueryRequest):
 
             return {
                 "format": "pivot",
-                "question": {"q_id": req.question_id, "q_text": q_text, "q_type": q_type},
+                "question": {
+                    "q_id": req.question_id,
+                    "q_text": q_text,
+                    "q_type": q_type,
+                },
                 "filters_applied": req.filters,
                 "group_by": req.group_by,
                 "total_respondents": total_respondents,
-                "counts":      {"columns": counts_columns, "rows": counts_rows},
-                "percentages": {"columns": pct_columns,    "rows": pct_rows},
+                "counts": {"columns": counts_columns, "rows": counts_rows},
+                "percentages": {"columns": pct_columns, "rows": pct_rows},
                 "sql": freq_sql.strip(),
             }
 
@@ -756,7 +794,7 @@ def run_query(req: QueryRequest):
         # branch — sum per-city counts into the AMM/Periferia/RestoNL/NL buckets.
         if req.group_by == "city_id":
             new_cell_map = {}
-            new_totals   = {}
+            new_totals = {}
             for label in city_bucket_labels:
                 ids = label_to_city_ids.get(label, set())
                 new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
@@ -764,44 +802,56 @@ def run_query(req: QueryRequest):
                     s = sum(cell_map.get((opt_id, c), 0) for c in ids)
                     if s:
                         new_cell_map[(opt_id, label)] = s
-            cell_map         = new_cell_map
+            cell_map = new_cell_map
             group_totals_raw = new_totals
             grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
-            group_keys       = list(city_bucket_labels)
-            group_labels     = list(group_keys)
+            group_keys = list(city_bucket_labels)
+            group_labels = list(group_keys)
 
         counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]
-        pct_columns    = list(counts_columns)
+        pct_columns = list(counts_columns)
 
-        atomic_keys = [g for g in group_keys if g not in ("AMM", "Nuevo León")] \
-                      if req.group_by == "city_id" else list(group_keys)
+        atomic_keys = (
+            [g for g in group_keys if g not in ("AMM", "Nuevo León")]
+            if req.group_by == "city_id"
+            else list(group_keys)
+        )
 
         counts_rows = []
-        pct_rows    = []
+        pct_rows = []
         for opt_id in option_keys:
             label_in_opts = opt_lookup.get(opt_id)
-            label = label_in_opts if label_in_opts is not None else (
-                str(opt_id) if opt_id is not None else ""
+            label = (
+                label_in_opts
+                if label_in_opts is not None
+                else (str(opt_id) if opt_id is not None else "")
             )
             row_total = sum(cell_map.get((opt_id, g), 0) for g in atomic_keys)
             count_row = [opt_id, label]
-            pct_row   = [opt_id, label]
+            pct_row = [opt_id, label]
             for g in group_keys:
                 cnt = cell_map.get((opt_id, g), 0)
                 grp_t = group_totals_raw.get(g, 0)
                 count_row.append(cnt if cnt else "")
                 pct_row.append(round(cnt * 100.0 / grp_t, 1) if grp_t else "")
             count_row.append(row_total if row_total else "")
-            pct_row.append(round(row_total * 100.0 / grand_total_incl, 1) if grand_total_incl else "")
+            pct_row.append(
+                round(row_total * 100.0 / grand_total_incl, 1)
+                if grand_total_incl
+                else ""
+            )
             counts_rows.append(count_row)
             pct_rows.append(pct_row)
 
         # Total row
         counts_rows.append(
-            ["Total", ""] + [group_totals_raw.get(g, 0) for g in group_keys] + [grand_total_incl]
+            ["Total", ""]
+            + [group_totals_raw.get(g, 0) for g in group_keys]
+            + [grand_total_incl]
         )
         pct_rows.append(
-            ["Total", ""] + [100.0 if group_totals_raw.get(g, 0) else "" for g in group_keys]
+            ["Total", ""]
+            + [100.0 if group_totals_raw.get(g, 0) else "" for g in group_keys]
             + [100.0 if grand_total_incl else ""]
         )
 
@@ -811,8 +861,8 @@ def run_query(req: QueryRequest):
             "filters_applied": req.filters,
             "group_by": req.group_by,
             "total_respondents": total_respondents,
-            "counts":      {"columns": counts_columns, "rows": counts_rows},
-            "percentages": {"columns": pct_columns,    "rows": pct_rows},
+            "counts": {"columns": counts_columns, "rows": counts_rows},
+            "percentages": {"columns": pct_columns, "rows": pct_rows},
             "sql": freq_sql.strip(),
         }
 
@@ -871,6 +921,7 @@ def health():
 # Imported last so the lazy `from main import ...` calls inside chat.py resolve
 # against a fully-loaded module (no circular import at load time).
 from chat import router as chat_router  # noqa: E402
+
 app.include_router(chat_router)
 
 

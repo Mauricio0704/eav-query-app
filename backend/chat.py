@@ -7,6 +7,7 @@ import time
 import logging
 from decimal import Decimal
 from functools import lru_cache
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.concurrency import run_in_threadpool
@@ -16,13 +17,13 @@ logger = logging.getLogger("encuesta.chat")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-MAX_TOOL_ROUNDS = 4  # safety cap on function-call/answer iterations
-GENERATE_RETRIES = 3  # extra attempts when Gemini returns a transient 503/overload
+MAX_TOOL_ROUNDS = 4
+GENERATE_RETRIES = 3
 
 router = APIRouter()
 
 
-# ── Gemini client (lazy singleton) ─────────────────────────────────────────
+# Gemini client
 _client = None
 
 
@@ -35,16 +36,13 @@ def _get_client():
                 detail="El chat de IA no está disponible: falta GEMINI_API_KEY en el servidor.",
             )
         from google import genai
+
         _client = genai.Client(api_key=GEMINI_API_KEY)
     return _client
 
 
-# ── Schema context (built once from the live DB metadata) ───────────────────
 @lru_cache(maxsize=1)
 def _schema_context() -> str:
-    """Compact description of every question / attribute / recode the model may
-    reference. Built from the same helpers that power the manual UI so it can
-    never drift from the real data."""
     from main import list_questions, list_attributes
     from metadata import RECODES, AMM_ID, PERIFERIA_ID, ID_TO_CITY_NAME
 
@@ -55,9 +53,7 @@ def _schema_context() -> str:
 
     lines = ["PREGUNTAS DISPONIBLES (usa el q_id EXACTO como question_id):"]
     for q in questions:
-        lines.append(
-            f"- {q['q_id']} [{q['q_type']}] ({q['q_section']}): {q['q_text']}"
-        )
+        lines.append(f"- {q['q_id']} [{q['q_type']}] ({q['q_section']}): {q['q_text']}")
 
     lines.append("")
     lines.append(
@@ -81,7 +77,7 @@ def _schema_context() -> str:
         for key, rc in RECODES.items():
             src = rc["source_attribute"]
             cats = [
-                f"{label} → {{\"attribute\": \"{src}\", \"value\": {ids}}}"
+                f'{label} → {{"attribute": "{src}", "value": {ids}}}'
                 for label, ids in rc["buckets"]
                 if ids  # 'Otro'/None (resto) no se puede expresar como ids
             ]
@@ -90,7 +86,7 @@ def _schema_context() -> str:
 
     lines.append("")
     lines.append(
-        "GEOGRAFÍA — group_by=\"city_id\" devuelve una fila/columna por cada "
+        'GEOGRAFÍA — group_by="city_id" devuelve una fila/columna por cada '
         "municipio del AMM MÁS estos agregados:"
     )
     lines.append(
@@ -98,28 +94,28 @@ def _schema_context() -> str:
         "Sinónimos: zona metropolitana, área metro, AMM, ZMM."
     )
     lines.append(f"- Periferia = {periferia_cities}.")
-    lines.append("- Resto NL = los demás municipios de Nuevo León fuera del AMM y la Periferia.")
+    lines.append(
+        "- Resto NL = los demás municipios de Nuevo León fuera del AMM y la Periferia."
+    )
     lines.append("- Nuevo León = el estado completo (todos los municipios).")
 
     city_catalog = ", ".join(
         f"{cid}={name}" for cid, name in sorted(ID_TO_CITY_NAME.items())
     )
     lines.append("")
-    lines.append(
-        "CATÁLOGO DE MUNICIPIOS (city_id = nombre): " + city_catalog
-    )
+    lines.append("CATÁLOGO DE MUNICIPIOS (city_id = nombre): " + city_catalog)
     lines.append(
         "FILTRAR POR MUNICIPIO: para limitar a uno o varios municipios concretos "
         "(p. ej. 'en Monterrey', 'en Apodaca y San Nicolás'), usa un filtro "
-        "{\"attribute\": \"city_id\", \"value\": [ids]} con los ids numéricos del "
+        '{"attribute": "city_id", "value": [ids]} con los ids numéricos del '
         "catálogo de arriba. Ej.: solo Monterrey → "
-        "{\"attribute\": \"city_id\", \"value\": [39]}. Puedes combinar este filtro "
-        "con group_by=\"city_id\" (mostrará una columna por cada municipio filtrado) "
+        '{"attribute": "city_id", "value": [39]}. Puedes combinar este filtro '
+        'con group_by="city_id" (mostrará una columna por cada municipio filtrado) '
         "o con cualquier otro group_by."
     )
     lines.append(
         "FILTRAR POR ZONA (AMM, Periferia, Resto NL, Nuevo León): estas son "
-        "agregaciones, NO municipios. Para limitar a una zona usa group_by=\"city_id\" "
+        'agregaciones, NO municipios. Para limitar a una zona usa group_by="city_id" '
         "y lee su fila/columna agregada; o filtra por la LISTA de city_ids que la "
         "componen (los del catálogo). NUNCA pongas el nombre de una zona o de un "
         "municipio como `value`: el filtro city_id solo acepta ids numéricos."
@@ -138,7 +134,7 @@ def _system_instruction() -> str:
         "REGLAS:\n"
         "- Para cualquier cifra, SIEMPRE llama a `query`. Nunca inventes números.\n"
         "- `question_id` debe ser uno de los q_id listados abajo, exactamente.\n"
-        "- `group_by`: \"answer\" (sin agrupar), \"city_id\" (por municipio), o el "
+        '- `group_by`: "answer" (sin agrupar), "city_id" (por municipio), o el '
         "nombre de un atributo o recode listado abajo.\n"
         "- `filters`: lista de objetos {attribute, value}. `attribute` debe ser "
         "EXACTAMENTE uno de los nombres de atributo del catálogo de abajo (o "
@@ -147,7 +143,7 @@ def _system_instruction() -> str:
         "lista de uno o más ids numéricos (option_id) del atributo. Usa SIEMPRE el "
         "id que aparece en el catálogo para ese atributo; nunca adivines el número. "
         "Ej.: si el catálogo dice 'sexo: 0=Hombre, 1=Mujer', filtrar mujeres es "
-        "{\"attribute\": \"sexo\", \"value\": [1]}.\n"
+        '{"attribute": "sexo", "value": [1]}.\n'
         "- `initial_only` = true proyecta a la población (metodología oficial CVNL); "
         "úsalo por defecto, salvo que pidan conteos crudos del muestreo.\n"
         "- Los códigos 7777/8888/9999 (No aplica / No sabe / No contesta) se manejan "
@@ -160,7 +156,7 @@ def _system_instruction() -> str:
     )
 
 
-# ── Tool declaration ────────────────────────────────────────────────────────
+# Tool declaration
 def _query_tool():
     from google.genai import types
 
@@ -221,7 +217,7 @@ def _query_tool():
     )
 
 
-# ── Query execution ─────────────────────────────────────────────────────────
+# Query execution
 def _norm_value(v):
     if isinstance(v, (list, tuple)):
         return [int(x) for x in v]
@@ -229,11 +225,7 @@ def _norm_value(v):
 
 
 def _exec_query(args: dict):
-    """Run one `query` tool call. Returns (full_result_for_frontend, summary_for_model).
-
-    Any bad argument from the model is returned as an `error` summary (never
-    raised) so the conversation loop can let the model self-correct instead of
-    crashing the whole request."""
+    """Run one `query` tool call. Returns (full_result_for_frontend, summary_for_model)."""
     from main import run_query, QueryRequest
 
     try:
@@ -264,8 +256,7 @@ def _exec_query(args: dict):
 
 
 def _norm_city_value(v):
-    """city_id filters only accept numeric municipality ids. Reject zone names
-    like 'AMM' with a clear hint so the model switches to group_by='city_id'."""
+    """city_id filters only accept numeric municipality ids."""
     items = v if isinstance(v, (list, tuple)) else [v]
     out = []
     for x in items:
@@ -279,12 +270,8 @@ def _norm_city_value(v):
     return out
 
 
-def _jsonable(obj):
-    """Recursively coerce a value into plain JSON types. DuckDB returns some
-    numbers (e.g. means/stats of numeric questions) as Decimal, which the
-    google-genai SDK can't json.dumps when we feed a tool result back to the
-    model — that raises TypeError and surfaces as a 502. Converting Decimal→float
-    here keeps the round-trip serializable."""
+def _jsonable(obj) -> Any:
+    """Recursively coerce a value into plain JSON types."""
     if isinstance(obj, Decimal):
         return float(obj)
     if isinstance(obj, dict):
@@ -294,7 +281,7 @@ def _jsonable(obj):
     return obj
 
 
-def _summarize(result: dict) -> dict:
+def _summarize(result: dict) -> dict[str, Any]:
     """Compact view of a query result to feed back to the model (drops SQL)."""
     out = {
         "question": result.get("question"),
@@ -311,16 +298,16 @@ def _summarize(result: dict) -> dict:
     return _jsonable(out)
 
 
-# ── Conversation ─────────────────────────────────────────────────────────────
+# Conversation
 def _history_to_contents(history):
     from google.genai import types
 
     out = []
-    for m in history or []:
-        text = (m.get("text") or "").strip()
+    for msg in history or []:
+        text = (msg.get("text") or "").strip()
         if not text:
             continue
-        role = "model" if m.get("role") == "assistant" else "user"
+        role = "model" if msg.get("role") == "assistant" else "user"
         out.append(types.Content(role=role, parts=[types.Part(text=text)]))
     return out
 
@@ -340,17 +327,23 @@ def _generate(client, contents, config):
             return client.models.generate_content(
                 model=GEMINI_MODEL, contents=contents, config=config
             )
-        except Exception as e:  # noqa: BLE001 — re-raised below if not transient
+        except Exception as e:
             if not _is_overloaded(e) or attempt == GENERATE_RETRIES - 1:
                 raise
             last_exc = e
-            delay = 1.5 * (2**attempt)  # 1.5s, 3s, …
+            delay = 1.5 * (2**attempt)
             logger.warning(
                 "Gemini overloaded (attempt %d/%d), retrying in %.1fs: %s",
-                attempt + 1, GENERATE_RETRIES, delay, e,
+                attempt + 1,
+                GENERATE_RETRIES,
+                delay,
+                e,
             )
             time.sleep(delay)
-    raise last_exc  # pragma: no cover
+
+    if last_exc is None:
+        raise RuntimeError("generate failed: no exception captured")
+    raise last_exc
 
 
 def _run_chat(message: str, history: list) -> dict:
@@ -372,8 +365,9 @@ def _run_chat(message: str, history: list) -> dict:
 
     for _ in range(MAX_TOOL_ROUNDS):
         resp = _generate(client, contents, config)
-        candidate = resp.candidates[0]
-        parts = candidate.content.parts or []
+        candidate = resp.candidates[0] if resp.candidates else None
+        content = candidate.content if candidate else None
+        parts = content.parts if content and content.parts else []
         fcalls = [p.function_call for p in parts if getattr(p, "function_call", None)]
 
         if not fcalls:
@@ -384,21 +378,28 @@ def _run_chat(message: str, history: list) -> dict:
             break
 
         # Record the model's tool-call turn, then answer each call.
-        contents.append(candidate.content)
+        if content is not None:
+            contents.append(content)
         response_parts = []
         for fc in fcalls:
+            if fc is None:
+                continue
             args = dict(fc.args) if fc.args else {}
             result, summary = _exec_query(args)
             tool_calls.append(args)
             if result is not None:
-                data_result = result  # keep the last successful table for the UI
+                data_result = result
             response_parts.append(
-                types.Part.from_function_response(name=fc.name, response=summary)
+                types.Part.from_function_response(
+                    name=fc.name or "query", response=summary
+                )
             )
         contents.append(types.Content(role="user", parts=response_parts))
     else:
         if not reply_text:
-            reply_text = "No pude completar la consulta. Intenta reformular la pregunta."
+            reply_text = (
+                "No pude completar la consulta. Intenta reformular la pregunta."
+            )
 
     logger.info("chat message=%r tool_calls=%s", message, tool_calls)
     return {"reply": reply_text, "tool_calls": tool_calls, "data": data_result}
@@ -406,7 +407,6 @@ def _run_chat(message: str, history: list) -> dict:
 
 class ChatRequest(BaseModel):
     message: str
-    # Prior turns as [{"role": "user"|"assistant", "text": "..."}]
     history: list[dict] = []
 
 
@@ -422,7 +422,10 @@ def _friendly_error(e: Exception) -> tuple[int, str]:
             "subir el límite para uso real.)"
         )
     if code in (401, 403) or "API key" in text or "PERMISSION_DENIED" in text:
-        return 502, "Problema de autenticación con la API de Gemini. Revisa GEMINI_API_KEY."
+        return (
+            502,
+            "Problema de autenticación con la API de Gemini. Revisa GEMINI_API_KEY.",
+        )
     if _is_overloaded(e):
         return 503, (
             "El modelo de IA está temporalmente saturado por alta demanda. "

@@ -8,7 +8,7 @@ const input = ref('')
 const scroller = ref(null)
 
 const suggestions = [
-  '¿Qué porcentaje de personas se siente segura en su colonia?',
+  '¿Qué porcentaje de personas se siente segura en su municipio?',
   'Compara la percepción de inseguridad entre hombres y mujeres',
   'Satisfacción con los servicios de salud por municipio',
 ]

@@ -3,13 +3,6 @@ defineProps({
   data: { type: Object, required: true },
 })
 
-const STAT_ROW_LABELS = new Set([
-  'Promedio',
-  'Mínimo',
-  'Máximo',
-  'Desv. estándar',
-])
-
 function isNumeric(cell, i) {
   return i >= 2
 }
@@ -18,14 +11,10 @@ function isTotalRow(row) {
   return row[0] === 'Total'
 }
 
-function isStatRow(row) {
-  return STAT_ROW_LABELS.has(row[0])
-}
-
 function formatCount(cell, row, ci) {
   if (ci < 2) return cell ?? ''
   if (typeof cell === 'number') return cell.toLocaleString('en-US')
-  if (isStatRow(row)) return cell ?? ''
+  if (row[0] === 'Promedio') return cell ?? ''
   return cell === '' || cell == null ? '0' : cell
 }
 </script>

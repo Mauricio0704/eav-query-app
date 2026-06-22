@@ -44,39 +44,40 @@ const SECTION_LABELS = {
   migracion_y_discriminacion: 'Migración y discriminación',
 }
 
-export function sectionLabel(key) {
-  return SECTION_LABELS[key] || key
-}
-
 export const questionsBySection = computed(() => {
   const groups = new Map()
-  for (const k of Object.keys(SECTION_LABELS)) groups.set(k, [])
+  for (const section of Object.keys(SECTION_LABELS)) groups.set(section, [])
   for (const q of state.questions) {
-    const k = q.q_section || 'otros'
-    if (!groups.has(k)) groups.set(k, [])
-    groups.get(k).push(q)
+    const section = q.q_section || 'otros'
+    if (!groups.has(section)) groups.set(section, [])
+    groups.get(section).push(q)
   }
   const out = []
-  for (const [k, qs] of groups) {
-    if (qs.length) out.push({ key: k, label: sectionLabel(k), questions: qs })
+  for (const [section, questions] of groups) {
+    if (questions.length)
+      out.push({
+        key: section,
+        label: SECTION_LABELS[section] || section,
+        questions,
+      })
   }
   return out
 })
 
 const attributeValueMap = computed(() => {
-  const m = new Map()
-  for (const a of state.attributes) {
-    const inner = new Map()
-    for (const v of a.values) inner.set(v.value, v.label)
-    m.set(a.attribute, inner)
+  const out = new Map()
+  for (const attr of state.attributes) {
+    const valueToLabel = new Map()
+    for (const v of attr.values) valueToLabel.set(v.value, v.label)
+    out.set(attr.attribute, valueToLabel)
   }
-  return m
+  return out
 })
 
 const cityNameMap = computed(() => {
-  const m = new Map()
-  for (const c of state.cities) m.set(c.city_id, c.name)
-  return m
+  const out = new Map()
+  for (const city of state.cities) out.set(city.city_id, city.name)
+  return out
 })
 
 export function filterValueLabel(filter) {
@@ -91,8 +92,7 @@ export function filterValueLabel(filter) {
   return inner?.get(v) ?? String(v)
 }
 
-// Strip leading indentation (and blank lines) so the generated SQL reads flush-left.
-function dedentSQL(sql) {
+function cleanSQL(sql) {
   return sql
     .split('\n')
     .map((l) => l.trim())
@@ -101,7 +101,7 @@ function dedentSQL(sql) {
 }
 
 export const sqlPreview = computed(() => {
-  if (state.lastResult?.sql) return dedentSQL(state.lastResult.sql)
+  if (state.lastResult?.sql) return cleanSQL(state.lastResult.sql)
   if (!state.questionId) return '-- Selecciona una pregunta'
   return '-- Ejecuta la consulta para ver el SQL generado'
 })
@@ -150,9 +150,7 @@ export function removeFilter(idx) {
   state.appliedPreset = ''
 }
 
-// Add a value to a manual filter. Values for the same attribute are merged into
-// one {attribute, value:[...]} (OR within attribute), matching how presets and
-// the backend expect filters. No-op if the value is already present.
+// Add a value to a manual filter
 export function addFilter(attribute, value) {
   if (!attribute || value === '' || value == null) return
   const v = Number(value)
@@ -272,8 +270,6 @@ export function loadConversation(id) {
   const conv = state.conversations.find((c) => c.id === id)
   if (!conv) return
   state.currentConversationId = id
-  // Backfill ids for messages saved before ids existed, so each renders as a
-  // distinct component (independent table/chart toggle).
   state.chatMessages = conv.messages.map((m) => ({ ...m, id: m.id || msgId() }))
 }
 

@@ -36,8 +36,8 @@ const newFilterValues = computed(() => {
   if (newFilterAttr.value === 'city_id') {
     return state.cities.map((c) => ({ value: c.city_id, label: c.name }))
   }
-  const a = state.attributes.find((x) => x.attribute === newFilterAttr.value)
-  return a ? a.values : []
+  const attr = state.attributes.find((x) => x.attribute === newFilterAttr.value)
+  return attr ? attr.values : []
 })
 function onFilterAttrChange() {
   newFilterValue.value = ''
