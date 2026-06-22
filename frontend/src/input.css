@@ -1,13 +1,17 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-sans:  'DM Sans', sans-serif;
+  --font-sans: 'DM Sans', sans-serif;
   --font-serif: 'Fraunces', serif;
-  --font-mono:  'DM Mono', monospace;
+  --font-mono: 'DM Mono', monospace;
 }
 
 /* keyframes must live outside @layer */
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 @layer base {
   body {
@@ -19,9 +23,17 @@
     line-height: 1.5;
   }
 
-  ::-webkit-scrollbar       { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 4px; }
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 4px;
+  }
 }
 
 @layer components {

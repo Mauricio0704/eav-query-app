@@ -1,6 +1,7 @@
 import { reactive, computed } from 'vue'
 import * as api from './api.js'
 
+// Tracks state of query, UI and chat history
 export const state = reactive({
   questions: [],
   attributes: [],
@@ -16,11 +17,9 @@ export const state = reactive({
   activeTab: 'table',
   loading: false,
   error: null,
-  // 'manual' = query builder, 'ai' = natural-language chat
   queryMode: 'manual',
   chatMessages: [],
   chatLoading: false,
-  // Persisted chat history (most recent first, capped to MAX_CONVERSATIONS).
   conversations: [],
   currentConversationId: null,
 })
@@ -28,8 +27,8 @@ export const state = reactive({
 const CHAT_STORAGE_KEY = 'eav-chat-conversations'
 const MAX_CONVERSATIONS = 5
 
-export const selectedQuestion = computed(() =>
-  state.questions.find(q => q.q_id === state.questionId) || null
+export const selectedQuestion = computed(
+  () => state.questions.find((q) => q.q_id === state.questionId) || null,
 )
 
 const SECTION_LABELS = {
@@ -87,7 +86,7 @@ export function filterValueLabel(filter) {
       : attributeValueMap.value.get(filter.attribute)
   const v = filter.value
   if (Array.isArray(v)) {
-    return v.map(x => inner?.get(x) ?? String(x)).join(', ')
+    return v.map((x) => inner?.get(x) ?? String(x)).join(', ')
   }
   return inner?.get(v) ?? String(v)
 }
@@ -96,8 +95,8 @@ export function filterValueLabel(filter) {
 function dedentSQL(sql) {
   return sql
     .split('\n')
-    .map(l => l.trim())
-    .filter(l => l !== '')
+    .map((l) => l.trim())
+    .filter((l) => l !== '')
     .join('\n')
 }
 
@@ -131,7 +130,7 @@ export async function init() {
 }
 
 export function applyPreset(key) {
-  const p = state.presets.find(x => x.key === key)
+  const p = state.presets.find((x) => x.key === key)
   if (!p) {
     state.appliedPreset = ''
     return
@@ -157,9 +156,11 @@ export function removeFilter(idx) {
 export function addFilter(attribute, value) {
   if (!attribute || value === '' || value == null) return
   const v = Number(value)
-  const existing = state.filters.find(f => f.attribute === attribute)
+  const existing = state.filters.find((f) => f.attribute === attribute)
   if (existing) {
-    const arr = Array.isArray(existing.value) ? existing.value : [existing.value]
+    const arr = Array.isArray(existing.value)
+      ? existing.value
+      : [existing.value]
     if (!arr.includes(v)) existing.value = [...arr, v]
   } else {
     state.filters.push({ attribute, value: [v] })
@@ -198,11 +199,13 @@ export function setQueryMode(mode) {
 
 let _msgSeq = 0
 function msgId() {
-  return (crypto.randomUUID && crypto.randomUUID()) || `m${Date.now()}_${_msgSeq++}`
+  return (
+    (crypto.randomUUID && crypto.randomUUID()) || `m${Date.now()}_${_msgSeq++}`
+  )
 }
 
 function conversationTitle(messages) {
-  const firstUser = messages.find(m => m.role === 'user')
+  const firstUser = messages.find((m) => m.role === 'user')
   const t = (firstUser?.text || 'Conversación').trim()
   return t.length > 48 ? t.slice(0, 48) + '…' : t
 }
@@ -227,7 +230,7 @@ export function loadConversations() {
     const parsed = JSON.parse(raw)
     if (Array.isArray(parsed)) {
       state.conversations = parsed
-        .filter(c => c && c.id && Array.isArray(c.messages))
+        .filter((c) => c && c.id && Array.isArray(c.messages))
         .sort((a, b) => b.updatedAt - a.updatedAt)
         .slice(0, MAX_CONVERSATIONS)
     }
@@ -240,7 +243,9 @@ export function loadConversations() {
 function syncCurrentConversation() {
   if (!state.chatMessages.length) return
   const now = Date.now()
-  let conv = state.conversations.find(c => c.id === state.currentConversationId)
+  let conv = state.conversations.find(
+    (c) => c.id === state.currentConversationId,
+  )
   if (!conv) {
     conv = {
       id: (crypto.randomUUID && crypto.randomUUID()) || String(now),
@@ -264,16 +269,16 @@ export function newConversation() {
 }
 
 export function loadConversation(id) {
-  const conv = state.conversations.find(c => c.id === id)
+  const conv = state.conversations.find((c) => c.id === id)
   if (!conv) return
   state.currentConversationId = id
   // Backfill ids for messages saved before ids existed, so each renders as a
   // distinct component (independent table/chart toggle).
-  state.chatMessages = conv.messages.map(m => ({ ...m, id: m.id || msgId() }))
+  state.chatMessages = conv.messages.map((m) => ({ ...m, id: m.id || msgId() }))
 }
 
 export function deleteConversation(id) {
-  const idx = state.conversations.findIndex(c => c.id === id)
+  const idx = state.conversations.findIndex((c) => c.id === id)
   if (idx === -1) return
   state.conversations.splice(idx, 1)
   if (state.currentConversationId === id) newConversation()
@@ -284,7 +289,10 @@ export async function sendChatMessage(text) {
   const msg = (text || '').trim()
   if (!msg || state.chatLoading) return
   // History = prior turns (text only) before this new message.
-  const history = state.chatMessages.map(m => ({ role: m.role, text: m.text }))
+  const history = state.chatMessages.map((m) => ({
+    role: m.role,
+    text: m.text,
+  }))
   state.chatMessages.push({ id: msgId(), role: 'user', text: msg })
   syncCurrentConversation() // surface the conversation in the list right away
   state.chatLoading = true
