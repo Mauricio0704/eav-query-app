@@ -40,40 +40,19 @@ function destroy() {
 }
 
 function buildFlat(data) {
+    // Both shapes chart as a distribution (one bar per row): categorical
+    // [id, label, conteo, %] and numeric [valor, conteo, %]. The % is always the
+    // LAST column; the readable x label is the value (numeric → col 0) or the
+    // option label (categorical → col 1).
     const isNumerica = data.question.q_type === 'numerica'
-    if (isNumerica) {
-        const row = data.rows[0] || []
-        return {
-            type: 'bar',
-            data: {
-                labels: ['Promedio', 'Mínimo', 'Máximo'],
-                datasets: [{
-                    label: data.question.q_text,
-                    data: [row[2], row[3], row[4]],
-                    backgroundColor: FLAT_COLORS.map(c => c + 'CC'),
-                    borderColor: FLAT_COLORS,
-                    borderWidth: 1,
-                    borderRadius: 3,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 } } },
-                    y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { family: 'DM Sans', size: 11 } } },
-                },
-            },
-        }
-    }
+    const labelIdx = isNumerica ? 0 : 1
     return {
         type: 'bar',
         data: {
-            labels: data.rows.map(r => r[0]),
+            labels: data.rows.map(r => r[labelIdx]),
             datasets: [{
                 label: '%',
-                data: data.rows.map(r => r[2]),
+                data: data.rows.map(r => r[r.length - 1]),
                 backgroundColor: FLAT_COLORS.map(c => c + 'CC'),
                 borderColor: FLAT_COLORS,
                 borderWidth: 1,
