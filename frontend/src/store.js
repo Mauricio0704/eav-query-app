@@ -6,6 +6,7 @@ export const state = reactive({
   attributes: [],
   recodes: [],
   presets: [],
+  cities: [],
   questionId: '',
   groupBy: 'answer',
   filters: [],
@@ -73,8 +74,17 @@ const attributeValueMap = computed(() => {
   return m
 })
 
+const cityNameMap = computed(() => {
+  const m = new Map()
+  for (const c of state.cities) m.set(c.city_id, c.name)
+  return m
+})
+
 export function filterValueLabel(filter) {
-  const inner = attributeValueMap.value.get(filter.attribute)
+  const inner =
+    filter.attribute === 'city_id'
+      ? cityNameMap.value
+      : attributeValueMap.value.get(filter.attribute)
   const v = filter.value
   if (Array.isArray(v)) {
     return v.map(x => inner?.get(x) ?? String(x)).join(', ')
@@ -82,8 +92,17 @@ export function filterValueLabel(filter) {
   return inner?.get(v) ?? String(v)
 }
 
+// Strip leading indentation (and blank lines) so the generated SQL reads flush-left.
+function dedentSQL(sql) {
+  return sql
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l !== '')
+    .join('\n')
+}
+
 export const sqlPreview = computed(() => {
-  if (state.lastResult?.sql) return state.lastResult.sql
+  if (state.lastResult?.sql) return dedentSQL(state.lastResult.sql)
   if (!state.questionId) return '-- Selecciona una pregunta'
   return '-- Ejecuta la consulta para ver el SQL generado'
 })
@@ -92,16 +111,18 @@ export const canRun = computed(() => !!state.questionId && !state.loading)
 
 export async function init() {
   try {
-    const [qs, attrs, recodes, presets] = await Promise.all([
+    const [qs, attrs, recodes, presets, cities] = await Promise.all([
       api.fetchQuestions(),
       api.fetchAttributes(),
       api.fetchRecodes(),
       api.fetchPresets(),
+      api.fetchCities(),
     ])
     state.questions = qs
     state.attributes = attrs
     state.recodes = recodes
     state.presets = presets
+    state.cities = cities
     loadConversations()
   } catch (e) {
     state.error = 'Error conectando al servidor'
@@ -127,6 +148,22 @@ export function clearPreset() {
 
 export function removeFilter(idx) {
   state.filters.splice(idx, 1)
+  state.appliedPreset = ''
+}
+
+// Add a value to a manual filter. Values for the same attribute are merged into
+// one {attribute, value:[...]} (OR within attribute), matching how presets and
+// the backend expect filters. No-op if the value is already present.
+export function addFilter(attribute, value) {
+  if (!attribute || value === '' || value == null) return
+  const v = Number(value)
+  const existing = state.filters.find(f => f.attribute === attribute)
+  if (existing) {
+    const arr = Array.isArray(existing.value) ? existing.value : [existing.value]
+    if (!arr.includes(v)) existing.value = [...arr, v]
+  } else {
+    state.filters.push({ attribute, value: [v] })
+  }
   state.appliedPreset = ''
 }
 

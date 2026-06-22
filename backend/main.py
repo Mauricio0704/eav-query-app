@@ -250,7 +250,8 @@ def list_presets():
 
 @app.get("/api/cities")
 def list_cities():
-    """Returns distinct city_id values from responses for use as a filter."""
+    """Returns distinct city_id values (with municipality names) for use as a
+    filter. Unknown ids fall back to showing the raw id."""
     conn = get_conn()
     try:
         rows = conn.execute("""
@@ -259,7 +260,10 @@ def list_cities():
             WHERE city_id IS NOT NULL
             ORDER BY city_id
         """).fetchall()
-        return [{"city_id": r[0]} for r in rows]
+        return [
+            {"city_id": r[0], "name": ID_TO_CITY_NAME.get(r[0], str(r[0]))}
+            for r in rows
+        ]
     finally:
         conn.close()
 
@@ -273,7 +277,6 @@ class QueryRequest(BaseModel):
     # Each filter: {"attribute": "sexo", "value": 1} or {"attribute": "tipo_trabajo", "value": [1, 4, 6]}
     # For city filter use attribute="city_id"
     filters: list[dict] = []
-    # Group results by: "answer" | "city_id" | any attribute name | recode key
     group_by: str = "answer"
     # When True, restrict to is_initial_respondent=1 and weight by factor_cvnl
     # (population projection). When False, count every row unweighted.
@@ -285,8 +288,14 @@ def run_query(req: QueryRequest):
     """
     Core query endpoint. Builds and executes a SQL query against DuckDB.
 
-    For multiple-choice questions: returns counts + percentages per option.
-    For numeric questions: returns avg, min, max, stddev, and a histogram.
+    group_by="answer" (flat shape):
+      - Multiple-choice questions: one row per option with count + percentage.
+      - Numeric questions: one row per distinct value with count + percentage
+        (a frequency breakdown; sentinels 7777/8888/9999 excluded).
+
+    group_by != "answer" (pivot shape): two tables — counts and percentages —
+    each with a Total row/column. Numeric questions add a single "Promedio"
+    (weighted mean) row to the counts table.
     """
     conn = get_conn()
     try:
@@ -370,24 +379,31 @@ def run_query(req: QueryRequest):
         # ── group_by="answer" → flat shape (no pivot) ─────────────────────
         if req.group_by == "answer":
             if q_type == "numerica":
+                # Frequency breakdown: one row per distinct numeric value (the
+                # value IS the answer, so no separate option label/id), with
+                # weighted count + percentage. Sentinels excluded.
                 sql = f"""
-                    SELECT
-                        NULL AS grupo,
-                        {count_int}                         AS total,
-                        {avg_expr}                          AS promedio,
-                        ROUND(MIN(a.value)::NUMERIC, 2)     AS minimo,
-                        ROUND(MAX(a.value)::NUMERIC, 2)     AS maximo,
-                        ROUND(STDDEV(a.value)::NUMERIC, 2)  AS desv_std
-                    FROM answers a
-                    INNER JOIN responses r ON r.respondent_id = a.respondent_id
-                    {join_clauses}
-                    WHERE a.question_id = '{req.question_id}'
-                      AND a.value NOT IN (7777, 8888, 9999)
-                      {initial_filter}
-                      {city_where}
+                    WITH base AS (
+                        SELECT a.value      AS valor,
+                               {count_expr} AS cnt
+                        FROM answers a
+                        INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                        {join_clauses}
+                        WHERE a.question_id = '{req.question_id}'
+                          AND a.value NOT IN (7777, 8888, 9999)
+                          {initial_filter}
+                          {city_where}
+                        GROUP BY a.value
+                    ),
+                    totals AS (SELECT SUM(cnt) AS total FROM base)
+                    SELECT b.valor,
+                           ROUND(b.cnt)::BIGINT                 AS total,
+                           ROUND(b.cnt * 100.0 / t.total, 1)    AS pct
+                    FROM base b CROSS JOIN totals t
+                    ORDER BY b.valor ASC
                 """
                 rows = conn.execute(sql).fetchall()
-                col_labels = ["Respuesta", "Respuestas", "Promedio", "Mínimo", "Máximo", "Desv. estándar"]
+                col_labels = ["Respuesta", "Respuestas", "%"]
             else:
                 sql = f"""
                     WITH base AS (
@@ -488,13 +504,33 @@ def run_query(req: QueryRequest):
         # `city_id` we keep raw ids for now; cell_map / stats are remapped
         # to metadata labels (11 AMM cities + 4 aggregates) further down.
         if req.group_by == "city_id":
-            label_to_city_ids = {
-                ID_TO_CITY_NAME[cid]: {str(cid)} for cid in AMM_ID
-            }
-            label_to_city_ids["AMM"]        = {str(c) for c in AMM_ID}
-            label_to_city_ids["Periferia"]  = {str(c) for c in PERIFERIA_ID}
-            label_to_city_ids["Resto NL"]   = {str(c) for c in _RESTO_NL}
-            label_to_city_ids["Nuevo León"] = {str(c) for c in _NL_CITY_IDS}
+            # When the user ALSO filters by city, show one column per filtered
+            # municipality (no AMM/Periferia/Resto NL/Nuevo León aggregates) so
+            # only the requested cities appear. Otherwise show the full curated
+            # set: the 11 AMM cities + the 4 aggregates.
+            city_filter_ids = None
+            if city_filter:
+                raw_vals = city_filter["value"]
+                city_filter_ids = raw_vals if isinstance(raw_vals, list) else [raw_vals]
+            if city_filter_ids:
+                label_to_city_ids = {}
+                for cid in city_filter_ids:
+                    lbl = ID_TO_CITY_NAME.get(int(cid), str(cid))
+                    label_to_city_ids.setdefault(lbl, set()).add(str(int(cid)))
+                muni_rank = {m: i for i, m in enumerate(DESIRED_ORDERS["municipio"])}
+                city_bucket_labels = sorted(
+                    label_to_city_ids.keys(),
+                    key=lambda l: (muni_rank.get(l, 10_000), l.lower()),
+                )
+            else:
+                label_to_city_ids = {
+                    ID_TO_CITY_NAME[cid]: {str(cid)} for cid in AMM_ID
+                }
+                label_to_city_ids["AMM"]        = {str(c) for c in AMM_ID}
+                label_to_city_ids["Periferia"]  = {str(c) for c in PERIFERIA_ID}
+                label_to_city_ids["Resto NL"]   = {str(c) for c in _RESTO_NL}
+                label_to_city_ids["Nuevo León"] = {str(c) for c in _NL_CITY_IDS}
+                city_bucket_labels = list(DESIRED_ORDERS["municipio"])
             group_keys   = list(group_totals_raw.keys())
             group_labels = group_keys  # placeholder, replaced below
         else:
@@ -580,7 +616,7 @@ def run_query(req: QueryRequest):
             if req.group_by == "city_id":
                 new_cell_map = {}
                 new_totals   = {}
-                for label in DESIRED_ORDERS["municipio"]:
+                for label in city_bucket_labels:
                     ids = label_to_city_ids.get(label, set())
                     new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
                     for v in distinct_values:
@@ -590,25 +626,23 @@ def run_query(req: QueryRequest):
                 cell_map         = new_cell_map
                 group_totals_raw = new_totals
                 grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
-                group_keys       = list(DESIRED_ORDERS["municipio"])
+                group_keys       = list(city_bucket_labels)
                 group_labels     = list(group_keys)
 
-                # Per-bucket stats: rename the 11 AMM cities, run fresh SQL
-                # for the 4 aggregates.
+                # Per-bucket stats: a single-city bucket reuses the precomputed
+                # per-city stats; an aggregate bucket (>1 city) is recomputed via
+                # SQL because stats don't compose from per-city aggregates.
                 new_stats = {}
-                for cid in AMM_ID:
-                    raw = stats_per_group.get(str(cid))
-                    if raw:
-                        new_stats[ID_TO_CITY_NAME[cid]] = raw
-                for label, agg_ids in [
-                    ("AMM",        AMM_ID),
-                    ("Periferia",  PERIFERIA_ID),
-                    ("Resto NL",   sorted(_RESTO_NL)),
-                    ("Nuevo León", sorted(_NL_CITY_IDS)),
-                ]:
-                    if not agg_ids:
+                for label in city_bucket_labels:
+                    ids = sorted(int(c) for c in label_to_city_ids.get(label, set()))
+                    if not ids:
                         continue
-                    in_clause = ",".join(str(i) for i in agg_ids)
+                    if len(ids) == 1:
+                        raw = stats_per_group.get(str(ids[0]))
+                        if raw:
+                            new_stats[label] = raw
+                        continue
+                    in_clause = ",".join(str(i) for i in ids)
                     agg_row = conn.execute(f"""
                         SELECT {avg_expr},
                                ROUND(MIN(a.value)::NUMERIC, 2),
@@ -668,7 +702,7 @@ def run_query(req: QueryRequest):
             )
 
             # Stat rows (counts table only — they aren't percentages)
-            stat_names = ["Promedio", "Mínimo", "Máximo", "Desv. estándar"]
+            stat_names = ["Promedio"]
             for i, name in enumerate(stat_names):
                 row = [name, ""]
                 for g in group_keys:
@@ -723,7 +757,7 @@ def run_query(req: QueryRequest):
         if req.group_by == "city_id":
             new_cell_map = {}
             new_totals   = {}
-            for label in DESIRED_ORDERS["municipio"]:
+            for label in city_bucket_labels:
                 ids = label_to_city_ids.get(label, set())
                 new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
                 for opt_id in option_keys:
@@ -733,7 +767,7 @@ def run_query(req: QueryRequest):
             cell_map         = new_cell_map
             group_totals_raw = new_totals
             grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
-            group_keys       = list(DESIRED_ORDERS["municipio"])
+            group_keys       = list(city_bucket_labels)
             group_labels     = list(group_keys)
 
         counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]

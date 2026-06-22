@@ -90,9 +90,8 @@ def _schema_context() -> str:
 
     lines.append("")
     lines.append(
-        "GEOGRAFÍA — para cualquier pregunta sobre zonas, municipios, el AMM, "
-        "la periferia o Nuevo León en general, usa group_by=\"city_id\". Eso "
-        "devuelve una fila/columna por cada municipio MÁS estos agregados:"
+        "GEOGRAFÍA — group_by=\"city_id\" devuelve una fila/columna por cada "
+        "municipio del AMM MÁS estos agregados:"
     )
     lines.append(
         f"- AMM = Área Metropolitana de Monterrey (suma de: {amm_cities}). "
@@ -101,12 +100,29 @@ def _schema_context() -> str:
     lines.append(f"- Periferia = {periferia_cities}.")
     lines.append("- Resto NL = los demás municipios de Nuevo León fuera del AMM y la Periferia.")
     lines.append("- Nuevo León = el estado completo (todos los municipios).")
+
+    city_catalog = ", ".join(
+        f"{cid}={name}" for cid, name in sorted(ID_TO_CITY_NAME.items())
+    )
+    lines.append("")
     lines.append(
-        "Para limitar a una zona o municipio (AMM, Periferia, Monterrey, etc.) "
-        "SIEMPRE usa group_by=\"city_id\" y lee la fila/columna correspondiente. "
-        "NUNCA pongas 'AMM', 'Periferia', 'Resto NL', 'Nuevo León' ni un nombre de "
-        "municipio como `value` de un filtro: 'AMM' NO es un city_id válido. "
-        "Los filtros de city_id solo aceptan ids numéricos de municipio."
+        "CATÁLOGO DE MUNICIPIOS (city_id = nombre): " + city_catalog
+    )
+    lines.append(
+        "FILTRAR POR MUNICIPIO: para limitar a uno o varios municipios concretos "
+        "(p. ej. 'en Monterrey', 'en Apodaca y San Nicolás'), usa un filtro "
+        "{\"attribute\": \"city_id\", \"value\": [ids]} con los ids numéricos del "
+        "catálogo de arriba. Ej.: solo Monterrey → "
+        "{\"attribute\": \"city_id\", \"value\": [39]}. Puedes combinar este filtro "
+        "con group_by=\"city_id\" (mostrará una columna por cada municipio filtrado) "
+        "o con cualquier otro group_by."
+    )
+    lines.append(
+        "FILTRAR POR ZONA (AMM, Periferia, Resto NL, Nuevo León): estas son "
+        "agregaciones, NO municipios. Para limitar a una zona usa group_by=\"city_id\" "
+        "y lee su fila/columna agregada; o filtra por la LISTA de city_ids que la "
+        "componen (los del catálogo). NUNCA pongas el nombre de una zona o de un "
+        "municipio como `value`: el filtro city_id solo acepta ids numéricos."
     )
 
     return "\n".join(lines)
@@ -124,9 +140,12 @@ def _system_instruction() -> str:
         "- `question_id` debe ser uno de los q_id listados abajo, exactamente.\n"
         "- `group_by`: \"answer\" (sin agrupar), \"city_id\" (por municipio), o el "
         "nombre de un atributo o recode listado abajo.\n"
-        "- `filters`: lista de objetos {attribute, value}. `value` es una lista de "
-        "uno o más ids numéricos (option_id) del atributo. Usa SIEMPRE el id que "
-        "aparece en el catálogo de abajo para ese atributo; nunca adivines el número. "
+        "- `filters`: lista de objetos {attribute, value}. `attribute` debe ser "
+        "EXACTAMENTE uno de los nombres de atributo del catálogo de abajo (o "
+        "'city_id'), copiado tal cual; NUNCA lo abrevies ni lo traduzcas (usa "
+        "'sexo', no 'sex'; 'nivel_max_estudios', no 'estudios'). `value` es una "
+        "lista de uno o más ids numéricos (option_id) del atributo. Usa SIEMPRE el "
+        "id que aparece en el catálogo para ese atributo; nunca adivines el número. "
         "Ej.: si el catálogo dice 'sexo: 0=Hombre, 1=Mujer', filtrar mujeres es "
         "{\"attribute\": \"sexo\", \"value\": [1]}.\n"
         "- `initial_only` = true proyecta a la población (metodología oficial CVNL); "

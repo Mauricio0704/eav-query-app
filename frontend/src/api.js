@@ -24,6 +24,12 @@ export async function fetchPresets() {
   return res.json()
 }
 
+export async function fetchCities() {
+  const res = await fetch(`${API}/cities`)
+  if (!res.ok) throw new Error('Error al cargar ciudades')
+  return res.json()
+}
+
 export async function runQuery(body) {
   const res = await fetch(`${API}/query`, {
     method: 'POST',

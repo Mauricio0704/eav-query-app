@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Eye, Copy, Check, Play, X, SlidersHorizontal, Sparkles, Plus, MessageSquare, Trash2 } from 'lucide-vue-next'
 import {
     state,
@@ -9,6 +9,7 @@ import {
     applyPreset,
     clearPreset,
     removeFilter,
+    addFilter,
     filterValueLabel,
     questionsBySection,
     setQueryMode,
@@ -16,6 +17,25 @@ import {
     loadConversation,
     deleteConversation,
 } from '../store.js'
+
+// Manual "add filter" controls.
+const newFilterAttr = ref('')
+const newFilterValue = ref('')
+const newFilterValues = computed(() => {
+    if (newFilterAttr.value === 'city_id') {
+        return state.cities.map(c => ({ value: c.city_id, label: c.name }))
+    }
+    const a = state.attributes.find(x => x.attribute === newFilterAttr.value)
+    return a ? a.values : []
+})
+function onFilterAttrChange() {
+    newFilterValue.value = ''
+}
+function addCurrentFilter() {
+    if (!newFilterAttr.value || newFilterValue.value === '') return
+    addFilter(newFilterAttr.value, newFilterValue.value)
+    newFilterValue.value = ''
+}
 
 function relativeTime(ts) {
     const diff = Date.now() - ts
@@ -200,6 +220,56 @@ function onGroupByChange(e) {
                     >
                         <path d="M1 1L6 6L11 1" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
+                </div>
+            </div>
+
+            <!-- Agregar filtro -->
+            <div>
+                <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2 block">
+                    Agregar filtro
+                </label>
+                <div class="space-y-2">
+                    <div class="relative">
+                        <select
+                            v-model="newFilterAttr"
+                            @change="onFilterAttrChange"
+                            class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
+                        >
+                            <option value="">— Atributo —</option>
+                            <option value="city_id">Ciudad</option>
+                            <option v-for="a in state.attributes" :key="a.attribute" :value="a.attribute">
+                                {{ a.attribute }}
+                            </option>
+                        </select>
+                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-2 pointer-events-none" fill="none" viewBox="0 0 12 7.4">
+                            <path d="M1 1L6 6L11 1" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <select
+                                v-model="newFilterValue"
+                                :disabled="!newFilterAttr"
+                                class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <option value="">— Valor —</option>
+                                <option v-for="v in newFilterValues" :key="v.value" :value="v.value">
+                                    {{ v.label }}
+                                </option>
+                            </select>
+                            <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-2 pointer-events-none" fill="none" viewBox="0 0 12 7.4">
+                                <path d="M1 1L6 6L11 1" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <button
+                            @click="addCurrentFilter"
+                            :disabled="!newFilterAttr || newFilterValue === ''"
+                            class="shrink-0 bg-[#0d9488] hover:bg-[#00685f] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-4xl px-3 flex items-center justify-center transition-colors"
+                            aria-label="Agregar filtro"
+                        >
+                            <Plus class="size-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
