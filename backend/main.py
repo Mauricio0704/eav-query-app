@@ -4,6 +4,8 @@ Usage:  uvicorn main:app --reload --port 8000
 """
 
 import os
+from functools import lru_cache
+
 import duckdb
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -127,10 +129,13 @@ def get_conn():
 
 
 @app.get("/api/questions")
+@lru_cache(maxsize=1)
 def list_questions():
     """
     Returns all questions with their type, section, and answer options.
     Used to populate the question selector in the UI.
+
+    Cached: the survey schema is immutable for the life of the process.
     """
     conn = get_conn()
     try:
@@ -178,6 +183,7 @@ def list_questions():
 
 
 @app.get("/api/attributes")
+@lru_cache(maxsize=1)
 def list_attributes():
     """
     Returns all distinct attribute names from respondent_attributes,
@@ -185,6 +191,8 @@ def list_attributes():
 
     respondent_attributes.attribute  → question_id in options table
     respondent_attributes.value      → option_id in options table
+
+    Cached: attribute definitions are immutable for the life of the process.
     """
     conn = get_conn()
     try:
@@ -250,9 +258,12 @@ def list_presets():
 
 
 @app.get("/api/cities")
+@lru_cache(maxsize=1)
 def list_cities():
     """Returns distinct city_id values (with municipality names) for use as a
-    filter. Unknown ids fall back to showing the raw id."""
+    filter. Unknown ids fall back to showing the raw id.
+
+    Cached: the set of cities is immutable for the life of the process."""
     conn = get_conn()
     try:
         rows = conn.execute("""
@@ -310,6 +321,21 @@ def run_query(req: QueryRequest):
             raise HTTPException(status_code=404, detail="Question not found")
 
         q_type, q_text = q_info
+
+        # SQL-injection guard
+        valid_attrs = {a["attribute"] for a in list_attributes()}
+        for f in req.filters:
+            attr = f.get("attribute")
+            if attr != "city_id" and attr not in valid_attrs:
+                raise HTTPException(
+                    status_code=400, detail=f"Unknown filter attribute: {attr}"
+                )
+
+        valid_group_by = {"answer", "city_id", "edad_anos"} | set(RECODES) | valid_attrs
+        if req.group_by not in valid_group_by:
+            raise HTTPException(
+                status_code=400, detail=f"Unknown group_by: {req.group_by}"
+            )
 
         # `initial_only` controls both the cohort and the weighting:
         #  - True  → restrict to is_initial_respondent=1, project to population
@@ -586,10 +612,7 @@ def run_query(req: QueryRequest):
 
             stats_sql = f"""
                 SELECT {group_expr} AS grupo,
-                       {avg_expr}                          AS promedio,
-                       ROUND(MIN(a.value)::NUMERIC, 2)     AS minimo,
-                       ROUND(MAX(a.value)::NUMERIC, 2)     AS maximo,
-                       ROUND(STDDEV(a.value)::NUMERIC, 2)  AS desv_std
+                       {avg_expr} AS promedio
                 FROM answers a
                 INNER JOIN responses r ON r.respondent_id = a.respondent_id
                 {join_clauses}
@@ -605,10 +628,7 @@ def run_query(req: QueryRequest):
             }
 
             overall_stats_sql = f"""
-                SELECT {avg_expr},
-                       ROUND(MIN(a.value)::NUMERIC, 2),
-                       ROUND(MAX(a.value)::NUMERIC, 2),
-                       ROUND(STDDEV(a.value)::NUMERIC, 2)
+                SELECT {avg_expr}
                 FROM answers a
                 INNER JOIN responses r ON r.respondent_id = a.respondent_id
                 {join_clauses}
@@ -617,9 +637,7 @@ def run_query(req: QueryRequest):
                   {initial_filter}
                   {city_where}
             """
-            overall_stats = list(
-                conn.execute(overall_stats_sql).fetchone() or [None] * 4
-            )
+            overall_stats = list(conn.execute(overall_stats_sql).fetchone() or [None])
 
             distinct_values = sorted(
                 {r[0] for r in freq_rows}, key=lambda v: (v is None, v)
@@ -661,10 +679,7 @@ def run_query(req: QueryRequest):
                         continue
                     in_clause = ",".join(str(i) for i in ids)
                     agg_row = conn.execute(f"""
-                        SELECT {avg_expr},
-                               ROUND(MIN(a.value)::NUMERIC, 2),
-                               ROUND(MAX(a.value)::NUMERIC, 2),
-                               ROUND(STDDEV(a.value)::NUMERIC, 2)
+                        SELECT {avg_expr}
                         FROM answers a
                         INNER JOIN responses r ON r.respondent_id = a.respondent_id
                         {join_clauses}
@@ -740,7 +755,7 @@ def run_query(req: QueryRequest):
             for i, name in enumerate(stat_names):
                 row = [name, ""]
                 for g in group_keys:
-                    v = stats_per_group.get(g, [None] * 4)[i]
+                    v = stats_per_group.get(g, [None])[i]
                     row.append(v if v is not None else "")
                 stat_val = overall_stats[i]
                 row.append(stat_val if stat_val is not None else "")
