@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Chart, registerables } from 'chart.js'
+import { PieChart, ChevronDown } from 'lucide-vue-next'
 
 Chart.register(...registerables)
 
@@ -13,6 +14,8 @@ const canvasEl = ref(null)
 const pieCanvases = ref([])
 let chartInstance = null
 let pieInstances = []
+
+const showPieCharts = ref(false)
 
 function setPieRef(el, i) {
   if (el) pieCanvases.value[i] = el
@@ -50,11 +53,14 @@ const pieGroupLabels = computed(() => {
   return cols.slice(2, -1)
 })
 
-function destroy() {
+function destroyMain() {
   if (chartInstance) {
     chartInstance.destroy()
     chartInstance = null
   }
+}
+
+function destroyPies() {
   for (const c of pieInstances) c.destroy()
   pieInstances = []
 }
@@ -208,8 +214,8 @@ function buildPie(data, groupIdx) {
   }
 }
 
-async function render() {
-  destroy()
+async function renderMain() {
+  destroyMain()
   if (!props.data || !props.active) return
   await nextTick()
   if (canvasEl.value) {
@@ -219,19 +225,37 @@ async function render() {
         : buildFlat(props.data)
     chartInstance = new Chart(canvasEl.value, config)
   }
-  if (props.data.format === 'pivot') {
-    const count = pieGroupLabels.value.length
-    for (let i = 0; i < count; i++) {
-      const el = pieCanvases.value[i]
-      if (!el) continue
-      pieInstances.push(new Chart(el, buildPie(props.data, i)))
-    }
+}
+
+async function renderPies() {
+  destroyPies()
+  if (!props.data || !props.active) return
+  if (props.data.format !== 'pivot' || !showPieCharts.value) return
+  await nextTick()
+  const count = pieGroupLabels.value.length
+  for (let i = 0; i < count; i++) {
+    const el = pieCanvases.value[i]
+    if (!el) continue
+    pieInstances.push(new Chart(el, buildPie(props.data, i)))
   }
 }
 
-watch(() => [props.data, props.active], render, { immediate: true })
+watch(
+  () => [props.data, props.active],
+  () => {
+    showPieCharts.value = false
+    renderMain()
+    destroyPies()
+  },
+  { immediate: true },
+)
 
-onBeforeUnmount(destroy)
+watch(showPieCharts, renderPies)
+
+onBeforeUnmount(() => {
+  destroyMain()
+  destroyPies()
+})
 </script>
 
 <template>
@@ -241,10 +265,19 @@ onBeforeUnmount(destroy)
     </div>
 
     <div v-if="pieGroupLabels.length" class="space-y-4">
-      <h3 class="font-['Manrope'] font-semibold text-sm text-[#1e293b]">
-        Distribución por columna
-      </h3>
-      <div class="grid grid-cols-2 lg:grid-cols-3 gap-6">
+      <button
+        @click="showPieCharts = !showPieCharts"
+        class="flex items-center gap-2 text-sm font-semibold text-[#7e34c3] hover:text-[#5e2494] transition-colors"
+      >
+        <PieChart class="size-4" />
+        {{ showPieCharts ? 'Ocultar' : 'Mostrar' }} distribución por columna
+        <ChevronDown
+          class="size-4 transition-transform"
+          :class="showPieCharts ? 'rotate-180' : ''"
+        />
+      </button>
+
+      <div v-if="showPieCharts" class="grid grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           v-for="(label, i) in pieGroupLabels"
           :key="label"

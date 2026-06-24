@@ -314,6 +314,16 @@ export async function sendChatMessage(text) {
   }
 }
 
+export async function retryLastMessage() {
+  if (state.chatLoading) return
+  const msgs = state.chatMessages
+  if (msgs.length && msgs[msgs.length - 1].role === 'assistant') msgs.pop()
+  if (!msgs.length || msgs[msgs.length - 1].role !== 'user') return
+  const last = msgs.pop()
+  syncCurrentConversation()
+  await sendChatMessage(last.text)
+}
+
 export async function exportCurrentCSV() {
   if (!state.lastResult) return
   const blob = await api.exportCSV(buildBody())

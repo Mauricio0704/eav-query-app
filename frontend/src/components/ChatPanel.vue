@@ -1,7 +1,12 @@
 <script setup>
 import { ref, nextTick, watch } from 'vue'
-import { Send, Sparkles } from 'lucide-vue-next'
-import { state, sendChatMessage, filterValueLabel } from '../store.js'
+import { Send, Sparkles, RotateCw } from 'lucide-vue-next'
+import {
+  state,
+  sendChatMessage,
+  retryLastMessage,
+  filterValueLabel,
+} from '../store.js'
 import ResultView from './ResultView.vue'
 
 const input = ref('')
@@ -115,6 +120,14 @@ watch(
               >
                 {{ toolSummary(m.toolCalls) }}
               </p>
+              <button
+                v-if="m.error && !state.chatLoading"
+                @click="retryLastMessage"
+                class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#b91c1c] hover:text-[#7f1d1d] transition-colors"
+              >
+                <RotateCw class="size-3.5" />
+                Reintentar
+              </button>
             </div>
 
             <!-- Result for this answer (toggle table / chart) -->
@@ -127,13 +140,15 @@ watch(
           </div>
         </template>
 
-        <!-- Loading -->
-        <div
-          v-if="state.chatLoading"
-          class="flex items-center gap-2.5 text-[#64748b]"
-        >
-          <div class="spinner"></div>
-          Analizando…
+        <div v-if="state.chatLoading" class="flex flex-col gap-1.5">
+          <div
+            class="w-fit bg-white border border-[#e2e8f0] rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm"
+          >
+            <div class="typing"><span></span><span></span><span></span></div>
+          </div>
+          <span class="text-xs text-[#94a3b8] pl-1"
+            >Consultando la encuesta…</span
+          >
         </div>
       </div>
     </div>
@@ -162,3 +177,37 @@ watch(
     </div>
   </div>
 </template>
+
+<style scoped>
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: #7e34c3;
+  opacity: 0.4;
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+</style>
