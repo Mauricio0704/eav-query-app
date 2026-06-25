@@ -2,7 +2,10 @@ node_modules/
 .pyc
 .editorconfig
 __pycache__/
+.pytest_cache
 dist/
 .venv
 .mypy_cache
 .DS_Store
+.vscode
+pyrightconfig.json
