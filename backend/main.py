@@ -4,6 +4,7 @@ Usage:  uvicorn main:app --reload --port 8000
 """
 
 import os
+import re
 from functools import lru_cache
 
 import duckdb
@@ -22,6 +23,7 @@ from metadata import (
     DESIRED_ORDERS,
     RECODES,
     PRESETS,
+    DERIVED_NEXT,
 )
 
 DB_PATH = os.getenv("DB_PATH", "../data/encuesta.duckdb")
@@ -128,6 +130,56 @@ def get_conn():
 # ---------------------------------------------------------------------------
 
 
+# ── Question display ordering ─────────────────────────────────────────────────
+_NUM_RE = re.compile(r"\d+")
+
+
+def _question_sort_key(q_id: str):
+    if q_id.startswith("cp"):
+        rank = 0
+    elif q_id.startswith("p"):
+        rank = 1
+    else:
+        rank = 2
+    nums = tuple(int(n) for n in _NUM_RE.findall(q_id))
+    return (rank, nums, q_id)
+
+
+def _ordered_question_ids(all_ids: list[str]) -> list[str]:
+    """Order question ids per the display rules. Derived questions listed in
+    DERIVED_NEXT are placed immediately before their target id (chains and
+    several-before-one-target preserve DERIVED_NEXT order); everything else
+    sorts by `_question_sort_key`."""
+    id_set = set(all_ids)
+    derived = {d for d, _ in DERIVED_NEXT if d in id_set}
+
+    # target id -> derived ids to emit just before it, in DERIVED_NEXT order
+    before: dict[str, list[str]] = {}
+    for d, target in DERIVED_NEXT:
+        if d in id_set:
+            before.setdefault(target, []).append(d)
+
+    base_ids = sorted((q for q in all_ids if q not in derived), key=_question_sort_key)
+
+    emitted: set[str] = set()
+    order: list[str] = []
+
+    def emit(q_id: str) -> None:
+        if q_id in emitted or q_id not in id_set:
+            return
+        for d in before.get(q_id, []):
+            emit(d)
+        emitted.add(q_id)
+        order.append(q_id)
+
+    for q_id in base_ids:
+        emit(q_id)
+    # Derived whose target is missing/unreachable: append by canonical key.
+    for q_id in sorted((q for q in all_ids if q not in emitted), key=_question_sort_key):
+        emit(q_id)
+    return order
+
+
 @app.get("/api/questions")
 @lru_cache(maxsize=1)
 def list_questions():
@@ -177,6 +229,9 @@ def list_questions():
                 }
             )
 
+        order = _ordered_question_ids([r["q_id"] for r in result])
+        pos = {q_id: i for i, q_id in enumerate(order)}
+        result.sort(key=lambda r: pos[r["q_id"]])
         return result
     finally:
         conn.close()

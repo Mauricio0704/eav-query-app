@@ -224,7 +224,7 @@ def _norm_value(v):
     return int(v)
 
 
-def _exec_query(args: dict):
+def _exec_query(args: dict) -> tuple[dict | None, dict[str, Any]]:
     """Run one `query` tool call. Returns (full_result_for_frontend, summary_for_model)."""
     from main import run_query, QueryRequest
 

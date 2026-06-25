@@ -289,7 +289,7 @@ DERIVED_NEXT: list[tuple[str, str]] = [
     ("tiempo_espera_consulta", "p103_1"),
     ("al_menos_un_problema_mental", "p107_1"),
     ("tiempo_espera", "p21_1"),
-    ("costo_total_viaje", "p24"),
+    ("costo_total_viaje_redondo", "p24"),
     ("tiempo_ida", "p27_1"),
     ("tiempo_regreso", "p28_1"),
     ("tiempo_total_traslado", "tiempo_ida"),

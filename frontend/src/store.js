@@ -64,6 +64,72 @@ export const questionsBySection = computed(() => {
   return out
 })
 
+function questionSearch(q, note, sectionLabel) {
+  return `${q.q_id} ${q.q_text || ''} ${note} ${sectionLabel}`.toLowerCase()
+}
+
+export const questionPicker = computed(() => {
+  const sections = []
+  const byId = new Map()
+  const groupOf = new Map()
+  let groupSeq = 0
+
+  for (const grp of questionsBySection.value) {
+    const sectionLabel = grp.label
+
+    // How many questions share each note within this section.
+    const noteCounts = new Map()
+    for (const q of grp.questions) {
+      const note = (q.q_notes || '').trim()
+      if (note) noteCounts.set(note, (noteCounts.get(note) || 0) + 1)
+    }
+
+    const entries = []
+    const groupByNote = new Map()
+    for (const q of grp.questions) {
+      const note = (q.q_notes || '').trim()
+      const meta = {
+        id: q.q_id,
+        main: q.q_text || q.q_id,
+        sectionLabel,
+        note,
+        stem: '',
+        groupId: null,
+        search: questionSearch(q, note, sectionLabel),
+      }
+      if (note && noteCounts.get(note) > 1) {
+        let entry = groupByNote.get(note)
+        if (!entry) {
+          entry = {
+            type: 'group',
+            groupId: `g${groupSeq++}`,
+            label: note,
+            facets: [],
+          }
+          groupByNote.set(note, entry)
+          entries.push(entry)
+        }
+        meta.groupId = entry.groupId
+        meta.stem = note
+        entry.facets.push(meta)
+        groupOf.set(meta.id, entry.groupId)
+      } else {
+        entries.push({ type: 'q', ...meta })
+      }
+      byId.set(meta.id, meta)
+    }
+
+    sections.push({
+      key: grp.key,
+      label: sectionLabel,
+      count: grp.questions.length,
+      entries,
+    })
+  }
+
+  return { sections, byId, groupOf, total: state.questions.length }
+})
+
 const attributeValueMap = computed(() => {
   const out = new Map()
   for (const attr of state.attributes) {

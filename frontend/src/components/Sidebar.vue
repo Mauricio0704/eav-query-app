@@ -11,6 +11,7 @@ import {
   Plus,
   MessageSquare,
   Trash2,
+  Search,
 } from 'lucide-vue-next'
 import {
   state,
@@ -22,12 +23,19 @@ import {
   removeFilter,
   addFilter,
   filterValueLabel,
-  questionsBySection,
+  questionPicker,
   setQueryMode,
   newConversation,
   loadConversation,
   deleteConversation,
 } from '../store.js'
+import QuestionPicker from './QuestionPicker.vue'
+
+// Searchable question picker modal.
+const pickerOpen = ref(false)
+const selectedQuestionMeta = computed(
+  () => questionPicker.value.byId.get(state.questionId) || null,
+)
 
 // Manual "add filter" controls.
 const newFilterAttr = ref('')
@@ -75,10 +83,6 @@ async function copySQL() {
   }
 }
 
-function truncate(text, n) {
-  return text.length > n ? text.slice(0, n) + '…' : text
-}
-
 function onPresetChange(e) {
   applyPreset(e.target.value)
 }
@@ -92,7 +96,7 @@ function onGroupByChange(e) {
 <template>
   <aside class="w-70 shrink-0 bg-white border-r border-[#e2e8f0] flex flex-col">
     <!-- Logo -->
-    <div class="p-4 border-b border-[#e2e8f0]">
+    <div class="py-2 px-4 border-b border-[#e2e8f0]">
       <div class="flex items-center gap-3 px-2 py-2">
         <img src="/logo.webp" alt="Logo" class="size-22 object-contain" />
         <div>
@@ -102,9 +106,9 @@ function onGroupByChange(e) {
             Encuesta
           </h1>
           <p
-            class="text-[10px] text-[#94a3b8] font-bold tracking-wider uppercase"
+            class="font-['Manrope'] font-extrabold text-[#7e34c3] text-center text-[20px] tracking-tight"
           >
-            Así Vamos · 2025
+            Así Vamos
           </p>
         </div>
       </div>
@@ -156,36 +160,36 @@ function onGroupByChange(e) {
           >
             Pregunta
           </label>
-          <div class="relative">
-            <select
-              v-model="state.questionId"
-              class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
+          <button
+            @click="pickerOpen = true"
+            class="w-full text-left bg-[#f1f5f9] border border-gray-300 rounded-2xl px-3 py-2.5 cursor-pointer flex items-center gap-2.5 hover:border-[#0d9488] transition-colors"
+          >
+            <span
+              v-if="selectedQuestionMeta"
+              class="shrink-0 font-mono text-[11px] font-medium px-1.5 py-0.5 rounded bg-[#e9d8fb] text-[#7e34c3]"
+              >{{ selectedQuestionMeta.id }}</span
             >
-              <option value="">— Selecciona una pregunta —</option>
-              <optgroup
-                v-for="g in questionsBySection"
-                :key="g.key"
-                :label="g.label"
+            <span class="flex-1 min-w-0">
+              <span
+                class="block text-[13px] font-semibold text-[#334155] overflow-hidden text-ellipsis whitespace-nowrap"
+                >{{
+                  selectedQuestionMeta
+                    ? selectedQuestionMeta.main
+                    : '— Selecciona una pregunta —'
+                }}</span
               >
-                <option v-for="q in g.questions" :key="q.q_id" :value="q.q_id">
-                  {{ q.q_id }} — {{ truncate(q.q_text, 60) }}
-                </option>
-              </optgroup>
-            </select>
-            <svg
-              class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-2 pointer-events-none"
-              fill="none"
-              viewBox="0 0 12 7.4"
-            >
-              <path
-                d="M1 1L6 6L11 1"
-                stroke="#94A3B8"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
+              <span
+                class="block text-[11px] text-[#94a3b8] overflow-hidden text-ellipsis whitespace-nowrap mt-px"
+                >{{
+                  selectedQuestionMeta
+                    ? selectedQuestionMeta.note ||
+                      selectedQuestionMeta.sectionLabel
+                    : 'Busca entre todas las preguntas'
+                }}</span
+              >
+            </span>
+            <Search class="size-4 text-[#94a3b8] shrink-0" />
+          </button>
         </div>
 
         <!-- Análisis predefinido -->
@@ -517,5 +521,7 @@ function onGroupByChange(e) {
         Ejecutar consulta
       </button>
     </div>
+
+    <QuestionPicker :open="pickerOpen" @close="pickerOpen = false" />
   </aside>
 </template>

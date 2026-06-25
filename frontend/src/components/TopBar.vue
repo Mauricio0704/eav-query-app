@@ -3,10 +3,11 @@ import { computed } from 'vue'
 import { Database } from 'lucide-vue-next'
 import { state, selectedQuestion } from '../store.js'
 
-const questionText = computed(
-  () =>
-    selectedQuestion.value?.q_text ||
-    'Selecciona una pregunta en el panel izquierdo',
+const questionText = computed(() =>
+  state.queryMode === 'ai'
+    ? 'Haz una pregunta'
+    : selectedQuestion.value?.q_text ||
+      'Selecciona una pregunta en el panel izquierdo',
 )
 const isEmpty = computed(() => !selectedQuestion.value)
 </script>

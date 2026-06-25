@@ -76,16 +76,14 @@ function setTab(t) {
                     Sobre los Datos
                   </h3>
                   <p class="text-sm text-[#64748b] leading-relaxed mb-3">
-                    Los datos provienen de la encuesta de percepción ciudadana
-                    realizada por
+                    Los datos provienen de la Encuesta Así Vamos realizada
+                    anualmente de 2016 a 2025 por
                     <a href="https://comovamosnl.org/" target="_blank">
                       <span class="font-medium underline text-[#0d9488]">
                         Cómo Vamos Nuevo León</span
-                      >.
+                      >
                     </a>
-                  </p>
-                  <p class="text-xs text-[#64748b]">
-                    • Datos recolectados de Agosto 2025 - Septiembre 2025
+                    en colaboración con la UANL.
                   </p>
                 </div>
               </div>
@@ -115,9 +113,6 @@ function setTab(t) {
                     muestreo estratificado por nivel socioeconómico, edad y zona
                     geográfica.
                   </p>
-                  <ul class="text-xs text-[#64748b] space-y-1">
-                    <li>• Tamaño de muestra: 4,955 respondientes</li>
-                  </ul>
                 </div>
               </div>
             </div>
@@ -137,7 +132,7 @@ function setTab(t) {
                 </div>
                 <div class="flex gap-3 justify-center">
                   <a
-                    href="https://drive.google.com/drive/folders/1_Ksr-u7sE1SrwrEGRbYUG1Pe_8yEmLqo?usp=sharing"
+                    href="https://comovamosnl.org/encuesta-asi-vamos/"
                     target="_blank"
                   >
                     <button
