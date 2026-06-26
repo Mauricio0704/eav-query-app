@@ -17,6 +17,12 @@ function formatCount(cell, row, ci) {
   if (row[0] === 'Promedio') return cell ?? ''
   return cell === '' || cell == null ? '0' : cell
 }
+
+function formatPercent(cell, ci) {
+  if (ci < 2) return cell ?? ''
+  if (cell === '' || cell == null) return ''
+  return `${cell}%`
+}
 </script>
 
 <template>
@@ -108,7 +114,7 @@ function formatCount(cell, row, ci) {
                     : 'text-[#1e293b] font-medium'
               "
             >
-              {{ cell === '' || cell == null ? '' : cell }}
+              {{ formatPercent(cell, ci) }}
             </td>
           </tr>
         </tbody>
