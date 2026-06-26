@@ -2,6 +2,7 @@
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { Search, X, ChevronRight, Check } from 'lucide-vue-next'
 import { state, questionPicker } from '../store.js'
+import InfoTooltip from './InfoTooltip.vue'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -52,6 +53,7 @@ const built = computed(() => {
       indent,
       showStem: searching.value && !!meta.stem,
       stem: meta.stem,
+      info: meta.info,
       pre,
       mid,
       post,
@@ -258,6 +260,7 @@ watch(
                   >{{ it.post }}</span
                 >
               </span>
+              <InfoTooltip v-if="it.info" :text="it.info" />
               <Check
                 v-if="it.selected"
                 class="size-4 text-[#0d9488] shrink-0"

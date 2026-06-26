@@ -64,8 +64,8 @@ export const questionsBySection = computed(() => {
   return out
 })
 
-function questionSearch(q, note, sectionLabel) {
-  return `${q.q_id} ${q.q_text || ''} ${note} ${sectionLabel}`.toLowerCase()
+function questionSearch(q, block, info, sectionLabel) {
+  return `${q.q_id} ${q.q_text || ''} ${block} ${info} ${sectionLabel}`.toLowerCase()
 }
 
 export const questionPicker = computed(() => {
@@ -77,40 +77,43 @@ export const questionPicker = computed(() => {
   for (const grp of questionsBySection.value) {
     const sectionLabel = grp.label
 
-    // How many questions share each note within this section.
-    const noteCounts = new Map()
+    // How many questions share each block within this section.
+    const blockCounts = new Map()
     for (const q of grp.questions) {
-      const note = (q.q_notes || '').trim()
-      if (note) noteCounts.set(note, (noteCounts.get(note) || 0) + 1)
+      const block = (q.q_block || '').trim()
+      if (block) blockCounts.set(block, (blockCounts.get(block) || 0) + 1)
     }
 
     const entries = []
-    const groupByNote = new Map()
+    const groupByBlock = new Map()
     for (const q of grp.questions) {
-      const note = (q.q_notes || '').trim()
+      const block = (q.q_block || '').trim()
+      const info = (q.q_info || '').trim()
       const meta = {
         id: q.q_id,
         main: q.q_text || q.q_id,
         sectionLabel,
-        note,
+        block,
+        info,
+        note: block || info,
         stem: '',
         groupId: null,
-        search: questionSearch(q, note, sectionLabel),
+        search: questionSearch(q, block, info, sectionLabel),
       }
-      if (note && noteCounts.get(note) > 1) {
-        let entry = groupByNote.get(note)
+      if (block && blockCounts.get(block) > 1) {
+        let entry = groupByBlock.get(block)
         if (!entry) {
           entry = {
             type: 'group',
             groupId: `g${groupSeq++}`,
-            label: note,
+            label: block,
             facets: [],
           }
-          groupByNote.set(note, entry)
+          groupByBlock.set(block, entry)
           entries.push(entry)
         }
         meta.groupId = entry.groupId
-        meta.stem = note
+        meta.stem = block
         entry.facets.push(meta)
         groupOf.set(meta.id, entry.groupId)
       } else {

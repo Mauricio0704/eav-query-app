@@ -195,12 +195,12 @@ function setTab(t) {
             <p
               class="text-xs font-bold text-[#64748b] uppercase tracking-wider mb-2"
             >
-              Total Muestra
+              Universo de la pregunta
             </p>
             <h3
               class="font-['Manrope'] font-bold text-[32px] text-[#0f172a] tracking-tight mb-2"
             >
-              {{ totalRespondents }} Respondientes
+              {{ totalRespondents }} personas
             </h3>
             <span
               class="inline-block bg-[#f0fdfa] text-[#0d9488] px-2 py-1 rounded text-xs font-bold"

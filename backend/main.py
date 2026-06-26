@@ -197,13 +197,14 @@ def list_questions():
                 q.q_text,
                 q.q_section,
                 q.q_type,
-                q.q_notes
+                q.q_info,
+                q.q_block
             FROM questions q
             ORDER BY q.q_id
         """).fetchall()
 
         result = []
-        for q_id, q_text, q_section, q_type, q_notes in questions:
+        for q_id, q_text, q_section, q_type, q_info, q_block in questions:
             # For multiple-choice questions, fetch their options
             options = []
             if q_type != "numerica":
@@ -224,7 +225,8 @@ def list_questions():
                     "q_text": q_text,
                     "q_section": q_section,
                     "q_type": q_type,
-                    "q_notes": q_notes,
+                    "q_info": q_info,
+                    "q_block": q_block,
                     "options": options,
                 }
             )

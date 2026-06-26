@@ -30,6 +30,7 @@ import {
   deleteConversation,
 } from '../store.js'
 import QuestionPicker from './QuestionPicker.vue'
+import InfoTooltip from './InfoTooltip.vue'
 
 // Searchable question picker modal.
 const pickerOpen = ref(false)
@@ -188,6 +189,10 @@ function onGroupByChange(e) {
                 }}</span
               >
             </span>
+            <InfoTooltip
+              v-if="selectedQuestionMeta && selectedQuestionMeta.info"
+              :text="selectedQuestionMeta.info"
+            />
             <Search class="size-4 text-[#94a3b8] shrink-0" />
           </button>
         </div>
