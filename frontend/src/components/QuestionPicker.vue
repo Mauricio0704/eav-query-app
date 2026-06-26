@@ -205,16 +205,16 @@ watch(
             <button
               v-else-if="it.kind === 'group'"
               @click="toggleGroup(it.groupId)"
-              class="w-full text-left flex items-center gap-2.5 px-3 py-2.5 my-0.5 rounded-lg bg-[#faf5ff] border-l-[3px] border-[#7e34c3] cursor-pointer"
+              class="w-full text-left flex items-start gap-2.5 px-3 py-2.5 my-0.5 rounded-lg bg-[#faf5ff] border-l-[3px] border-[#7e34c3] cursor-pointer"
             >
               <ChevronRight
-                class="size-3.5 text-[#7e34c3] shrink-0 transition-transform"
+                class="size-3.5 mt-0.5 text-[#7e34c3] shrink-0 transition-transform"
                 :class="it.expanded ? 'rotate-90' : ''"
                 stroke-width="2.5"
               />
               <span class="flex-1 min-w-0">
                 <span
-                  class="block text-[13px] font-bold text-[#5e2494] overflow-hidden text-ellipsis whitespace-nowrap"
+                  class="block text-[13px] font-bold text-[#5e2494] break-words"
                   >{{ it.label }}</span
                 >
               </span>
@@ -246,7 +246,7 @@ watch(
               <span class="flex-1 min-w-0">
                 <span
                   v-if="it.showStem"
-                  class="block text-[11px] text-[#94a3b8] overflow-hidden text-ellipsis whitespace-nowrap"
+                  class="block text-[11px] text-[#94a3b8] break-words"
                   >{{ it.stem }}</span
                 >
                 <span

@@ -21,7 +21,7 @@ const isEmpty = computed(() => !selectedQuestion.value)
         <img src="/minilogo.webp" class="size-8 max-w-none" />
       </div>
       <h2
-        class="font-['Poppins'] text-lg truncate uppercase text-[#fb7e50] font-extrabold"
+        class="font-['Poppins'] text-lg whitespace-nowrap overflow-x-auto min-w-0 uppercase text-[#fb7e50] font-extrabold"
       >
         {{ questionText }}
       </h2>
