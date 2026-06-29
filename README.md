@@ -1,131 +1,155 @@
-# Encuesta NL — Query Builder
+# Encuesta NL — Survey Query Builder
 
-A deterministic survey data query tool for non-technical users.
-Built with DuckDB (Python/FastAPI backend) + plain HTML/JS frontend.
+A query tool over the *Así Vamos* / Consejo Nuevo León survey: ~15,400 respondents, 1.1M answers, 309 questions. It lets non-technical users build cross-tabulations, weight results to the population, and export them — without writing SQL. An optional natural-language mode maps plain Spanish onto the same validated query layer.
+
+DuckDB (FastAPI backend) + Vue 3 frontend.
+
+---
 
 ## Stack
 
-| Layer    | Technology        |
-|----------|-------------------|
-| Database | DuckDB            |
-| Backend  | Python + FastAPI  |
-| Frontend | HTML + JS (no framework) |
+| Layer         | Technology                                         |
+|---------------|----------------------------------------------------|
+| Database      | DuckDB (embedded, columnar, read-only)             |
+| Backend       | Python 3.12 · FastAPI · Pydantic · Uvicorn         |
+| AI            | Google Gemini (`google-genai`) with tool use       |
+| Frontend      | Vue 3 (Composition API) · Vite · Tailwind CSS v4   |
+| Visualization | Chart.js                                           |
+| Tests         | pytest (FastAPI TestClient) — 31 tests             |
+| Deployment    | Render.com (`render.yaml`)                          |
 
 ---
 
-## Setup
+## Architecture
 
-### 1. Install Python dependencies
-
-```bash
-pip install fastapi uvicorn duckdb python-multipart
+```
+┌──────────────────────┐        /api/*         ┌───────────────────────────┐
+│  Vue 3 + Vite SPA     │  ───────────────────► │  FastAPI (Python)         │
+│  Tailwind · Chart.js  │  ◄─────────────────── │  • query engine           │
+│  manual + AI modes    │     JSON / CSV        │  • safe SQL builder       │
+└──────────────────────┘                       │  • LLM tool-use (chat)    │
+                                                └─────────────┬─────────────┘
+                                                              │ read-only
+                                                     ┌────────▼────────┐
+                                                     │  DuckDB (EAV)    │
+                                                     └─────────────────┘
 ```
 
-### 2. Point to your database
+In production FastAPI also serves the built SPA as static files, so the whole app is a single service.
 
-Set the `DB_PATH` environment variable to your `.duckdb` file:
+### Data schema (EAV)
 
-```bash
-export DB_PATH=/path/to/your/encuesta.duckdb
+```sql
+answers               (respondent_id, question_id, option_id, value REAL)
+options               (question_id, option_id, option_label)
+questions             (q_id, q_text, q_section, q_type, q_notes)
+respondent_attributes (respondent_id, question_id, attribute, value)   -- value = option_id
+responses             (respondent_id, is_initial_respondent, nombre, factor_cvnl, city_id)
 ```
 
-Or if you're loading from Excel/CSV, DuckDB can query those directly.
-See the note at the bottom of this file.
+The data is stored entity-attribute-value: each `(respondent, question)` pair is a row in `answers`, and demographic filters live in `respondent_attributes`, where `attribute` is a friendly name (`sexo`) keyed to a survey `question_id` and `value` is the `option_id` whose human label comes from `options`.
 
-### 3. Start the backend
+---
+
+## Design decisions
+
+### DuckDB as an embedded, read-only file
+The dataset is fixed reference data, not transactional. An embedded columnar database removes the need for a separate DB server, makes aggregate scans over 1.1M rows fast, and ships as one committed file (~7.8 MB). Every connection is opened `read_only=True`; the file is never mutated at runtime, which also makes the deployment immutable and trivially reproducible.
+
+### EAV schema
+Survey instruments are sparse and irregular — questions appear and disappear across sections, many are conditional, and answer sets differ per question. A wide one-column-per-question table would be mostly nulls and would require migrations as the instrument changes. EAV keeps the storage uniform and lets the query layer treat every question identically.
+
+### Generated SQL with allowlist validation, not an ORM
+Queries are composed dynamically (which question, which group-by, which filters), so an ORM buys little. Instead, every user-supplied identifier — `question_id`, `group_by`, each filter `attribute` — is checked against an allowlist derived from the database *before* any SQL string is built. Values are integers coerced through Pydantic. The result is dynamic SQL with no injection surface, and the generated SQL is returned to the client so the query is fully transparent.
+
+### Population projection (`factor_cvnl`)
+Raw response counts describe the sample, not Nuevo León. The query engine can restrict to initial respondents and apply each respondent's survey expansion factor to produce population estimates. This is a per-query toggle (`initial_only`) rather than a global mode, because both views are legitimate — analysts need weighted estimates, but data-quality checks need raw counts.
+
+### Sentinel handling
+Codes `7777` / `8888` / `9999` (*Not applicable* / *Don't know* / *No answer*) are real responses, so they stay in count and percentage distributions, but they are meaningless as quantities, so they are excluded from numeric statistics (means, etc.). Keeping both behaviors avoids silently biasing aggregates while not hiding non-response from the user.
+
+### Pivot mode returns counts *and* percentages
+When grouping by an attribute, the response is two parallel tables — absolute counts and column percentages — each with totals. Percentages alone hide small cell sizes; counts alone make distributions hard to compare across unequal groups. Returning both lets the UI show either without a second round-trip.
+
+### Geographic rollups in metadata, not SQL
+41 raw `city_id` codes are collapsed into the 11 Monterrey-metro (AMM) municipalities plus four aggregates (AMM, Periphery, Rest of NL, Nuevo León). These groupings, the canonical display orderings, value recodes, and presets all live in `backend/metadata.py` as plain data — so changing how cities roll up or how income brackets are ordered is a data edit, not a query rewrite.
+
+### Recodes and derived orderings as data
+Domain-specific value regroupings (e.g. collapsing transport modes into modal categories) and the canonical order of every categorical (`sexo`, `estudios`, `ingreso`, age buckets…) are declared in `metadata.py`. Age is bucketed via a SQL `CASE` rather than pivoting on individual integer years, since per-year columns are noise for analysis.
+
+### AI mode via tool use, not text-to-SQL
+The natural-language mode does not ask the model to emit SQL. The model is given the *same* query functions the UI calls and can only act by invoking them, so every AI answer runs through the identical validated, weighted query path and is reproducible. This keeps the LLM grounded in real results and keeps the injection surface at zero. It is fully optional — without `GEMINI_API_KEY` the app runs in manual mode.
+
+### Caching
+Metadata endpoints (`/api/questions`, `/api/attributes`, `/api/cities`) are immutable for the life of the process and are cached with `lru_cache`, so the common path serves from memory.
+
+---
+
+## Running locally
 
 ```bash
+# Backend (FastAPI) — API on :8000, docs at /docs
 cd backend
-uvicorn main:app --reload --port 8000
+../.venv/bin/uvicorn main:app --port 8000 --reload
+
+# Frontend (Vite dev server, proxies /api → :8000)
+cd frontend
+npm install        # first time only
+npm run dev        # http://localhost:3000
 ```
 
-The API will be available at `http://localhost:8000`.
-Interactive docs at `http://localhost:8000/docs`.
+AI mode is optional:
 
-### 4. Open the frontend
+```bash
+export GEMINI_API_KEY=your_key_here   # omit to run manual-only
+```
 
-Open `frontend/index.html` in your browser.
-(Or serve it with any static server, e.g. `python3 -m http.server 3000` from the frontend folder.)
+Tests:
+
+```bash
+./.venv/bin/pytest        # query engine + endpoints
+```
 
 ---
 
-## API Endpoints
+## API
 
-| Method | Path               | Description                          |
-|--------|--------------------|--------------------------------------|
-| GET    | /api/questions     | All questions + their answer options |
-| GET    | /api/attributes    | All respondent filter attributes + labels |
-| GET    | /api/cities        | All city IDs                         |
-| POST   | /api/query         | Run a query, returns JSON            |
-| POST   | /api/query/csv     | Same but returns CSV download        |
-| GET    | /api/health        | Health check                         |
+| Method | Path             | Description                          |
+|--------|------------------|--------------------------------------|
+| GET    | `/api/questions` | All questions + answer options       |
+| GET    | `/api/attributes`| Respondent filter attributes + labels|
+| GET    | `/api/cities`    | Distinct municipalities              |
+| POST   | `/api/query`     | Run a query → JSON                   |
+| POST   | `/api/query/csv` | Run a query → CSV download           |
+| POST   | `/api/chat`      | Natural-language query (AI mode)     |
+| GET    | `/api/health`    | Health check                         |
 
-### POST /api/query — Request body
+**`POST /api/query`**
 
 ```json
 {
-  "question_id": "49",
-  "filters": [
-    { "attribute": "sexo", "value": 2 },
-    { "attribute": "rango_ingreso", "value": 1 }
-  ],
-  "group_by": "answer"
+  "question_id": "p1",
+  "filters": [{ "attribute": "sexo", "value": 1 }],
+  "group_by": "city_id",
+  "initial_only": true
 }
 ```
 
-- `group_by` can be `"answer"`, `"city_id"`, or any attribute name (e.g. `"sexo"`)
-- `filters` is a list of `{attribute, value}` pairs where `value` is the integer from `respondent_attributes`
+`group_by` accepts `"answer"` (flat distribution), `"city_id"`, or any attribute / recode key. Any value other than `"answer"` switches the response to pivot mode (paired counts + percentages tables).
 
 ---
 
-## Schema reference
+## Project layout
 
-```sql
-answers              (respondent_id, question_id, option_id, value REAL)
-options              (question_id, option_id, option_label)
-questions            (q_id, q_text, q_section, q_type, q_notes)
-respondent_attributes(respondent_id, question_id [=attribute], value [=option_id])
-responses            (respondent_id, is_initial_respondent, nombre, factor_cvnl, city_id)
 ```
-
-**How attribute labels resolve:**
-`respondent_attributes.attribute` → `options.question_id`
-`respondent_attributes.value`     → `options.option_id`
-So the human-readable label for a filter value is fetched from the `options` table.
-
----
-
-## Using Excel / CSV files instead of a .duckdb file
-
-DuckDB can query Excel and CSV files directly. To use this, replace
-the table references in `main.py` with file paths:
-
-```python
-# In get_conn(), after connecting:
-conn.execute("CREATE VIEW IF NOT EXISTS answers AS SELECT * FROM read_csv_auto('/path/to/answers.csv')")
-conn.execute("CREATE VIEW IF NOT EXISTS options AS SELECT * FROM read_csv_auto('/path/to/options.csv')")
-# etc.
+eav-queries/
+├── backend/
+│   ├── main.py        # FastAPI app, query engine, safe SQL builder
+│   ├── chat.py        # Gemini tool-use integration (AI mode)
+│   └── metadata.py    # Geo rollups, recodes, presets, canonical orderings
+├── frontend/
+│   └── src/           # Vue 3 + Vite SPA (components, store, API client)
+├── tests/             # pytest suite (query engine + endpoints)
+├── data/              # Embedded DuckDB database (committed, never mutated)
+└── render.yaml        # Deployment blueprint
 ```
-
-Or for Excel:
-```python
-conn.execute("INSTALL spatial; LOAD spatial;")
-conn.execute("CREATE VIEW IF NOT EXISTS answers AS SELECT * FROM st_read('/path/to/data.xlsx')")
-```
-
----
-
-## Production deployment
-
-1. Set `CORS` in `main.py` to your frontend's domain (not `"*"`)
-2. Run uvicorn behind nginx or use `gunicorn -k uvicorn.workers.UvicornWorker`
-3. Serve `frontend/` as static files from the same nginx config
-4. Keep `DB_PATH` as an env var — never hardcode paths
-
----
-
-## Extending the query builder
-
-- **New filter types** (date range, multi-select): add them to `frontend/index.html`'s `addFilter()` function and update the `QueryRequest` model in `main.py`
-- **New chart types**: extend `drawChart()` in the frontend
-- **Authentication**: add FastAPI middleware or use a reverse proxy with basic auth for internal access
