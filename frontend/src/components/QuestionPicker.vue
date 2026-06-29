@@ -214,7 +214,7 @@ watch(
               />
               <span class="flex-1 min-w-0">
                 <span
-                  class="block text-[13px] font-bold text-[#5e2494] break-words"
+                  class="block text-[13px] font-bold text-[#5e2494] wrap-break-word"
                   >{{ it.label }}</span
                 >
               </span>
@@ -246,7 +246,7 @@ watch(
               <span class="flex-1 min-w-0">
                 <span
                   v-if="it.showStem"
-                  class="block text-[11px] text-[#94a3b8] break-words"
+                  class="block text-[11px] text-[#94a3b8] wrap-break-word"
                   >{{ it.stem }}</span
                 >
                 <span

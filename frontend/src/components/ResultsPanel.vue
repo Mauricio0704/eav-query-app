@@ -13,7 +13,13 @@ const totalRespondents = computed(
 )
 const groupByLabel = computed(() => {
   const g = state.lastResult?.group_by
-  return !g || g === 'answer' ? 'Respuesta' : g
+  if (!g || g === 'answer') return 'Respuesta'
+  if (g === 'city_id') return 'Ciudad'
+  const attr = state.attributes.find((a) => a.attribute === g)
+  if (attr) return attr.label || attr.attribute
+  const recode = state.recodes.find((r) => r.key === g)
+  if (recode) return recode.label
+  return g
 })
 
 function setTab(t) {
@@ -56,7 +62,7 @@ function setTab(t) {
           <div class="grid grid-cols-2 gap-6 mb-8">
             <div class="bg-white rounded-lg border border-[#e2e8f0] p-6">
               <div class="flex items-start gap-4">
-                <div class="bg-[#0d9488]/10 rounded-lg p-3 shrink-0">
+                <!-- <div class="bg-[#0d9488]/10 rounded-lg p-3 shrink-0">
                   <svg
                     class="size-6 text-[#0d9488]"
                     fill="none"
@@ -70,7 +76,7 @@ function setTab(t) {
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                </div>
+                </div> -->
                 <div>
                   <h3 class="font-semibold text-[#1e293b] mb-2">
                     Sobre los Datos
@@ -91,7 +97,7 @@ function setTab(t) {
 
             <div class="bg-white rounded-lg border border-[#e2e8f0] p-6">
               <div class="flex items-start gap-4">
-                <div class="bg-[#0d9488]/10 rounded-lg p-3 shrink-0">
+                <!-- <div class="bg-[#0d9488]/10 rounded-lg p-3 shrink-0">
                   <svg
                     class="size-6 text-[#0d9488]"
                     fill="none"
@@ -105,7 +111,7 @@ function setTab(t) {
                       d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                     />
                   </svg>
-                </div>
+                </div> -->
                 <div>
                   <h3 class="font-semibold text-[#1e293b] mb-2">Metodología</h3>
                   <p class="text-sm text-[#64748b] leading-relaxed mb-3">

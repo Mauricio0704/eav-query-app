@@ -21,6 +21,7 @@ from metadata import (
     PERIFERIA_ID,
     ID_TO_CITY_NAME,
     DESIRED_ORDERS,
+    ATTRIBUTE_LABELS,
     RECODES,
     PRESETS,
     DERIVED_NEXT,
@@ -280,7 +281,10 @@ def list_attributes():
                 }
             )
 
-        return [{"attribute": k, "values": v} for k, v in attrs.items()]
+        return [
+            {"attribute": k, "label": ATTRIBUTE_LABELS.get(k, k), "values": v}
+            for k, v in attrs.items()
+        ]
     finally:
         conn.close()
 

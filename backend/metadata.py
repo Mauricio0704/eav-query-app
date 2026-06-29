@@ -75,6 +75,20 @@ ID_TO_CITY_NAME = {
 }
 
 
+ATTRIBUTE_LABELS = {
+    "afiliacion_servicio_salud": "Afiliación a servicio de salud",
+    "edad_anos": "Edad",
+    "ingreso": "Ingreso",
+    "modo_transporte": "Modo de transporte",
+    "nivel_actual_estudios": "Nivel de estudios actual",
+    "nivel_max_estudios": "Nivel máximo de estudios",
+    "servicio_salud_donde_se_atendio": "Servicio de salud donde se atendió",
+    "sexo": "Sexo",
+    "tipo_consulta": "Tipo de consulta",
+    "tipo_escuela": "Tipo de escuela",
+    "tipo_trabajo": "Tipo de trabajo",
+}
+
 DESIRED_ORDERS = {
     "sexo": [
         "Hombre",
@@ -192,87 +206,33 @@ RECODES: dict = {
 
 PRESETS: list = [
     {
-        "key": "por_municipio_hombres",
-        "label": "Por municipio · solo hombres",
+        "key": "respuesta_por_unidad_geografica",
+        "label": "Respuesta por unidad geográfica",
+        "group_by": "city_id",
+        "filters": [],
+    },
+    {
+        "key": "respuesta_hombres_por_unidad_geografica",
+        "label": "Respuesta de HOMBRES por unidad geográfica",
         "group_by": "city_id",
         "filters": [{"attribute": "sexo", "value": 0}],
     },
     {
-        "key": "por_municipio_mujeres",
-        "label": "Por municipio · solo mujeres",
+        "key": "respuesta_mujeres_por_unidad_geografica",
+        "label": "Respuesta de MUJERES por unidad geográfica",
         "group_by": "city_id",
         "filters": [{"attribute": "sexo", "value": 1}],
     },
     {
-        "key": "por_municipio_trabajo_remunerado",
-        "label": "Por municipio · trabajo remunerado",
-        "group_by": "city_id",
-        "filters": [{"attribute": "tipo_trabajo", "value": [1, 4, 6]}],
-    },
-    {
-        "key": "por_municipio_trabajo_remunerado_hombres",
-        "label": "Por municipio · trabajo remunerado (hombres)",
-        "group_by": "city_id",
-        "filters": [
-            {"attribute": "tipo_trabajo", "value": [1, 4, 6]},
-            {"attribute": "sexo", "value": 0},
-        ],
-    },
-    {
-        "key": "por_municipio_trabajo_remunerado_mujeres",
-        "label": "Por municipio · trabajo remunerado (mujeres)",
-        "group_by": "city_id",
-        "filters": [
-            {"attribute": "tipo_trabajo", "value": [1, 4, 6]},
-            {"attribute": "sexo", "value": 1},
-        ],
-    },
-    {
-        "key": "por_municipio_estudios_primaria",
-        "label": "Por municipio · estudia primaria",
-        "group_by": "city_id",
-        "filters": [{"attribute": "nivel_actual_estudios", "value": [2]}],
-    },
-    {
-        "key": "por_municipio_estudios_secundaria",
-        "label": "Por municipio · estudia secundaria",
-        "group_by": "city_id",
-        "filters": [{"attribute": "nivel_actual_estudios", "value": [3]}],
-    },
-    {
-        "key": "por_municipio_estudios_media_superior",
-        "label": "Por municipio · estudia media superior",
-        "group_by": "city_id",
-        "filters": [{"attribute": "nivel_actual_estudios", "value": [4, 5]}],
-    },
-    {
-        "key": "por_municipio_escuela_publica",
-        "label": "Por municipio · escuela pública",
-        "group_by": "city_id",
-        "filters": [{"attribute": "tipo_escuela", "value": 1}],
-    },
-    {
-        "key": "por_municipio_escuela_privada",
-        "label": "Por municipio · escuela privada",
-        "group_by": "city_id",
-        "filters": [{"attribute": "tipo_escuela", "value": 2}],
-    },
-    {
-        "key": "por_tipo_trabajo_remunerado",
-        "label": "Por tipo de trabajo (remunerado / no)",
-        "group_by": "tipo_trabajo_remunerado",
+        "key": "respuesta_por_sexo",
+        "label": "Respuesta por sexo",
+        "group_by": "sexo",
         "filters": [],
     },
     {
-        "key": "por_servicio_salud_publico_privado",
-        "label": "Por tipo de servicio de salud (público / privado)",
-        "group_by": "tipo_servicio_salud_publico_privado",
-        "filters": [],
-    },
-    {
-        "key": "por_particion_modal_agregada",
-        "label": "Por partición modal agregada",
-        "group_by": "particion_modal_agregada",
+        "key": "respuesta_por_edad",
+        "label": "Respuesta por edad",
+        "group_by": "edad_anos",
         "filters": [],
     },
 ]

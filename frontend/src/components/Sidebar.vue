@@ -48,6 +48,11 @@ const newFilterValues = computed(() => {
   const attr = state.attributes.find((x) => x.attribute === newFilterAttr.value)
   return attr ? attr.values : []
 })
+function attributeLabel(attr) {
+  if (attr === 'city_id') return 'Ciudad'
+  const a = state.attributes.find((x) => x.attribute === attr)
+  return a?.label || attr
+}
 function onFilterAttrChange() {
   newFilterValue.value = ''
 }
@@ -197,12 +202,12 @@ function onGroupByChange(e) {
           </button>
         </div>
 
-        <!-- Análisis predefinido -->
+        <!-- Desagregaciones predefinidas -->
         <div>
           <label
             class="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2 block"
           >
-            Análisis predefinido
+            Desagregaciones predefinidas
           </label>
           <div class="relative">
             <select
@@ -231,6 +236,16 @@ function onGroupByChange(e) {
           </div>
         </div>
 
+        <!-- Manual configuration divider -->
+        <div class="flex items-center gap-2 pt-1">
+          <span
+            class="text-[11px] font-bold text-[#1a1a1b] uppercase tracking-wide whitespace-nowrap"
+          >
+            Configurar manualmente
+          </span>
+          <span class="flex-1 h-px bg-[#e2e8f0]" />
+        </div>
+
         <!-- Group By -->
         <div>
           <label
@@ -246,20 +261,16 @@ function onGroupByChange(e) {
             >
               <option value="answer">Respuesta</option>
               <option value="city_id">Ciudad</option>
-              <optgroup label="Atributos">
-                <option
-                  v-for="a in state.attributes"
-                  :key="a.attribute"
-                  :value="a.attribute"
-                >
-                  {{ a.attribute }}
-                </option>
-              </optgroup>
-              <optgroup v-if="state.recodes.length" label="Recodes">
-                <option v-for="r in state.recodes" :key="r.key" :value="r.key">
-                  {{ r.label }}
-                </option>
-              </optgroup>
+              <option
+                v-for="a in state.attributes"
+                :key="a.attribute"
+                :value="a.attribute"
+              >
+                {{ a.label || a.attribute }}
+              </option>
+              <option v-for="r in state.recodes" :key="r.key" :value="r.key">
+                {{ r.label }}
+              </option>
             </select>
             <svg
               class="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-2 pointer-events-none"
@@ -298,7 +309,7 @@ function onGroupByChange(e) {
                   :key="a.attribute"
                   :value="a.attribute"
                 >
-                  {{ a.attribute }}
+                  {{ a.label || a.attribute }}
                 </option>
               </select>
               <svg
@@ -378,7 +389,7 @@ function onGroupByChange(e) {
               :key="i"
               class="inline-flex items-center gap-1 bg-[#f0fdfa] text-[#0d9488] text-xs font-medium px-2 py-1 rounded"
             >
-              <span>{{ f.attribute }}: {{ filterValueLabel(f) }}</span>
+              <span>{{ attributeLabel(f.attribute) }}: {{ filterValueLabel(f) }}</span>
               <button
                 @click="removeFilter(i)"
                 class="hover:text-[#00685f]"
@@ -392,22 +403,18 @@ function onGroupByChange(e) {
 
         <!-- Initial only toggle -->
         <div>
-          <label class="flex items-start gap-3 cursor-pointer">
+          <label class="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               v-model="state.initialOnly"
-              class="mt-0.5 size-4 accent-[#0d9488] cursor-pointer"
+              class="size-4 accent-[#0d9488] cursor-pointer"
             />
-            <span class="flex-1">
-              <span class="text-sm font-medium text-[#1e293b] block">
-                Proyectar a la población
-              </span>
-              <span class="text-xs text-[#64748b] block leading-snug mt-0.5">
-                Restringe a respondientes iniciales y aplica
-                <code class="text-[10px]">factor_cvnl</code>. Apaga para ver
-                conteos crudos del muestreo.
-              </span>
+            <span class="flex-1 text-sm font-medium text-[#1e293b]">
+              Proyectar a la población
             </span>
+            <InfoTooltip
+              text="Restringe a respondientes iniciales y aplica el factor de expansión factor_cvnl. Apaga para ver conteos crudos del muestreo."
+            />
           </label>
         </div>
 
