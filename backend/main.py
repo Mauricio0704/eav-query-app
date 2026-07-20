@@ -27,7 +27,7 @@ from metadata import (
     DERIVED_NEXT,
 )
 
-DB_PATH = os.getenv("DB_PATH", "../data/encuesta.duckdb")
+DB_PATH = os.getenv("DB_PATH", "../data/encuesta_multianual.duckdb")
 
 # ── Metadata-driven ordering helpers ──────────────────────────────────────────
 # City buckets used when grouping by city_id (mirrors DESIRED_ORDERS["municipio"]).
@@ -126,6 +126,32 @@ def get_conn():
     return duckdb.connect(DB_PATH, read_only=True)
 
 
+@lru_cache(maxsize=1)
+def _wave_ids() -> frozenset[str]:
+    """All wave_ids present in the database (for validation)."""
+    conn = get_conn()
+    try:
+        rows = conn.execute("SELECT wave_id FROM waves").fetchall()
+        return frozenset(r[0] for r in rows)
+    finally:
+        conn.close()
+
+
+@lru_cache(maxsize=1)
+def _default_wave() -> str:
+    """Most recent wave — used whenever a request omits `wave_id`."""
+    conn = get_conn()
+    try:
+        row = conn.execute(
+            "SELECT wave_id FROM waves ORDER BY year DESC, wave_id DESC LIMIT 1"
+        ).fetchone()
+        if not row:
+            raise RuntimeError("No waves defined in the database")
+        return row[0]
+    finally:
+        conn.close()
+
+
 # ---------------------------------------------------------------------------
 # Schema helpers
 # ---------------------------------------------------------------------------
@@ -191,8 +217,10 @@ def list_questions():
     Cached: the survey schema is immutable for the life of the process.
     """
     conn = get_conn()
+    wave = _default_wave()
     try:
-        questions = conn.execute("""
+        questions = conn.execute(
+            """
             SELECT
                 q.q_id,
                 q.q_text,
@@ -201,8 +229,11 @@ def list_questions():
                 q.q_info,
                 q.q_block
             FROM questions q
+            WHERE q.wave_id = ?
             ORDER BY q.q_id
-        """).fetchall()
+        """,
+            [wave],
+        ).fetchall()
 
         result = []
         for q_id, q_text, q_section, q_type, q_info, q_block in questions:
@@ -213,10 +244,10 @@ def list_questions():
                     """
                     SELECT option_id, option_label
                     FROM options
-                    WHERE question_id = ?
+                    WHERE wave_id = ? AND question_id = ?
                     ORDER BY option_id
                 """,
-                    [q_id],
+                    [wave, q_id],
                 ).fetchall()
                 options = [{"option_id": oid, "label": lbl} for oid, lbl in opts]
 
@@ -253,8 +284,10 @@ def list_attributes():
     Cached: attribute definitions are immutable for the life of the process.
     """
     conn = get_conn()
+    wave = _default_wave()
     try:
-        rows = conn.execute("""
+        rows = conn.execute(
+            """
             SELECT
                 ra.attribute,
                 ra.value,
@@ -262,12 +295,16 @@ def list_attributes():
             FROM (
                 SELECT DISTINCT question_id, attribute, value
                 FROM respondent_attributes
+                WHERE wave_id = ?
             ) ra
             LEFT JOIN options o
-                ON o.question_id = ra.question_id
+                ON o.wave_id     = ?
+                AND o.question_id = ra.question_id
                 AND o.option_id   = ra.value
             ORDER BY ra.attribute, ra.value
-        """).fetchall()
+        """,
+            [wave, wave],
+        ).fetchall()
 
         # Group by attribute
         attrs: dict = {}
@@ -326,13 +363,18 @@ def list_cities():
 
     Cached: the set of cities is immutable for the life of the process."""
     conn = get_conn()
+    wave = _default_wave()
     try:
-        rows = conn.execute("""
+        rows = conn.execute(
+            """
             SELECT DISTINCT city_id
             FROM responses
             WHERE city_id IS NOT NULL
+              AND wave_id = ?
             ORDER BY city_id
-        """).fetchall()
+        """,
+            [wave],
+        ).fetchall()
         return [
             {"city_id": r[0], "name": ID_TO_CITY_NAME.get(r[0], str(r[0]))}
             for r in rows
@@ -355,6 +397,8 @@ class QueryRequest(BaseModel):
     # When True, restrict to is_initial_respondent=1 and weight by factor_cvnl
     # (population projection). When False, count every row unweighted.
     initial_only: bool = True
+    # Survey wave (year). None → most recent wave. All tables are wave-scoped.
+    wave_id: str | None = None
 
 
 @app.post("/api/query")
@@ -373,9 +417,16 @@ def run_query(req: QueryRequest):
     """
     conn = get_conn()
     try:
-        # Determine question type
+        # Resolve + validate the wave. `wave` comes from a known set, so it is
+        # safe to inline into the SQL strings below alongside question_id.
+        wave = req.wave_id or _default_wave()
+        if wave not in _wave_ids():
+            raise HTTPException(status_code=400, detail=f"Unknown wave_id: {wave}")
+
+        # Determine question type (within this wave)
         q_info = conn.execute(
-            "SELECT q_type, q_text FROM questions WHERE q_id = ?", [req.question_id]
+            "SELECT q_type, q_text FROM questions WHERE wave_id = ? AND q_id = ?",
+            [wave, req.question_id],
         ).fetchone()
 
         if not q_info:
@@ -426,6 +477,7 @@ def run_query(req: QueryRequest):
             join_clauses += f"""
             INNER JOIN respondent_attributes {alias}
                 ON {alias}.respondent_id = r.respondent_id
+                AND {alias}.wave_id = '{wave}'
                 AND {alias}.attribute = '{f["attribute"]}'
                 AND {value_clause}"""
 
@@ -446,9 +498,9 @@ def run_query(req: QueryRequest):
                 SELECT ROUND(SUM(factor_cvnl))::BIGINT FROM (
                     SELECT DISTINCT a.respondent_id, r.factor_cvnl
                     FROM answers a
-                    INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                    INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                     {join_clauses}
-                    WHERE a.question_id = '{req.question_id}'
+                    WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                       {sentinel_filter}
                       {initial_filter}
                       {city_where}
@@ -458,9 +510,9 @@ def run_query(req: QueryRequest):
             total_sql = f"""
                 SELECT COUNT(DISTINCT a.respondent_id)
                 FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                 {join_clauses}
-                WHERE a.question_id = '{req.question_id}'
+                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                   {sentinel_filter}
                   {initial_filter}
                   {city_where}
@@ -478,9 +530,9 @@ def run_query(req: QueryRequest):
                         SELECT a.value      AS valor,
                                {count_expr} AS cnt
                         FROM answers a
-                        INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                        INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                         {join_clauses}
-                        WHERE a.question_id = '{req.question_id}'
+                        WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                           AND a.value NOT IN (7777, 8888, 9999)
                           {initial_filter}
                           {city_where}
@@ -502,12 +554,13 @@ def run_query(req: QueryRequest):
                                o.option_label  AS respuesta,
                                {count_expr}    AS cnt
                         FROM answers a
-                        INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                        INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                         INNER JOIN options o
-                            ON o.question_id = a.question_id
+                            ON o.wave_id = '{wave}'
+                            AND o.question_id = a.question_id
                             AND o.option_id = a.option_id
                         {join_clauses}
-                        WHERE a.question_id = '{req.question_id}'
+                        WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                           {initial_filter}
                           {city_where}
                         GROUP BY id_respuesta, respuesta
@@ -548,6 +601,7 @@ def run_query(req: QueryRequest):
                 SELECT {_edad_bin_sql('rg.value')}
                 FROM respondent_attributes rg
                 WHERE rg.respondent_id = r.respondent_id
+                  AND rg.wave_id = '{wave}'
                   AND rg.attribute = 'edad_anos'
                 LIMIT 1
             )"""
@@ -557,6 +611,7 @@ def run_query(req: QueryRequest):
                 SELECT {_recode_case_sql(req.group_by, 'rg.value')}
                 FROM respondent_attributes rg
                 WHERE rg.respondent_id = r.respondent_id
+                  AND rg.wave_id = '{wave}'
                   AND rg.attribute = '{recode_src}'
                 LIMIT 1
             )"""
@@ -570,9 +625,11 @@ def run_query(req: QueryRequest):
                 SELECT COALESCE(o2.option_label, rg.value::TEXT)
                 FROM respondent_attributes rg
                 LEFT JOIN options o2
-                  ON o2.question_id = rg.question_id
+                  ON o2.wave_id     = '{wave}'
+                 AND o2.question_id = rg.question_id
                  AND o2.option_id   = rg.value
                 WHERE rg.respondent_id = r.respondent_id
+                  AND rg.wave_id = '{wave}'
                   AND rg.attribute = '{req.group_by}'
                 LIMIT 1
             )"""
@@ -582,9 +639,9 @@ def run_query(req: QueryRequest):
         per_group_total_sql = f"""
             SELECT {group_expr} AS grupo, {count_int} AS total
             FROM answers a
-            INNER JOIN responses r ON r.respondent_id = a.respondent_id
+            INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
             {join_clauses}
-            WHERE a.question_id = '{req.question_id}'
+            WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
               {initial_filter}
               {city_where}
             GROUP BY grupo
@@ -649,8 +706,8 @@ def run_query(req: QueryRequest):
         opt_lookup = {
             row[0]: row[1]
             for row in conn.execute(
-                "SELECT option_id, option_label FROM options WHERE question_id = ?",
-                [req.question_id],
+                "SELECT option_id, option_label FROM options WHERE wave_id = ? AND question_id = ?",
+                [wave, req.question_id],
             ).fetchall()
         }
 
@@ -660,9 +717,9 @@ def run_query(req: QueryRequest):
                        {group_expr} AS grupo,
                        {count_int} AS cnt
                 FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                 {join_clauses}
-                WHERE a.question_id = '{req.question_id}'
+                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                   AND a.value IS NOT NULL
                   {initial_filter}
                   {city_where}
@@ -675,9 +732,9 @@ def run_query(req: QueryRequest):
                 SELECT {group_expr} AS grupo,
                        {avg_expr} AS promedio
                 FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                 {join_clauses}
-                WHERE a.question_id = '{req.question_id}'
+                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                   AND a.value NOT IN (7777, 8888, 9999)
                   {initial_filter}
                   {city_where}
@@ -691,9 +748,9 @@ def run_query(req: QueryRequest):
             overall_stats_sql = f"""
                 SELECT {avg_expr}
                 FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                 {join_clauses}
-                WHERE a.question_id = '{req.question_id}'
+                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                   AND a.value NOT IN (7777, 8888, 9999)
                   {initial_filter}
                   {city_where}
@@ -742,9 +799,9 @@ def run_query(req: QueryRequest):
                     agg_row = conn.execute(f"""
                         SELECT {avg_expr}
                         FROM answers a
-                        INNER JOIN responses r ON r.respondent_id = a.respondent_id
+                        INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                         {join_clauses}
-                        WHERE a.question_id = '{req.question_id}'
+                        WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
                           AND a.value NOT IN (7777, 8888, 9999)
                           AND r.city_id IN ({in_clause})
                           {initial_filter}
@@ -844,12 +901,13 @@ def run_query(req: QueryRequest):
                    {group_expr} AS grupo,
                    {count_int} AS cnt
             FROM answers a
-            INNER JOIN responses r ON r.respondent_id = a.respondent_id
+            INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
             LEFT JOIN options o
-                ON o.question_id = a.question_id
+                ON o.wave_id = '{wave}'
+                AND o.question_id = a.question_id
                 AND o.option_id = a.option_id
             {join_clauses}
-            WHERE a.question_id = '{req.question_id}'
+            WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
               {initial_filter}
               {city_where}
             GROUP BY id_respuesta, respuesta, grupo
