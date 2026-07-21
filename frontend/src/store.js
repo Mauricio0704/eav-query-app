@@ -3,6 +3,8 @@ import * as api from './api.js'
 
 // Tracks state of query, UI and chat history
 export const state = reactive({
+  waves: [],
+  waveId: '',
   questions: [],
   attributes: [],
   recodes: [],
@@ -33,15 +35,26 @@ export const selectedQuestion = computed(
 
 const SECTION_LABELS = {
   generales: 'Generales',
+  variables_generales: 'Generales',
   economia_y_trabajo: 'Economía y trabajo',
   educacion: 'Educación',
   salud: 'Salud',
   seguridad: 'Seguridad',
+  seguridad_y_justicia: 'Seguridad y justicia',
   movilidad: 'Movilidad',
   desarrollo_urbano: 'Desarrollo urbano',
+  desarrollo_social_y_economico: 'Desarrollo social y económico',
   medio_ambiente: 'Medio ambiente',
   gobierno: 'Gobierno',
   migracion_y_discriminacion: 'Migración y discriminación',
+  migracion: 'Migración',
+  discriminacion: 'Discriminación',
+  participacion_ciudadana: 'Participación ciudadana',
+  como_vamos_nuevo_leon: 'Cómo Vamos, Nuevo León',
+  orgullo_de_nuevo_leon: 'Orgullo de Nuevo León',
+  principal_problema_de_nuevo_leon: 'Principal problema de Nuevo León',
+  problema_de_desarrollo_social: 'Problema de desarrollo social',
+  derivadas: 'Variables derivadas',
 }
 
 export const questionsBySection = computed(() => {
@@ -177,26 +190,62 @@ export const sqlPreview = computed(() => {
 
 export const canRun = computed(() => !!state.questionId && !state.loading)
 
+// Load the wave-scoped catalogs (questions/attributes/cities) for state.waveId.
+async function loadCatalog() {
+  const [qs, attrs, cities] = await Promise.all([
+    api.fetchQuestions(state.waveId),
+    api.fetchAttributes(state.waveId),
+    api.fetchCities(state.waveId),
+  ])
+  state.questions = qs
+  state.attributes = attrs
+  state.cities = cities
+}
+
 export async function init() {
   try {
-    const [qs, attrs, recodes, presets, cities] = await Promise.all([
-      api.fetchQuestions(),
-      api.fetchAttributes(),
+    const [waves, recodes, presets] = await Promise.all([
+      api.fetchWaves(),
       api.fetchRecodes(),
       api.fetchPresets(),
-      api.fetchCities(),
     ])
-    state.questions = qs
-    state.attributes = attrs
+    state.waves = waves
+    state.waveId = (waves.find((w) => w.is_default) || waves[0] || {}).wave_id || ''
     state.recodes = recodes
     state.presets = presets
-    state.cities = cities
+    await loadCatalog()
     loadConversations()
   } catch (e) {
     state.error = 'Error conectando al servidor'
     console.error(e)
   }
 }
+
+// Switch the active survey wave: reload catalogs and reset the query, since the
+// question set, options and filter values differ between waves.
+export async function setWave(waveId) {
+  if (!waveId || waveId === state.waveId) return
+  state.waveId = waveId
+  state.questionId = ''
+  state.filters = []
+  state.groupBy = 'answer'
+  state.appliedPreset = ''
+  state.lastResult = null
+  state.error = null
+  state.loading = true
+  try {
+    await loadCatalog()
+  } catch (e) {
+    state.error = 'Error al cambiar de ola'
+    console.error(e)
+  } finally {
+    state.loading = false
+  }
+}
+
+export const currentWave = computed(
+  () => state.waves.find((w) => w.wave_id === state.waveId) || null,
+)
 
 export function applyPreset(key) {
   const p = state.presets.find((x) => x.key === key)
@@ -241,6 +290,7 @@ function buildBody() {
     filters: state.filters,
     group_by: state.groupBy,
     initial_only: state.initialOnly,
+    wave_id: state.waveId || null,
   }
 }
 

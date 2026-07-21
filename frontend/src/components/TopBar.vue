@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
-import { Database } from 'lucide-vue-next'
-import { state, selectedQuestion } from '../store.js'
+import { Calendar } from 'lucide-vue-next'
+import { state, selectedQuestion, setWave } from '../store.js'
 
 const questionText = computed(() =>
   state.queryMode === 'ai'
@@ -9,7 +9,10 @@ const questionText = computed(() =>
     : selectedQuestion.value?.q_text ||
       'Selecciona una pregunta en el panel izquierdo',
 )
-const isEmpty = computed(() => !selectedQuestion.value)
+
+function onWaveChange(e) {
+  setWave(e.target.value)
+}
 </script>
 
 <template>
@@ -25,6 +28,27 @@ const isEmpty = computed(() => !selectedQuestion.value)
       >
         {{ questionText }}
       </h2>
+    </div>
+
+    <div
+      v-if="state.waves.length > 1"
+      class="flex items-center gap-2 shrink-0"
+      title="Levantamiento de la encuesta"
+    >
+      <Calendar class="size-4 text-[#94a3b8]" />
+      <label class="text-xs font-medium text-[#64748b] uppercase tracking-wide">
+        Encuesta
+      </label>
+      <select
+        :value="state.waveId"
+        :disabled="state.loading"
+        @change="onWaveChange"
+        class="font-['Poppins'] text-sm font-semibold text-[#334155] bg-[#f8fafc] border border-[#e2e8f0] rounded-lg px-3 py-1.5 cursor-pointer hover:border-[#fb7e50] focus:outline-none focus:border-[#fb7e50] focus:ring-1 focus:ring-[#fb7e50] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <option v-for="w in state.waves" :key="w.wave_id" :value="w.wave_id">
+          {{ w.label || w.year }}
+        </option>
+      </select>
     </div>
   </header>
 </template>
