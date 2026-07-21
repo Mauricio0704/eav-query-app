@@ -152,6 +152,14 @@ def _default_wave() -> str:
         conn.close()
 
 
+def _resolve_wave(wave: str | None) -> str:
+    """Validate an incoming wave_id (or fall back to the most recent wave)."""
+    w = wave or _default_wave()
+    if w not in _wave_ids():
+        raise HTTPException(status_code=400, detail=f"Unknown wave_id: {w}")
+    return w
+
+
 # ---------------------------------------------------------------------------
 # Schema helpers
 # ---------------------------------------------------------------------------
@@ -208,16 +216,16 @@ def _ordered_question_ids(all_ids: list[str]) -> list[str]:
 
 
 @app.get("/api/questions")
-@lru_cache(maxsize=1)
-def list_questions():
+@lru_cache(maxsize=16)
+def list_questions(wave: str | None = None):
     """
-    Returns all questions with their type, section, and answer options.
-    Used to populate the question selector in the UI.
+    Returns all questions with their type, section, and answer options for a
+    given wave. Used to populate the question selector in the UI.
 
-    Cached: the survey schema is immutable for the life of the process.
+    Cached per wave: each wave's schema is immutable for the life of the process.
     """
     conn = get_conn()
-    wave = _default_wave()
+    wave = _resolve_wave(wave)
     try:
         questions = conn.execute(
             """
@@ -272,8 +280,8 @@ def list_questions():
 
 
 @app.get("/api/attributes")
-@lru_cache(maxsize=1)
-def list_attributes():
+@lru_cache(maxsize=16)
+def list_attributes(wave: str | None = None):
     """
     Returns all distinct attribute names from respondent_attributes,
     along with their possible values (joined through options table).
@@ -281,10 +289,10 @@ def list_attributes():
     respondent_attributes.attribute  → question_id in options table
     respondent_attributes.value      → option_id in options table
 
-    Cached: attribute definitions are immutable for the life of the process.
+    Cached per wave: attribute definitions are immutable for the life of the process.
     """
     conn = get_conn()
-    wave = _default_wave()
+    wave = _resolve_wave(wave)
     try:
         rows = conn.execute(
             """
@@ -356,14 +364,14 @@ def list_presets():
 
 
 @app.get("/api/cities")
-@lru_cache(maxsize=1)
-def list_cities():
+@lru_cache(maxsize=16)
+def list_cities(wave: str | None = None):
     """Returns distinct city_id values (with municipality names) for use as a
     filter. Unknown ids fall back to showing the raw id.
 
-    Cached: the set of cities is immutable for the life of the process."""
+    Cached per wave: the set of cities is immutable for the life of the process."""
     conn = get_conn()
-    wave = _default_wave()
+    wave = _resolve_wave(wave)
     try:
         rows = conn.execute(
             """
@@ -378,6 +386,31 @@ def list_cities():
         return [
             {"city_id": r[0], "name": ID_TO_CITY_NAME.get(r[0], str(r[0]))}
             for r in rows
+        ]
+    finally:
+        conn.close()
+
+
+@app.get("/api/waves")
+def list_waves():
+    """Returns the survey waves available in the database, most-recent first.
+    `is_default` marks the wave used when a request omits `wave_id`."""
+    conn = get_conn()
+    default = _default_wave()
+    try:
+        rows = conn.execute(
+            "SELECT wave_id, year, label, n_respondents "
+            "FROM waves ORDER BY year DESC, wave_id DESC"
+        ).fetchall()
+        return [
+            {
+                "wave_id": w,
+                "year": year,
+                "label": label,
+                "n_respondents": n,
+                "is_default": w == default,
+            }
+            for w, year, label, n in rows
         ]
     finally:
         conn.close()
