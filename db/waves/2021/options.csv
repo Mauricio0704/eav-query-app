@@ -1,0 +1,1062 @@
+question_id,option_id,option_label
+cp2_1,1,Hombre
+cp2_1,2,Mujer
+cp2_1,3,No binario
+cp2_1,9,NC
+cp4_1,1,Jefa(e)
+cp4_1,2,Esposa(o) o pareja
+cp4_1,3,Hija(o)
+cp4_1,4,Nieta (o)
+cp4_1,5,Nuera o yerno
+cp4_1,6,Madre o padre
+cp4_1,7,Suegra(o)
+cp4_1,8,Otro
+cp4_1,9,NS/NC
+cp5_1,0,No
+cp5_1,1,Sí
+cp5_1,9,NS/NC
+cp6_1_1,0,Ninguno
+cp6_1_1,1,Preescolar
+cp6_1_1,2,Primaria
+cp6_1_1,3,Secundaria
+cp6_1_1,4,Carrera técnica con secundaria terminada
+cp6_1_1,5,Preparatoria o bachillerato
+cp6_1_1,6,Carrera técnica con secundaría terminada
+cp6_1_1,7,Normal
+cp6_1_1,8,Profesional
+cp6_1_1,9,Maestría
+cp6_2_1,1,Preescolar
+cp6_2_1,2,Primaria
+cp6_2_1,3,Secundaria
+cp6_2_1,4,Carrera técnica con secundaria terminada
+cp6_2_1,5,Preparatoria o bachillerato
+cp6_2_1,6,Carrera técnica con secundaría terminada
+cp6_2_1,7,Normal
+cp6_2_1,8,Profesional
+cp6_2_1,9,Maestría
+cp6_2_1,0,Doctorado
+cp7_1,1,Pública
+cp7_1,2,Privada
+cp7_1,3,Otro tipo
+p76_1_1,1,Sí
+p76_1_1,0,No
+p76_1_1,8,NS
+p76_1_1,9,NC
+p76_2_1,1,Sí
+p76_2_1,0,No
+p76_2_1,8,NS
+p76_2_1,9,NC
+p77_1_1,1,Sí
+p77_1_1,0,No
+p77_1_1,9,9
+p77_2_1,1,Sí
+p77_2_1,0,No
+p77_2_1,9,9
+p77_3_1,1,Sí
+p77_3_1,0,No
+p77_3_1,9,9
+cp8_1,1,IMSS
+cp8_1,2,"Hospital naval, militar o Pemex"
+cp8_1,3,ISSSTE Federal
+cp8_1,4,ISSSTE Estatal
+cp8_1,5,Secretaría de Salud (INSABI)
+cp8_1,6,Servicios Médicos UANL
+cp8_1,7,Seguro médico privado
+cp8_1,8,Seguro Popular
+cp9_1_1,1,Sí
+cp9_1_1,0,No
+cp9_1_1,9,NS/NC
+cp9_2_1,1,Sí
+cp9_2_1,0,No
+cp9_2_1,9,NS/NC
+cp9_3_1,1,Sí
+cp9_3_1,0,No
+cp9_3_1,9,NS/NC
+cp9_4_1,1,Sí
+cp9_4_1,0,No
+cp9_4_1,9,NS/NC
+p81_a,1,1
+p81_a,2,2
+p81_a,3,3
+p81_a,4,4
+p81_a,5,5
+p81_a,6,6
+p81_a,7,7
+p81_a,8,8
+p81_a,9,9
+p81_a,0,0
+p81_b,1,1
+p81_b,2,2
+p81_b,3,3
+p81_b,4,4
+p81_b,5,5
+p81_b,6,6
+p81_b,7,7
+p81_b,8,8
+p81_b,9,9
+p81_b,0,0
+p81_c,1,1
+p81_c,2,2
+p81_c,3,3
+p81_c,4,4
+p81_c,5,5
+p81_c,6,6
+p81_c,7,7
+p81_c,8,8
+p81_c,9,9
+p81_c,0,0
+p1,1,Empleado(a)
+p1,2,Buscando empleo
+p1,3,Estudiante
+p1,4,Negocio propio / independiente
+p1,5,Trabajo doméstico no remunerado (limpieza y cuidados)
+p1,6,Jubilado/Pensionado
+p8,1234567,1234567
+p9_1,1,Monterrey
+p9_1,2,Guadalupe
+p9_1,3,San Nicolás de los Garza
+p9_1,4,Apodaca
+p9_1,5,Escobedo
+p9_1,6,San Pedro Garza García
+p9_1,7,Santiago
+p9_1,8,Juárez
+p9_1,9,García
+p9_1,0,Santa Catarina
+p23,0,NO
+p23,1,Sí
+p24,1,Uno
+p24,2,Dos
+p24,3,Tres
+p24,4,Cuatro
+p24,5,Cinco o Más
+p12,1,La parada está lejos.
+p12,2,No hay una ruta que me lleve a mi destino.
+p12,3,Se tarda más tiempo que el transporte privado/ ES MÁS RÁPIDO EN AUTO
+p12,4,El pasaje es muy caro.
+p12,5,El transporte está feo/sucio
+p12,6,El transporte no me deja cerca de mi destino.
+p12,7,El transporte es inseguro / da miedo usarlo.
+p12,8,El transporte siempre va lleno.
+p12,9,El transporte tarda mucho tiempo en pasar.
+p12,0,"Mal servicio (choferes ebrios, groseros o que van jugando carreras)."
+p28,1,"Es menos seguro desplazarme (frente a los autos, tráfico)"
+p28,2,"Por la inseguridad pública (asalto, robos, acoso sexual)"
+p28,3,"No existe la infraestructura adecuada o suficiente (señalización, carriles, ciclovías, estacionamientos)"
+p28,4,"Malas condiciones climatológicas (calor, lluvia, falta de sombra)"
+p28,5,Mayores tiempos de traslado.
+p28,6,Pocas o nulas facilidades para combinar bicicleta con el transporte público y/o carro
+p28,7,No cuento con una bicicleta
+p29_1_1,0,NO
+p29_1_1,1,SÍ
+p29_1_1,8,NS
+p29_1_1,9,NC
+p29_1_2,0,NO
+p29_1_2,1,SÍ
+p29_1_2,8,NS
+p29_1_2,9,NC
+p29_1_3,0,NO
+p29_1_3,1,SÍ
+p29_1_3,8,NS
+p29_1_3,9,NC
+p29_1_4,0,NO
+p29_1_4,1,SÍ
+p29_1_4,8,NS
+p29_1_4,9,NC
+p29_1_5,0,NO
+p29_1_5,1,SÍ
+p29_1_5,8,NS
+p29_1_5,9,NC
+p29_1_6,0,NO
+p29_1_6,1,SÍ
+p29_1_6,8,NS
+p29_1_6,9,NC
+p29_1_7,0,NO
+p29_1_7,1,SÍ
+p29_1_7,8,NS
+p29_1_7,9,NC
+p29_1_8,0,NO
+p29_1_8,1,SÍ
+p29_1_8,8,NS
+p29_1_8,9,NC
+p30,1,Muy baja
+p30,2,Baja
+p30,3,Adecuada
+p30,4,Alta
+p30,5,Muy alta
+p31_1,0,NO
+p31_1,1,SÍ
+p31_1,8,NS
+p31_1,9,NC
+p31_2,0,NO
+p31_2,1,SÍ
+p31_2,8,NS
+p31_2,9,NC
+p31_3,0,NO
+p31_3,1,SÍ
+p31_3,8,NS
+p31_3,9,NC
+p31_4,0,NO
+p31_4,1,SÍ
+p31_4,8,NS
+p31_4,9,NC
+p31_5,0,NO
+p31_5,1,SÍ
+p31_5,8,NS
+p31_5,9,NC
+p31_6,0,NO
+p31_6,1,SÍ
+p31_6,8,NS
+p31_6,9,NC
+p31_7,0,NO
+p31_7,1,SÍ
+p31_7,8,NS
+p31_7,9,NC
+p31_8,0,NO
+p31_8,1,SÍ
+p31_8,8,NS
+p31_8,9,NC
+p31_9,0,NO
+p31_9,1,SÍ
+p31_9,8,NS
+p31_9,9,NC
+p31_10,0,NO
+p31_10,1,SÍ
+p31_10,8,NS
+p31_10,9,NC
+p31_11,0,NO
+p31_11,1,SÍ
+p31_11,8,NS
+p31_11,9,NC
+p21_1,0,No
+p21_1,1,Sí
+p21_1,3,NO HAY
+p21_1,8,NS
+p21_1,9,NC
+p21_2,0,No
+p21_2,1,Sí
+p21_2,3,NO HAY
+p21_2,8,NS
+p21_2,9,NC
+p21_3,0,No
+p21_3,1,Sí
+p21_3,3,NO HAY
+p21_3,8,NS
+p21_3,9,NC
+p21_4,0,No
+p21_4,1,Sí
+p21_4,3,NO HAY
+p21_4,8,NS
+p21_4,9,NC
+p21_5,0,No
+p21_5,1,Sí
+p21_5,3,NO HAY
+p21_5,8,NS
+p21_5,9,NC
+p21_6,0,No
+p21_6,1,Sí
+p21_6,3,NO HAY
+p21_6,8,NS
+p21_6,9,NC
+p21_7,0,No
+p21_7,1,Sí
+p21_7,3,NO HAY
+p21_7,8,NS
+p21_7,9,NC
+p21_8,0,No
+p21_8,1,Sí
+p21_8,3,NO HAY
+p21_8,8,NS
+p21_8,9,NC
+p21_9,0,No
+p21_9,1,Sí
+p21_9,3,NO HAY
+p21_9,8,NS
+p21_9,9,NC
+p22,1,1
+p22,2,2
+p22,3,3
+p22,4,4
+p22,5,5
+p22,6,6
+p22,7,7
+p22,8,8
+p22,9,9
+p22,0,0
+p33,1,"Transporte público: no hay rutas, son de mala calidad, el tiempo de espera es elevado."
+p33,2,Congestión vehicular (Tráfico).
+p33,3,"Inseguridad en el desplazamiento (choques entre vehículos, atropellos)"
+p33,4,"Calidad de la infraestructura vial para automóviles: baches, semáforos descompuestos, deficiencias viales."
+p33,5,No hay infraestructura para peatones y ciclistas.
+p33,6,Cultura vial: no se conduce de acuerdo con el reglamento.
+p33,8,NS
+p33,9,NC
+p34_1,0,NO
+p34_1,1,SÍ
+p34_1,8,NS
+p34_1,9,NC
+p34_2,0,NO
+p34_2,1,SÍ
+p34_2,8,NS
+p34_2,9,NC
+p34_3,0,NO
+p34_3,1,SÍ
+p34_3,8,NS
+p34_3,9,NC
+p34_4,0,NO
+p34_4,1,SÍ
+p34_4,8,NS
+p34_4,9,NC
+p34_5,0,NO
+p34_5,1,SÍ
+p34_5,8,NS
+p34_5,9,NC
+p34_6,0,NO
+p34_6,1,SÍ
+p34_6,8,NS
+p34_6,9,NC
+p34_7,0,NO
+p34_7,1,SÍ
+p34_7,8,NS
+p34_7,9,NC
+p34_8,0,NO
+p34_8,1,SÍ
+p34_8,8,NS
+p34_8,9,NC
+p34_9,0,NO
+p34_9,1,SÍ
+p34_9,8,NS
+p34_9,9,NC
+p34_10,0,NO
+p34_10,1,SÍ
+p34_10,8,NS
+p34_10,9,NC
+p34_11,0,NO
+p34_11,1,SÍ
+p34_11,8,NS
+p34_11,9,NC
+p34_12,0,NO
+p34_12,1,SÍ
+p34_12,8,NS
+p34_12,9,NC
+p34_13,0,NO
+p34_13,1,SÍ
+p34_13,8,NS
+p34_13,9,NC
+p34_14,0,NO
+p34_14,1,SÍ
+p34_14,8,NS
+p34_14,9,NC
+p35_1,0,NO
+p35_1,1,SÍ
+p35_1,8,NS
+p35_1,9,NC
+p35_2,0,NO
+p35_2,1,SÍ
+p35_2,8,NS
+p35_2,9,NC
+p35_3,0,NO
+p35_3,1,SÍ
+p35_3,8,NS
+p35_3,9,NC
+p36,1,Hace menos de un año
+p36,2,Hace 1-5 años
+p36,3,Hace más de 5-10 años
+p36,4,Hace más de 10 años
+p36,5,Nunca se ha mudado de casa
+p38,1,Compré una casa / Tener casa propia
+p38,2,La renta de la casa es más barata
+p38,3,Más cerca de trabajo
+p38,4,Más cerca de familia/amistades
+p38,5,"Tiene servicios más cerca (escuelas, parques, centros comerciales, hospitales, etc)"
+p38,6,Mejor seguridad
+p38,7,"Dificultad para pagar lugar anterior (subió la renta, comenzó a recibir menos ingresos)"
+p38,8,Es privada
+p38,9,Me pidieron desalojar/ Necesitaban el lugar dónde vivía
+p38,0,Me fui a vivir con mi pareja/ esposo(a)
+p40,1,"Grandes distancias entre viviendas y servicios básicos (escuelas,farmacias, trabajo, supermercados)."
+p40,2,Falta de áreas verdes o deportivas.
+p40,3,Invasión de áreas naturales/montañas por construcciones.
+p40,4,"Servicios públicos deficientes (luminarias, drenaje pluvial, recolección de residuos)."
+p40,5,"Desarrollo de construcciones en lugares sin infraestructura básica: calles, drenaje, luminarias, banquetas.Otro*"
+p42_1,0,NO
+p42_1,1,Sí
+p42_1,8,NS
+p42_1,9,NC
+p42_2,0,NO
+p42_2,1,Sí
+p42_2,8,NS
+p42_2,9,NC
+p42_3,0,NO
+p42_3,1,Sí
+p42_3,8,NS
+p42_3,9,NC
+p42_4,0,NO
+p42_4,1,Sí
+p42_4,8,NS
+p42_4,9,NC
+p42_5,0,NO
+p42_5,1,Sí
+p42_5,8,NS
+p42_5,9,NC
+p43,1,Pésima
+p43,2,Mala
+p43,3,Regular
+p43,4,Buena
+p43,5,Excelente
+p43,8,NS
+p43,9,NC
+p44_1,0,NO
+p44_1,1,Sí
+p44_1,8,NS
+p44_1,9,NC
+p44_2,0,NO
+p44_2,1,Sí
+p44_2,8,NS
+p44_2,9,NC
+p44_3,0,NO
+p44_3,1,Sí
+p44_3,8,NS
+p44_3,9,NC
+p44_4,0,NO
+p44_4,1,Sí
+p44_4,8,NS
+p44_4,9,NC
+p44_5,0,NO
+p44_5,1,Sí
+p44_5,8,NS
+p44_5,9,NC
+p46,1,No es de mi interés
+p46,2,No sé cómo separarla
+p46,3,"Aun cuando la separe, el camión mezcla todos los residuos"
+p47,1,Contaminación del aire
+p47,2,Contaminación de agua (ríos y arroyos)
+p47,4,"Falta de árboles, áreas verdes y mal estado de los ya existentes en la calle"
+p47,5,Basura/escombro en las calles y en terrenos baldíos
+p47,6,Escasez de agua/Desperdicio del agua
+p49,1,Mejor
+p49,2,Igual de bien
+p49,3,Igual de mal
+p49,4,Peor
+p49,8,NS
+p49,9,NC
+p50,1,Mejor
+p50,2,Igual de bien
+p50,3,Igual de mal
+p50,4,Peor
+p50,8,NS
+p50,9,NC
+p52,1,Les alcanza bien y pueden ahorrar
+p52,2,"Les alcanza justo, sin grandes dificultades"
+p52,3,No les alcanza y tienen dificultades
+p52,4,No les alcanza y tienen grandes dificultades
+p52,8,No Sabe
+p52,9,No Contestó
+p53,1,Sí
+p53,0,No
+p53,8,No sabe
+p53,9,No contesta
+p54_1,0,NO
+p54_1,1,Sí
+p54_1,8,NS
+p54_1,9,NC
+p54_2,0,NO
+p54_2,1,Sí
+p54_2,8,NS
+p54_2,9,NC
+p54_3,0,NO
+p54_3,1,Sí
+p54_3,8,NS
+p54_3,9,NC
+p54_4,0,NO
+p54_4,1,Sí
+p54_4,8,NS
+p54_4,9,NC
+p54_5,0,NO
+p54_5,1,Sí
+p54_5,8,NS
+p54_5,9,NC
+p54_6,0,NO
+p54_6,1,Sí
+p54_6,8,NS
+p54_6,9,NC
+p54_7,0,NO
+p54_7,1,Sí
+p54_7,8,NS
+p54_7,9,NC
+p54_8,0,NO
+p54_8,1,Sí
+p54_8,8,NS
+p54_8,9,NC
+p54_9,0,NO
+p54_9,1,Sí
+p54_9,8,NS
+p54_9,9,NC
+p54_10,0,NO
+p54_10,1,Sí
+p54_10,8,NS
+p54_10,9,NC
+p54_11,0,NO
+p54_11,1,Sí
+p54_11,8,NS
+p54_11,9,NC
+p54_12,0,NO
+p54_12,1,Sí
+p54_12,8,NS
+p54_12,9,NC
+p54_13,0,NO
+p54_13,1,Sí
+p54_13,8,NS
+p54_13,9,NC
+p54_14,0,NO
+p54_14,1,Sí
+p54_14,8,NS
+p54_14,9,NC
+p54_15,0,NO
+p54_15,1,Sí
+p54_15,8,NS
+p54_15,9,NC
+p54_16,0,NO
+p54_16,1,Sí
+p54_16,8,NS
+p54_16,9,NC
+p55,1,Sí y son de otro estado de México
+p55,2,Sí y son de otro país
+p55,3,Sí y son de otro estado de México y de otro país
+p55,4,No ha notado diferencia
+p56_1,0,En desacuerdo
+p56_1,1,De acuerdo
+p56_1,8,NS
+p56_1,9,NC
+p56_2,0,En desacuerdo
+p56_2,1,De acuerdo
+p56_2,8,NS
+p56_2,9,NC
+p56_3,0,En desacuerdo
+p56_3,1,De acuerdo
+p56_3,8,NS
+p56_3,9,NC
+p56_4,0,En desacuerdo
+p56_4,1,De acuerdo
+p56_4,8,NS
+p56_4,9,NC
+p56_5,0,En desacuerdo
+p56_5,1,De acuerdo
+p56_5,8,NS
+p56_5,9,NC
+p57,1,"Sí, una enfermedad Crónica (diabetes, hipertensión, cáncer, etc)"
+p57,2,"Sí, una enfermedad Aguda ( resfriados, enfermedades gastrointestinales, fracturas, quemaduras, etc)"
+p57,3,"Sí, Covid-19"
+p57,4,No
+p58,1,Sí
+p58,2,No
+p58,8,No sabe
+p58,9,No contesta
+p59,1,Se automedicó
+p59,2,Temor a contagiarse de covid
+p59,3,"No había citas, o las dan mucho tiempo después."
+p59,4,No tenía tiempo para ir.
+p59,5,No tenía una clínica cerca.
+p59,6,No tiene seguro médico/no puede pagar los tratamientos
+p60_1,1,Sí
+p60_1,0,No
+p60_1,8,No sabe
+p60_1,9,No contesta
+p60_2,1,Sí
+p60_2,0,No
+p60_2,8,No sabe
+p60_2,9,No contesta
+p61,1,IMSS
+p61,2,"Hospital naval, militar o PEMEX"
+p61,3,ISSSTE Federal
+p61,4,ISSSTELEON
+p61,5,Secretaría de Salud (INSABI)
+p61,6,Servicios médicos UANL
+p61,7,Hospital o consultorio privado
+p61,8,"Medicina tradicional (Curandero, hierbero, etc.) y Medicina alternativa"
+p61,0,Consultorio de farmacia
+p61,9,9
+p62,1,Siempre
+p62,2,La mayoría de las veces
+p62,3,Algunas veces
+p62,4,Nunca
+p62,8,No Sabe
+p62,9,No Contestó
+p63,1,Consulta programada (cita previa)
+p63,2,Consulta no programada
+p63,3,Urgencia
+p63,8,No Sabe
+p63,9,No Contestó
+p65,0,No lo atendieron
+p65,1,Si lo atendieron
+p66,1,Pésimas
+p66,2,Malas
+p66,3,Regulares
+p66,4,Buenas
+p66,5,Excelentes
+p66,8,NS
+p66,9,NC
+p67_1,1,Pésimas
+p67_1,2,Malas
+p67_1,3,Regulares
+p67_1,4,Buenas
+p67_1,5,Excelentes
+p67_1,8,NS
+p67_1,9,NC
+p67_2,1,Pésimas
+p67_2,2,Malas
+p67_2,3,Regulares
+p67_2,4,Buenas
+p67_2,5,Excelentes
+p67_2,8,NS
+p67_2,9,NC
+p67_3,1,Pésimas
+p67_3,2,Malas
+p67_3,3,Regulares
+p67_3,4,Buenas
+p67_3,5,Excelentes
+p67_3,8,NS
+p67_3,9,NC
+p67_4,1,Pésimas
+p67_4,2,Malas
+p67_4,3,Regulares
+p67_4,4,Buenas
+p67_4,5,Excelentes
+p67_4,8,NS
+p67_4,9,NC
+p67_5,1,Pésimas
+p67_5,2,Malas
+p67_5,3,Regulares
+p67_5,4,Buenas
+p67_5,5,Excelentes
+p67_5,8,NS
+p67_5,9,NC
+p68,1,1
+p68,2,2
+p68,3,3
+p68,4,4
+p68,5,5
+p68,6,6
+p68,7,7
+p68,8,8
+p68,9,9
+p68,0,0
+p69,1,Hospitales o clínicas insuficientes o lejanas
+p69,2,Los servicios de salud son caros
+p69,3,El personal médico es insuficiente
+p69,4,"Falta de insumos/medicamentos (camillas, equipo médico)"
+p69,5,La infraestructura de atención es deficiente
+p69,6,Falta de cobertura en tratamiento de padecimientos.
+p69,7,"Falta de programas preventivo (vacunación, control de peso, control de presión arterial)Otro*"
+p70_1,1,Muy frecuente
+p70_1,2,Frecuente
+p70_1,3,Poco frecuente
+p70_1,4,No me ocurre
+p70_2,1,Muy frecuente
+p70_2,2,Frecuente
+p70_2,3,Poco frecuente
+p70_2,4,No me ocurre
+p70_3,1,Muy frecuente
+p70_3,2,Frecuente
+p70_3,3,Poco frecuente
+p70_3,4,No me ocurre
+p71,1,Sí
+p71,0,No
+p71,8,NS
+p71,9,NC
+p73,1,La vacuna no ha estado disponible en mi municipio
+p73,2,No pude atender la cita cuando fue la vacunación en mi municipio
+p73,3,La vacuna no me da confianza
+p73,4,No creo que sea necesario vacunarme
+p73,5,No me es posible vacunarme por padecimientos médicosOtro*
+p74,1,Brigada de vacunación nacional
+p74,2,En mi empresa
+p74,3,Estados Unidos
+p74,4,Otra parte del extranjero P
+p74,7,7
+p82,1,El ingreso familiar no es suficiente.
+p82,2,Pocas oportunidades laborales.
+p82,3,"Servicios de salud poco accesibles (lejanos, caros, insuficientes)."
+p82,4,Mala calidad en los servicios de salud.
+p82,5,"Planteles educativos poco accesibles (lejanos, caros, cupo insuficiente)."
+p82,6,Mala calidad del servicio educativo.
+p83,1,Muy seguro
+p83,2,Seguro
+p83,3,Inseguro
+p83,4,Muy inseguro
+p83,8,NS
+p83,9,NC
+p84,0,NO
+p84,1,SÍ
+p84,8,NS
+p84,9,NC
+p85,0,NO
+p85,1,SÍ
+p85,8,NS
+p85,9,NC
+p86,1,1
+p86,2,2
+p86,3,3
+p86,4,4
+p86,5,5
+p86,6,6
+p86,7,7
+p86,8,8
+p86,9,9
+p86,0,0
+p87,1,Muy probable
+p87,2,Probable
+p87,3,Poco probable
+p87,4,Improbable
+p87,8,NS
+p87,9,NC
+p88_1,0,NO
+p88_1,1,SÍ
+p88_1,8,NS
+p88_1,9,NC
+p88_2,0,NO
+p88_2,1,SÍ
+p88_2,8,NS
+p88_2,9,NC
+p88_3,0,NO
+p88_3,1,SÍ
+p88_3,8,NS
+p88_3,9,NC
+p88_4,0,NO
+p88_4,1,SÍ
+p88_4,8,NS
+p88_4,9,NC
+p88_5,0,NO
+p88_5,1,SÍ
+p88_5,8,NS
+p88_5,9,NC
+p88_6,0,NO
+p88_6,1,SÍ
+p88_6,8,NS
+p88_6,9,NC
+p89_1,1,1
+p89_1,2,2
+p89_1,3,3
+p89_1,4,4
+p89_1,5,5
+p89_1,6,6
+p89_1,7,7
+p89_1,8,8
+p89_1,9,9
+p89_1,0,0
+p89_2,1,1
+p89_2,2,2
+p89_2,3,3
+p89_2,4,4
+p89_2,5,5
+p89_2,6,6
+p89_2,7,7
+p89_2,8,8
+p89_2,9,9
+p89_2,0,0
+p89_3,1,1
+p89_3,2,2
+p89_3,3,3
+p89_3,4,4
+p89_3,5,5
+p89_3,6,6
+p89_3,7,7
+p89_3,8,8
+p89_3,9,9
+p89_3,0,0
+p89_4,1,1
+p89_4,2,2
+p89_4,3,3
+p89_4,4,4
+p89_4,5,5
+p89_4,6,6
+p89_4,7,7
+p89_4,8,8
+p89_4,9,9
+p89_4,0,0
+p89_5,1,1
+p89_5,2,2
+p89_5,3,3
+p89_5,4,4
+p89_5,5,5
+p89_5,6,6
+p89_5,7,7
+p89_5,8,8
+p89_5,9,9
+p89_5,0,0
+p90,0,NO
+p90,1,SÍ
+p90,8,NS
+p90,9,NC
+p91_1,0,NO
+p91_1,1,SÍ
+p91_1,8,NS
+p91_1,9,NC
+p91_2,0,NO
+p91_2,1,SÍ
+p91_2,8,NS
+p91_2,9,NC
+p92,0,NO
+p92,1,SÍ
+p92,8,NS
+p92,9,NC
+p93,1,Nunca ocurre.
+p93,2,Casi no ocurre.
+p93,3,Ocurre con poca frecuencia.
+p93,4,Ocurre frecuentemente.
+p93,5,Siempre ocurre.
+p93,8,NS
+p93,9,NC
+p94,1,Nunca ocurre.
+p94,2,Casi no ocurre.
+p94,3,Ocurre con poca frecuencia.
+p94,4,Ocurre frecuentemente.
+p94,5,Siempre ocurre.
+p94,8,NS
+p94,9,NC
+p95_1,0,NO
+p95_1,1,Sí
+p95_1,8,NS
+p95_1,9,NC
+p95_2,0,NO
+p95_2,1,Sí
+p95_2,8,NS
+p95_2,9,NC
+p95_3,0,NO
+p95_3,1,Sí
+p95_3,8,NS
+p95_3,9,NC
+p96,1,"Delitos de alto impacto (homicidio, secuestro, violación)."
+p96,2,"Robos patrimoniales (robo a casa, vehículo, negocio o persona)."
+p96,3,"Delincuencia Organizada (venta de drogas, extorsiones, cobro de piso, presencia de grupos armados)."
+p96,4,Violencia familiar y/o violencia contra la mujer
+p96,5,"Violencia en la colonia (riñas, conflicto entre vecinos, pandillerismo)."
+p96,7,Ninguno
+p96,8,NS
+p97,1,Redes sociales
+p97,2,Periódico
+p97,3,Televisión
+p97,4,Radio
+p97,5,Portal de noticias en internet
+p97,6,Volanteo/perifoneo en la colonia
+p97,7,"Conversaciones con vecinos, familiares o amigos"
+p97,9,9
+p98,1,No es de mi interés
+p98,2,No tengo tiempo
+p98,3,"La información no está disponible, ni a mi alcance"
+p98,8,NS
+p98,9,NCOtro*
+p99,1,Televisión
+p99,2,Radio
+p99,3,Prensa
+p99,4,Medios digitales/ Portales de noticias en internet
+p99,5,Redes sociales
+p99,6,Otro P
+p99,9,9
+p99,8,No sabe
+p102,1,No tuve tiempo o acceso.
+p102,2,No contaba con identificación para votar
+p102,3,No tuve suficiente información para decidir por quien votar o saber a dónde acudir a votar
+p102,4,Mi voto no influye/importa
+p102,5,Me impidieron votar
+p102,6,Preferí no salir por temor a contagiarme
+p103_1,1,Sí
+p103_1,0,No
+p103_1,8,NS
+p103_1,9,NC
+p103_2,1,Sí
+p103_2,0,No
+p103_2,8,NS
+p103_2,9,NC
+p103_3,1,Sí
+p103_3,0,No
+p103_3,8,NS
+p103_3,9,NC
+p103_4,1,Sí
+p103_4,0,No
+p103_4,8,NS
+p103_4,9,NC
+p104,0,NO
+p104,1,Sí
+p104,8,NS
+p104,9,NC
+p105,0,NO
+p105,1,Sí
+p105,8,NS
+p105,9,NC
+p106,1,Muy frecuente
+p106,2,Frecuente
+p106,3,Poco frecuente
+p106,4,No ocurre
+p106,8,NS
+p106,9,NC
+p108,1,Muy frecuente
+p108,2,Frecuente
+p108,3,Poco frecuente
+p108,4,No ocurre
+p108,8,NS
+p108,9,NC
+p109,1,El gobierno no atiende las demandas ciudadanas.
+p109,2,Los gobernantes no cumplen sus compromisos de campaña.
+p109,3,Los gobernantes hacen uso inadecuado de los recursos públicos.
+p109,4,No hay mecanismos efectivos de diálogo / participación ciudadana.
+p110_1,0,NO
+p110_1,1,Sí
+p110_1,8,NS
+p110_1,9,NC
+p110_2,0,NO
+p110_2,1,Sí
+p110_2,8,NS
+p110_2,9,NC
+p110_3,0,NO
+p110_3,1,Sí
+p110_3,8,NS
+p110_3,9,NC
+p110_4,0,NO
+p110_4,1,Sí
+p110_4,8,NS
+p110_4,9,NC
+p111,1,Pensando en el bienestar del municipio.
+p111,2,Pensando en intereses particulares/personales
+p112,0,Desaprueba
+p112,1,Aprueba
+p112,8,NS
+p112,9,NC
+p113,1,Ha empeorado
+p113,2,Se ha mantenido igual de mal
+p113,3,Se ha mantenido igual de bien
+p113,4,Ha mejorado
+p113,8,NS
+p113,9,NC
+p114,1,Garantizar la seguridad del municipio
+p114,2,Mejorar los servicios públicos del municipio
+p114,3,Realizar acciones para mejorar la calidad del aire
+p114,4,Revisar las cuentas de la administración anterior
+p114,5,"Mejorar la infraestructura de movilidad, calles y banquetas"
+p115_1,0,NO
+p115_1,1,Sí
+p115_1,8,NS
+p115_1,9,NC
+p115_2,0,NO
+p115_2,1,Sí
+p115_2,8,NS
+p115_2,9,NC
+p115_3,0,NO
+p115_3,1,Sí
+p115_3,8,NS
+p115_3,9,NC
+p115_4,0,NO
+p115_4,1,Sí
+p115_4,8,NS
+p115_4,9,NC
+p116,1,Pensando en el bienestar del estado
+p116,2,Pensando en intereses particulares/personales.
+p117,0,Desaprueba
+p117,1,Aprueba
+p117,8,NS
+p117,9,NC
+p118,1,Mejor de lo que esperaba
+p118,2,Igual de bien que lo que esperaba
+p118,3,Igual de lo mal que lo que esperaba
+p118,4,Peor de lo que esperaba
+p119,1,Seguridad pública
+p119,2,Atención a la salud
+p119,3,Transporte Público
+p119,4,Combate a la corrupción
+p119,5,Empleo
+p119,6,Calidad del aire
+p119,7,Agua
+p119,8,Ninguno
+p120,1,Seguridad pública
+p120,2,Atención a la salud
+p120,3,Transporte Público
+p120,4,Combate a la corrupción
+p120,5,Empleo
+p120,6,Calidad del aire
+p120,7,Agua
+p120,8,Ninguno
+p121,1,Mejorará
+p121,2,Se quedará igual de bien
+p121,3,Se quedará igual de mal
+p121,4,Empeorará
+p121,8,NS
+p121,9,NC
+p122,1,Mejorar la seguridad pública
+p122,2,Resolver transporte público
+p122,3,Atención COVID
+p122,4,Acciones para mejorar la calidad del aire
+p122,5,Revisar las cuentas de la administración de JRC
+p122,6,Garantizar condiciones de empleo/inversión
+p122,7,Otro ¿Cuál?
+p122,8,NS
+p122,9,NO CONTESTO
+p123,1,Mucho
+p123,2,Algo
+p123,3,Poco
+p123,4,Nada
+p123,8,NS
+p123,9,NC
+p124_1,0,NO
+p124_1,1,Sí
+p124_1,8,NS
+p124_1,9,NC
+p124_2,0,NO
+p124_2,1,Sí
+p124_2,8,NS
+p124_2,9,NC
+p124_3,0,NO
+p124_3,1,Sí
+p124_3,8,NS
+p124_3,9,NC
+p124_4,0,NO
+p124_4,1,Sí
+p124_4,8,NS
+p124_4,9,NC
+p124_5,0,NO
+p124_5,1,Sí
+p124_5,8,NS
+p124_5,9,NC
+p124_6,0,NO
+p124_6,1,Sí
+p124_6,8,NS
+p124_6,9,NC
+p124_7,0,NO
+p124_7,1,Sí
+p124_7,8,NS
+p124_7,9,NC
+p124_8,0,NO
+p124_8,1,Sí
+p124_8,8,NS
+p124_8,9,NC
+p124_9,0,NO
+p124_9,1,Sí
+p124_9,8,NS
+p124_9,9,NC
+p124_10,0,NO
+p124_10,1,Sí
+p124_10,8,NS
+p124_10,9,NC
+p125_1,0,NO
+p125_1,1,Sí
+p125_1,8,NS
+p125_2,0,NO
+p125_2,1,Sí
+p125_2,8,NS
+p126,1,Iniciativa ciudadana
+p126,2,Iniciativa privada
+p126,3,Mismo gobiernoOtro*
+p127,1,"Movilidad (mala calidad de transporte público, congestión vehicular)"
+p127,2,"Desarrollo Urbano (deficiencias en servicios públicos, dispersión de la ciudad)"
+p127,3,"Medio Ambiente (contaminación, falta de árboles)"
+p127,4,Desarrollo Social (desempleo/pobreza /discriminación/ educación/salud)
+p127,5,"Seguridad (incremento de índices delictivos/impunidad, violencia familiar)"
+p127,6,Gobierno Eficiente (corrupción/mal uso de los recursos)
+p128,1,Sin ingreso
+p128,2,"Menos de 1 SM ($1 - $4,250)"
+p128,3,"1-2 SM (4,251 - 8,501)"
+p128,4,"2-3 SM (8,502 - 12,752)"
+p128,5,"3-4 SM (12,753 - 17,003)"
+p128,6,"4-5 SM (17,004 - 21,254)"
+p128,7,"5-6 SM (21,255 - 25,505)"
+p128,8,"6-7 SM (25,506 - 29,756)"
+p128,9,"7-8 SM (29,757 - 34,007)"
+p128,0,"8-9 SM (34,008 - 38,258)"
