@@ -14,6 +14,7 @@ const totalRespondents = computed(
 const groupByLabel = computed(() => {
   const g = state.lastResult?.group_by
   if (!g || g === 'answer') return 'Respuesta'
+  if (g === 'year') return 'Año'
   if (g === 'city_id') return 'Ciudad'
   const attr = state.attributes.find((a) => a.attribute === g)
   if (attr) return attr.label || attr.attribute

@@ -1,0 +1,290 @@
+concept_id,label,q_type,comparable,n_waves,opts
+attr_edad_anos,edad_anos,numerica,True,5,na
+attr_modo_transporte,modo_transporte,categorica,True,3,relabel?
+attr_nivel_actual_estudios,nivel_actual_estudios,categorica,True,4,match
+attr_nivel_max_estudios,nivel_max_estudios,categorica,True,4,match
+attr_servicio_salud_donde_se_atendio,servicio_salud_donde_se_atendio,categorica,True,2,relabel?
+attr_sexo,sexo,categorica,True,3,relabel?
+attr_tipo_consulta,tipo_consulta,categorica,True,4,match
+attr_tipo_escuela,tipo_escuela,categorica,True,5,match
+attr_tipo_trabajo,tipo_trabajo,categorica,True,4,relabel?
+c003,cuantas personas viven en el hogar,numerica,True,5,match
+c006,1 1 parentesco otro,numerica,True,2,na
+c007,1 estudia actualmente,categorica,True,4,match
+c015,durante el dia de ayer cual de los siguientes modos de transporte usted utilizo ,numerica,True,2,na
+c016,voto en las pasadas elecciones,numerica,True,2,na
+c023,considera que el gobierno de de alcalde hizo un buen uso de los recursos publico,categorica,True,4,match
+c025,la corrupcion consiste en el abuso de poder para beneficio propio en su opinion ,categorica,True,4,match
+c026,usted o algun conocido o familiar experimento algun acto de corrupcion en algun ,numerica,True,4,match
+c027,en su opinion en su municipio la corrupcion es una practica,categorica,True,4,match
+c029,b ruta,numerica,True,2,na
+c030,c cuantas personas viajan en el taxi sin contar al conductor,numerica,True,3,na
+c031,d cuantas personas viajan en el uber sin contar al conductor,numerica,True,3,na
+c032,h cuantas personas viajan en el auto,numerica,True,5,na
+c034,considera que de alcalde alcaldesa,numerica,True,2,na
+c035,1 fue un gobernante honesto a,categorica,True,3,match
+c036,2 fue capaz de resolver los problemas del municipio,categorica,True,4,match
+c039,usted considera que de alcalde alcaldesa saliente tomo la mayoria de sus decisio,categorica,True,5,match
+c040,en terminos generales aprueba o desaprueba el trabajo que hizo de alcalde alcald,categorica,True,4,match
+c041,en terminos generales considera que hoy comparado con hace tres anos este munici,categorica,True,2,match
+c045,2 fue capaz de resolver los problemas del estado,categorica,True,4,match
+c048,usted considera que jaime rodriguez calderon tomo la mayoria de sus decisiones e,categorica,True,5,match
+c049,en terminos generales aprueba o desaprueba el trabajo que hizo jaime rodriguez c,categorica,True,4,match
+c050,para usted el gobierno de jaime rodriguez calderon fue,categorica,True,2,match
+c069,si contesto 3 taxi 4 uber 5 motocicleta 8 automovil por que no utiliza el transp,categorica,True,2,relabel?
+c074,ha realizado alguna s de siguientes acciones en los ultimos 12 meses para mejora,numerica,True,3,na
+c075,1 asistir a marchas caminatas o manifestaciones,categorica,True,4,match
+c076,10 otra 10 1 especificar,numerica,True,3,match
+c078,3 hacer voluntariado en una asociacion civil o colectivo,categorica,True,4,match
+c079,4 participar en una junta de vecinos,categorica,True,4,match
+c080,5 participar en una asociacion de padres de familia,categorica,True,3,match
+c081,6 contactarse con los medios de comunicacion,categorica,True,4,match
+c082,7 firmar peticiones en linea,categorica,True,4,match
+c085,ha escuchado hablar de la iniciativa,numerica,True,2,na
+c086,1 como vamos nuevo leon,categorica,True,3,match
+c087,2 alcalde como vamos,categorica,True,2,match
+c088,sabe que tipo de iniciativa es como vamos,categorica,True,3,relabel?
+c089,para concluir en que ambito esta el principal problema que enfrenta actualmente ,categorica,True,5,relabel?
+c090,en esta vivienda cual es el gasto total por semana en gasolina,numerica,True,5,na
+c091,cual es su gasto promedio semanal en gasolina por usar su motocicleta,numerica,True,2,na
+c092,cuantos vehiculos de motor autos y camionetas hay en el hogar,numerica,True,5,na
+c093,cuantas motocicletas hay en el hogar,numerica,True,2,na
+c094,cuantas bicicletas hay en el hogar,numerica,True,5,na
+c095,1 cuanto tiempo de ida tardo en el medio que lo transporto a su destino principa,numerica,True,5,na
+c096,2 min,numerica,True,5,na
+c097,1 cuanto tiempo tardo de vuelta en el medio que lo transporto a su destino princ,numerica,True,5,na
+c099,cuantas horas trabaja al dia considerando hora de comida,numerica,True,4,na
+c100,1 cuanto tiempo espero para tomar su principal medio de transporte hrs,numerica,True,4,na
+c102,1 cuando camina en su municipio considera que los cruces peatonales le permiten ,categorica,True,3,relabel?
+c103,2 cuando camina en su municipio considera que las rampas para personas con disca,categorica,True,4,relabel?
+c105,4 cuando camina en su municipio considera que las banquetas son amplias para que,categorica,True,4,relabel?
+c106,5 cuando camina en su municipio considera que las banquetas tienen obstaculos co,categorica,True,4,relabel?
+c107,6 cuando camina en su municipio considera que las banquetas estan danadas,categorica,True,2,match
+c109,8 cuando camina en su municipio considera que las banquetas cuentan con alumbrad,categorica,True,3,relabel?
+c111,del 1 al 10 como califica la calidad y estado de las banquetas en su municipio d,numerica,True,4,match
+c112,realizo algun transbordo en su viaje de ida,categorica,True,2,match
+c113,cuantos transbordos realizo en su viaje de ida,categorica,True,4,match
+c114,cual fue el costo total de su viaje principal de ida a su destino,numerica,True,5,na
+c115,cual fue el costo total de su viaje principal de regreso a su casa,numerica,True,5,na
+c116,durante los viajes que realiza en la semana para alguno utiliza la bicicleta com,numerica,True,5,match
+c118,vamos a evaluar la calidad del servicio de transporte publico conteste las sigui,numerica,True,3,na
+c119,1 1 el tiempo de espera por unidades es siempre el mismo,categorica,True,3,match
+c120,1 2 si necesita viajar a zonas que normalmente no visita sabe donde consultar qu,categorica,True,4,match
+c121,1 3 se siente seguro viajando en el transporte publico,categorica,True,4,match
+c122,1 4 en su viaje regularmente puede ir sentado a,categorica,True,4,match
+c125,1 7 los choferes manejan en forma prudente y segura manejan a una velocidad adec,categorica,True,4,match
+c127,cuantos dias a la semana trabaja,numerica,True,5,na
+c128,considera que la tarifa del transporte publico es,categorica,True,5,match
+c129,las unidades del transporte publico presentan las siguientes fallas,numerica,True,2,na
+c130,1 asientos danados o sucios,categorica,True,4,match
+c133,2 vidrios rotos,categorica,True,4,match
+c134,3 grafiti y rayones,categorica,True,3,match
+c135,4 ruidoso escandaloso,categorica,True,3,match
+c136,5 echa humo contaminante,categorica,True,4,match
+c137,6 puertas o ventanas que no cierran adecuadamente,categorica,True,4,match
+c139,8 goteras en epoca de lluvia,categorica,True,4,match
+c141,tomando en cuenta las preguntas previas evalue del 1 al 10 que tan satisfecho es,numerica,True,5,match
+c142,de acuerdo con su percepcion mencione cual es el principal problema con el que s,categorica,True,2,relabel?
+c143,cual de los siguientes servicios se encuentra a menos de 1 kilometro o menos de ,numerica,True,2,na
+c158,de acuerdo con su experiencia en su colonia actualmente,numerica,True,2,na
+c162,cuando fue la ultima vez que se mudo de casa,categorica,True,5,relabel?
+c163,si se mudo de casa en que municipio y estado vivia antes,numerica,True,3,na
+c164,cual fue el motivo de su cambio de residencia,categorica,True,2,relabel?
+c166,al dia cuantas horas destina a los quehaceres constantes del hogar limpiar lavar,numerica,True,5,na
+c168,de acuerdo con su experiencia en su municipio que tan satisfecho esta con los si,numerica,True,2,na
+c169,1 alumbrado publico,numerica,True,4,match
+c170,2 condicion de las calles y avenidas,numerica,True,5,match
+c171,4 parques plazas y areas verdes,numerica,True,5,match
+c172,5 drenaje pluvial,numerica,True,5,match
+c173,6 recoleccion de basura,numerica,True,4,match
+c174,7 perros y gatos abandonados en la calle,numerica,True,4,match
+c175,los parques y jardines de su municipio,numerica,True,2,na
+c176,1 estan limpios y tienen buena imagen,categorica,True,4,match
+c177,2 son seguros para usted y su familia,categorica,True,3,match
+c178,3 cuentan con espacios para hacer ejercicio,categorica,True,4,match
+c179,4 cuentan con suficientes arboles y vegetacion en el suelo pasto jardines planta,categorica,True,4,match
+c180,5 cuentan con infraestructura necesaria bancas bebederos luminarias funcionando,categorica,True,4,match
+c181,considera que la calidad del aire en su municipio es,categorica,True,2,match
+c182,para combatir el problema de la mala calidad del aire en el area metropolitana d,numerica,True,2,na
+c185,3 retirar de circulacion a vehiculos contaminantes,categorica,True,3,match
+c186,4 invertir mas en transporte publico y menos en infraestructura para el automovi,categorica,True,3,match
+c187,5 sancionar a empresas que contaminen aunque implique su clausura,categorica,True,3,match
+c192,como describiria usted la situacion economica de su hogar comparada con la de ha,categorica,True,4,match
+c193,al dia cuantas horas destina al cuidado no remunerado de personas como ninos as ,numerica,True,3,na
+c194,y como cree usted que sera la situacion economica de su hogar dentro de 12 meses,categorica,True,4,match
+c201,con el total del ingreso del hogar diria usted que,categorica,True,4,match
+c202,considera que las mujeres tienen las mismas oportunidades laborales politicas y ,categorica,True,3,match
+c203,cree que en nuevo leon es frecuente que se discrimine a la gente por,numerica,True,4,match
+c204,1 por ser mujer,categorica,True,2,match
+c206,11 por tener sobrepeso u obesidad,categorica,True,4,match
+c207,12 por tener alguna enfermedad,categorica,True,4,match
+c209,14 por ser migrante,categorica,True,4,match
+c210,15 por su identidad o expresion de genero personas trans,categorica,True,4,match
+c214,3 por su embarazo,categorica,True,3,match
+c215,4 por su edad,categorica,True,4,match
+c218,7 por ser persona con discapacidad,categorica,True,4,match
+c219,8 por su orientacion sexual,categorica,True,4,match
+c220,9 por su color de piel,categorica,True,4,match
+c221,en los ultimos 12 meses usted ha notado una mayor cantidad de personas migrantes,categorica,True,3,match
+c222,mencione si esta de acuerdo con las siguientes afirmaciones,numerica,True,2,na
+c223,1 mexico deberia admitir a mas personas migrantes al pais,categorica,True,4,match
+c224,2 a las personas migrantes se les debe dar la oportunidad de que consigan un emp,categorica,True,2,match
+c227,5 el aumento de personas migrantes en el estado esta relacionado con el incremen,categorica,True,3,match
+c228,durante los ultimos 12 meses tuvo algun problema de salud si tuvo dos o mas pade,categorica,True,3,match
+c229,tuvo una consulta medica por este problema de salud,categorica,True,4,match
+c230,por que no consulto no leer respuestas,categorica,True,3,relabel?
+c231,durante el dia de ayer cual fue el principal motivo para trasladarse fuera de su,numerica,True,2,na
+c232,1 si fue una enfermedad aguda se resolvio su problema si la persona consulto,categorica,True,3,match
+c233,2 si es cronica le estan dando un seguimiento adecuado si la persona consulto,categorica,True,3,match
+c234,si utilizo servicios publicos de salud que tan comun es que pueda surtir su rece,categorica,True,4,match
+c235,para quien tuvo consulta programadacuantos dias pasaron entre que le programaron,numerica,True,5,relabel?
+c236,en esta ultima consulta,categorica,True,5,match
+c238,como calificaria las instalaciones hospitalarias,categorica,True,2,match
+c239,como calificaria los siguientes aspectos de atencion de servicios de salud,numerica,True,3,na
+c240,1 trato y atencion por parte del personal medico,categorica,True,3,match
+c241,2 trato y atencion de personal de enfermeria y tecnicos,categorica,True,3,match
+c242,3 atencion y el servicio por parte del personal administrativo,categorica,True,4,match
+c243,4 horarios de atencion,categorica,True,4,match
+c244,5 informacion recibida sobre el padecimiento,categorica,True,4,match
+c245,tomando en cuenta las preguntas previas evalue del 1 al 10 que tan satisfecho es,numerica,True,4,match
+c246,cual es el principal problema de salud que se vive en su municipio,categorica,True,2,relabel?
+c247,si respondio sin viaje en la pregunta anterior por que no salio,numerica,True,2,na
+c249,1 se ha percibido decaido a deprimido a,categorica,True,5,relabel?
+c250,2 se ha sentido nervioso a ansioso a o muy alterado a con los nervios de punta,categorica,True,5,relabel?
+c265,de acuerdo con su experiencia evalue las siguientes afirmaciones,numerica,True,2,na
+c266,p 79 1 en su hogar existen suficientes dispositivos electronicos para que las pe,numerica,True,3,match
+c267,p 79 2 su hogar cuenta con una conexion a internet,numerica,True,3,match
+c269,cuantas veces a la semana se dirige a este destino,numerica,True,4,match
+c271,a primaria,categorica,True,2,match
+c272,b secundaria,categorica,True,3,match
+c273,c media superior preparatoria bachillerato,categorica,True,3,match
+c275,que tan seguro se siente en su municipio,categorica,True,4,relabel?
+c276,en el ultimo ano usted o algun miembro del hogar ha sido victima de algun delito,categorica,True,4,match
+c277,usted o la persona que fue victima denuncio el delito,categorica,True,4,match
+c278,si contesto que si a la pregunta anterior como califica la experiencia de su den,numerica,True,4,match
+c279,para todos los encuestados que tan probable considera que los delitos denunciado,categorica,True,4,relabel?
+c280,en el tema de seguridad considera que,numerica,True,2,na
+c281,1 la presencia de policias en su colonia es suficiente,categorica,True,4,match
+c282,2 la policia de su colonia lo hace sentir mas seguro,categorica,True,2,match
+c283,3 confia en la policia de su colonia,categorica,True,2,match
+c284,4 el trato del policia al ciudadano es de forma respetuosa,categorica,True,2,match
+c286,6 la policia es justa al tomar decisiones,categorica,True,2,match
+c287,como evalua el desempeno de los servicios de seguridad en una escala del 1 al 10,numerica,True,2,na
+c288,1 policia de su municipio y barrio,numerica,True,4,match
+c289,2 fuerza civil,numerica,True,4,match
+c290,3 guardia nacional,numerica,True,4,match
+c291,4 ejercito y marina,numerica,True,4,match
+c292,5 transito,numerica,True,4,match
+c293,durante el ultimo ano ha tenido contacto con la policia o ha requerido de ella,categorica,True,3,match
+c294,si respondio que si a la pregunta anterior diria que,numerica,True,3,match
+c295,1 la policia cumplio con su labor,categorica,True,3,match
+c296,2 la policia solicito una mordida o moche,categorica,True,3,match
+c297,si requirio de la policia esta acudio al llamado,categorica,True,2,match
+c298,considera que la violencia hacia las mujeres dentro de los hogares,categorica,True,4,match
+c299,considera que la violencia hacia las mujeres en la via publica,categorica,True,3,match
+c300,esta de acuerdo con las siguientes afirmaciones,numerica,True,2,na
+c301,1 los piropos en la calle transporte publico hacia las mujeres son ofensivos,categorica,True,4,match
+c302,2 las mujeres tienen un mayor riesgo de ser agredidas que los hombres,categorica,True,4,match
+c303,3 las mujeres comparten la responsabilidad de ser agredidas por su forma de vest,categorica,True,4,match
+c304,de acuerdo con su percepcion mencione cual es el principal problema de seguridad,categorica,True,3,relabel?
+c305,cual es el medio por el que mas se entera de los temas de interes publico y todo,categorica,True,3,relabel?
+c306,si respondio que no se entera en la pregunta anterior por que no lo hace,categorica,True,2,match
+c309,2 cual fue la colonia de su destino,numerica,True,3,na
+c310,acciones participacion ciudadana,numerica,True,2,na
+c313,como evaluaria las instalaciones y equipamientos de la escuela a la que asiste,categorica,True,2,match
+c316,durante los ultimos 12 meses ha sido victima de bullying o acoso escolar en la e,categorica,True,3,match
+c317,considera que las autoridades escolares o maestros han tomado medidas efectivas ,categorica,True,4,match
+c318,tomando en cuenta las preguntas previas en una escala del 1 al 10 donde 1 es nad,numerica,True,3,na
+c320,meses,numerica,True,2,na
+c321,con quien vive en su hogar,categorica,True,4,match
+c323,hrs cuidados personas,numerica,True,2,na
+c324,hrs quehaceres hogar,numerica,True,2,na
+c325,considera que el consumo de drogas en la calle ha incrementado en los ultimos 12,categorica,True,2,match
+c326,si contesto redes sociales cual,categorica,True,2,match
+c327,para quien respondio que si que tipo de tramite o contacto fue,categorica,True,2,relabel?
+c329,para usted en este primer ano el gobierno de de alcalde ha sido,categorica,True,2,match
+c331,es un gobernante honesto,categorica,True,3,match
+c334,para usted en este primer ano el gobierno de samuel garcia ha sido,categorica,True,3,match
+c336,votar o proponer en que se deberia gastar el presupuesto participativo en su mun,categorica,True,4,match
+c337,solicitar apoyo o presentar quejas a funcionarios o autoridades reportar baches ,categorica,True,4,match
+c338,cual es su gasto total semanal en transporte publico,numerica,True,3,na
+c341,durante los viajes que realiza en la semana para alguno utiliza el transporte pu,numerica,True,4,match
+c342,en los ultimos 12 meses al utilizar el transporte publico ha sido victima de las,numerica,True,3,match
+c343,le miraron morbosamente el cuerpo,categorica,True,4,match
+c344,le dijeron piropos obscenos u ofensivos de caracter sexual,categorica,True,4,match
+c345,le hicieron sentir miedo de sufrir un ataque o abuso sexual,categorica,True,4,match
+c346,le tocaron o manosearon el cuerpo sin su consentimiento,categorica,True,4,match
+c347,que aspecto considera que el gobierno debe atender de manera mas urgente en el t,categorica,True,2,match
+c355,que tan preocupado se considera con respecto a la crisis de agua y la posibilida,categorica,True,2,match
+c357,por lo general con que frecuencia visita los parques de su municipio,categorica,True,4,match
+c358,implementar verificacion vehicular revision de las emisiones contaminantes de lo,categorica,True,3,match
+c359,implementar hoy no circula programa en el que salen de circulacion algunos dias ,categorica,True,3,match
+c360,que se reduzca el espacio para el automovil y se destine un carril exclusivo par,categorica,True,3,match
+c362,en estos ultimos anos haz percibido un mayor aumento en la temperatura en invier,categorica,True,2,match
+c363,durante momentos de altas temperaturas en tu casa tienes medios suficientes como,categorica,True,2,match
+c365,otro,numerica,True,2,na
+c367,por su nivel economico,categorica,True,4,match
+c368,algun medico le ha dicho que tiene diabetes o alta el azucar en la sangre,categorica,True,2,match
+c369,algun medico le ha dicho que tiene hipertension arterial presion alta,categorica,True,2,match
+c370,algun medico le ha dicho que padece de algun tipo de cancer durante los ultimos ,categorica,True,2,match
+c373,ha tardado mas de 30 minutos en poder dormir o se despierta durante la noche o m,categorica,True,4,match
+c374,si denuncio el responsable del delito fue encontrado y sancionado,categorica,True,2,match
+c375,considera que las decisiones y actuar de la policia benefician a las personas en,categorica,True,2,match
+c377,que autoridad es la principal responsable de investigar y perseguir los delitos ,numerica,True,4,match
+c378,la fiscalia general de justicia es la responsable de investigar y perseguir los ,categorica,True,4,match
+c379,si respondio c compras que tipo de compras realizo,categorica,True,3,relabel?
+c383,tiempo espera hrs,numerica,True,2,na
+c386,tiempo ida hrs,numerica,True,2,na
+c389,tiempo traslado total,numerica,True,2,na
+c393,transporte publico,categorica,True,2,match
+c395,ha realizado al menos una de las acciones de participacion ciudadana mencionadas,categorica,True,2,match
+c396,cree que en nuevo leon se discrimina a la gente por al menos una razon de las me,numerica,True,2,na
+c397,costo total de su viaje principal ida y regreso,numerica,True,3,na
+c398,durante el ultimo ciclo escolar de se le nego el acceso a las clases debido a la,categorica,True,2,match
+c402,numero de acciones de participacion ciudadana mencionadas anteriormente que ha r,numerica,True,2,na
+c403,numero de razones por las que cree que en nuevo leon se discrimina a la gente,numerica,True,2,na
+c405,considera que el gobierno de samuel garcia ha hecho un buen uso de los recursos ,categorica,True,3,match
+c414,participar en dialogos con autoridades consejos o comites ciudadanos mesas de tr,categorica,True,3,match
+c415,la direccion y municipio en su credencial de elector ine es la misma que donde v,categorica,True,3,match
+c416,realizo algun transbordo en su viaje de ida cambio de unidad de transporte para ,categorica,True,3,match
+c419,las unidades de transporte publico que utiliza estan climatizadas,categorica,True,3,match
+c420,timbre danado o inexistente si el timbre esta danado o no existe responder si,categorica,True,3,match
+c421,aparatos validadores de tarjeta danados o inexistentes si el aparato esta danado,categorica,True,3,match
+c425,considera que en su colonia existe un problema de viviendas abandonadas,categorica,True,2,match
+c426,solo para quienes responden 1 y 2 la vivienda a la que se mudo es,categorica,True,2,match
+c432,si respondio que si en al menos un inciso que hace con los residuos segregados,categorica,True,2,relabel?
+c434,con respecto al rio santa catarina cual de las siguientes dos opciones refleja m,categorica,True,2,relabel?
+c436,por su forma de vestir o arreglo personal tatuajes ropa forma de peinarse perfor,categorica,True,3,match
+c437,por haber estado en la carcel,categorica,True,3,match
+c439,por estar en situacion de calle,categorica,True,3,match
+c440,por su origen etnico indigena afrodescendiente etc,categorica,True,3,match
+c441,las personas migrantes deben tener las mismas oportunidades empleo educacion acc,categorica,True,3,match
+c442,considera que tiene sobrepeso u obesidad,categorica,True,2,match
+c444,seguro medico imss privado,categorica,True,3,match
+c445,guarderia,categorica,True,2,match
+c446,fondo de ahorro para el retiro,categorica,True,3,match
+c447,aguinaldo,categorica,True,3,match
+c448,bonos de despensa,categorica,True,3,match
+c467,en la escuela a la que asiste existen dispositivos electronicos laptop tablet co,categorica,True,2,match
+c472,al dia cuantas horas destina a actividades de ocio o no relacionadas con el trab,numerica,True,2,na
+c473,durante el dia de ayer salio de casa nota cuando la entrevista es realizada en d,categorica,True,2,match
+c474,las mujeres victimas de violencia son responsables de que las sigan agrediendo s,categorica,True,2,match
+c484,sabe quien es la o el diputado local del distrito en el que usted vive,categorica,True,2,match
+c485,el congreso local es la autoridad responsable de modificar decretar y agregar le,categorica,True,2,relabel?
+c486,en terminos generales considera que las y los diputados del congreso de nuevo le,categorica,True,2,match
+c487,en terminos generales aprueba o desaprueba el trabajo que hizo el congreso local,categorica,True,2,match
+c499,hay banquetas durante todo su trayecto,categorica,True,2,match
+c500,las banquetas estan danadas roturas hoyos etc,categorica,True,2,match
+c501,8 existen suficientes arboles que le brinden sombra,categorica,True,2,match
+c503,disminucion de la presion del agua,categorica,True,2,match
+c504,cortes de agua,categorica,True,2,relabel?
+c505,mala calidad de agua turbia sucia o mal olor,categorica,True,2,relabel?
+c510,a la mitad de la administracion de samuel garcia considera que su gobierno ha re,categorica,True,2,match
+c514,durante momentos de mucho calor en su casa puede mantener una temperatura agrada,categorica,True,2,match
+c515,durante momentos de mucho frio en su casa puede mantener una temperatura agradab,categorica,True,2,match
+c517,flexibilidad de horario poder elegir hora de entrada salida y comida,categorica,True,2,match
+c518,transporte privado de la empresa,categorica,True,2,match
+c519,minutos,numerica,True,2,na
+c520,como calificaria las instalaciones del hospital o clinica donde se atendio,categorica,True,2,match
+c521,regularmente realiza ejercicio o practica algun deporte durante la semana,categorica,True,2,match
+c522,al dia cuantas horas dedica al cuidado no remunerado de otras personas como nino,numerica,True,2,na

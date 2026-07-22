@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import {
   Eye,
   Copy,
@@ -24,6 +24,7 @@ import {
   addFilter,
   filterValueLabel,
   questionPicker,
+  selectedQuestion,
   setQueryMode,
   newConversation,
   loadConversation,
@@ -97,6 +98,17 @@ function onGroupByChange(e) {
   state.groupBy = e.target.value
   state.appliedPreset = ''
 }
+
+// "Año" (comparación entre olas) solo aplica a preguntas con concepto equivalente.
+const canCompareYears = computed(() => !!selectedQuestion.value?.concept_id)
+
+// Si cambias a una pregunta sin equivalencia y tenías "Año" seleccionado, resetea.
+watch(canCompareYears, (ok) => {
+  if (!ok && state.groupBy === 'year') {
+    state.groupBy = 'answer'
+    state.appliedPreset = ''
+  }
+})
 </script>
 
 <template>
@@ -260,6 +272,9 @@ function onGroupByChange(e) {
               class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
             >
               <option value="answer">Respuesta</option>
+              <option v-if="canCompareYears" value="year">
+                Año (comparar entre olas)
+              </option>
               <option value="city_id">Ciudad</option>
               <option
                 v-for="a in state.attributes"

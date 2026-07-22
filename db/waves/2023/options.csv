@@ -1,0 +1,1669 @@
+question_id,option_id,option_label
+cp1,1,Nombre de cada integrante
+cp2,0,Masculino
+cp2,1,Femenino
+cp2,9999,No contesta
+cp3,0,Hombre
+cp3,1,Mujer
+cp3,2,Persona no binaria
+cp3,9999,No contesta
+cp4_1,8888,No sabe
+cp4_1,9999,No contesta
+cp5,1,Familia o pareja
+cp5,2,Corresidentes (roomies)
+cp5,3,Sola(o)
+cp5,9999,No contesta
+cp6,1,IMSS
+cp6,2,"Hospital naval, militar o Pemex"
+cp6,3,ISSSTE Federal
+cp6,4,ISSSTE Estatal/ ISSSTELEON
+cp6,5,"Secretaría de Salud (""Cuidar tu salud"")"
+cp6,6,Servicios Médicos UANL /Hospital Universitario
+cp6,7,Seguro médico privado
+cp6,8,Ninguna institución
+cp6,9,Clínica municipal
+cp6,10,"Servicios empresariales de salud (Heineken, Vitro)"
+cp6,11,Suspe (Gobierno)
+cp6,12,Conalep
+cp6,8888,No Sabe
+cp6,9999,No contesta
+cp7,0,No
+cp7,1,Sí
+cp7,8888,No sabe
+cp7,9999,No contesta
+cp8,0,Ninguno
+cp8,1,Preescolar
+cp8,2,Primaria
+cp8,3,Secundaria
+cp8,4,Preparatoria o bachillerato general
+cp8,5,Bachillerato tecnológico
+cp8,6,Estudios técnicos o comerciales con primaria terminada
+cp8,7,Estudios técnicos o comerciales con secundaria terminada
+cp8,8,Estudios técnicos o comerciales con preparatoria terminada
+cp8,9,Normal con primaria o secundaria terminada
+cp8,10,Normal de licenciatura
+cp8,11,Licenciatura
+cp8,12,Especialidad
+cp8,13,Maestría
+cp8,14,Doctorado
+cp8,8888,No sabe
+cp8,9999,No contesta
+cp9,1,Preescolar
+cp9,2,Primaria
+cp9,3,Secundaria
+cp9,4,Preparatoria o bachillerato general
+cp9,5,Bachillerato tecnológico
+cp9,6,Estudios técnicos o comerciales con primaria terminada
+cp9,7,Estudios técnicos o comerciales con secundaria terminada
+cp9,8,Estudios técnicos o comerciales con preparatoria terminada
+cp9,9,Normal con primaria o secundaria terminada
+cp9,10,Normal de licenciatura
+cp9,11,Licenciatura
+cp9,12,Especialidad
+cp9,13,Maestría
+cp9,14,Doctorado
+cp9,8888,No sabe
+cp9,9999,No contesta
+cp10,1,Pública
+cp10,2,Privada
+cp10,3,Otro tipo
+cp10,8888,No sabe
+cp10,9999,No contesta
+cp11,0,NO
+cp11,1,SÍ
+cp11,8888,No sabe
+cp11,9999,No contesta
+cp12,0,NO
+cp12,1,SÍ
+cp12,8888,No sabe
+cp12,9999,No contesta
+cp13,0,NO
+cp13,1,SÍ
+cp13,8888,No sabe
+cp13,9999,No contesta
+cp14_1,0,NO
+cp14_1,1,SÍ
+cp14_1,8888,No sabe
+cp14_1,9999,No contesta
+cp14_2,0,NO
+cp14_2,1,SÍ
+cp14_2,8888,No sabe
+cp14_2,9999,No contesta
+cp15,1,Pésimas
+cp15,2,Malas
+cp15,3,Regulares
+cp15,4,Buenas
+cp15,5,Excelentes
+cp15,8888,No sabe
+cp15,9999,No contesta
+cp16_1,1,1
+cp16_1,2,2
+cp16_1,3,3
+cp16_1,4,4
+cp16_1,5,5
+cp16_1,6,6
+cp16_1,7,7
+cp16_1,8,8
+cp16_1,9,9
+cp16_1,10,10
+cp16_1,8888,No sabe
+cp16_1,9999,No contesta
+cp16_2,1,1
+cp16_2,2,2
+cp16_2,3,3
+cp16_2,4,4
+cp16_2,5,5
+cp16_2,6,6
+cp16_2,7,7
+cp16_2,8,8
+cp16_2,9,9
+cp16_2,10,10
+cp16_2,8888,No sabe
+cp16_2,9999,No contesta
+cp16_3,1,1
+cp16_3,2,2
+cp16_3,3,3
+cp16_3,4,4
+cp16_3,5,5
+cp16_3,6,6
+cp16_3,7,7
+cp16_3,8,8
+cp16_3,9,9
+cp16_3,10,10
+cp16_3,8888,No sabe
+cp16_3,9999,No contesta
+p1,0,No
+p1,1,Sí
+p1,3,No se requieren dispositivos electrónicos
+p1,8888,No sabe
+p1,9999,No contesta
+p1,7777,No aplica (no hay estudiantes)
+p2,0,No
+p2,1,Sí
+p2,8888,No sabe
+p2,9999,No contesta
+p3,1,Empleado(a)
+p3,2,Buscando empleo
+p3,3,Estudiante
+p3,4,Negocio propio / independiente
+p3,5,Trabajo doméstico no remunerado (limpieza y cuidados)
+p3,6,Trabajo doméstico remunerado (limpieza de otros hogares)
+p3,7,Jubilado/Pensionado
+p3,8,"Ni estudia, ni trabaja, ni busca empleo"
+p3,9,Otro. Especificar
+p3,9999,No contesta
+p4,1,Presencial
+p4,2,Híbrido
+p4,3,A distancia / en casa
+p5,8888,No sabe
+p5,9999,No contesta
+p6,8888,No sabe
+p6,9999,No contesta
+p7_1,0,NO
+p7_1,1,SÍ
+p7_1,8888,No sabe
+p7_1,9999,No contesta
+p7_2,0,NO
+p7_2,1,SÍ
+p7_2,8888,No sabe
+p7_2,9999,No contesta
+p7_3,0,NO
+p7_3,1,SÍ
+p7_3,8888,No sabe
+p7_3,9999,No contesta
+p7_4,0,NO
+p7_4,1,SÍ
+p7_4,8888,No sabe
+p7_4,9999,No contesta
+p7_5,0,NO
+p7_5,1,SÍ
+p7_5,8888,No sabe
+p7_5,9999,No contesta
+p7_6,0,NO
+p7_6,1,SÍ
+p7_6,8888,No sabe
+p7_6,9999,No contesta
+p8_1,8888,No sabe
+p8_1,9999,No contesta
+p8_2,8888,No sabe
+p8_2,9999,No contesta
+quehaceres_hogar,8888,No sabe
+quehaceres_hogar,9999,No contesta
+p9_1,8888,No sabe
+p9_1,9999,No contesta
+p9_2,8888,No sabe
+p9_2,9999,No contesta
+cuidado_personas,8888,No sabe
+cuidado_personas,9999,No contesta
+total_min_trabajo_rem_y_norem,8888,No sabe
+total_min_trabajo_rem_y_norem,9999,No contesta
+p10,1,Trabajo
+p10,2,Escuela
+p10,3,Compras
+p10,4,"Médico, hospital"
+p10,5,Diversión
+p10,6,Acompañar o Llevar a alguien
+p10,7,"Banco, Pago de servicios"
+p10,8,Visita
+p10,9,Sin viaje
+p10,10,Buscar trabajo
+p10,11,Iglesia
+p10,12,Trámites
+p10,13,Funeral
+p10,9999,No contesta
+p11,1,"Compras del hogar (despensa, artículos de limpieza, artículos de higiene personal, utiles para los niños(as) etc.)"
+p11,2,"Compras personales ( Ropa, maquillaje, perfumes, etc)"
+p11,3,Libros
+p11,4,Artículos para negocio
+p11,8888,No sabe
+p11,9999,No contesta
+p12,1,Le da miedo / es inseguro
+p12,2,"Condiciones meteorológicas (lluvia, calor)"
+p12,3,No existen lugares recreativos cerca
+p12,4,Tuvo un padecimiento de salud
+p12,6,Trabajó en casa
+p12,7,Estudió en casa
+p12,8,Tengo que cuidar a alguien
+p12,9,Los traslados son costosos
+p12,10,Es mi dia de descanso / vacaciones de trabajo
+p12,11,Tuve visita
+p12,12,No tenía a que salir
+p12,13,Tuve cosas que hacer en casa
+p12,14,No tengo trabajo ni dinero
+p12,15,No salgo por la edad
+p12,16,Hay mucho congestionamiento y el traslado es muy tardado
+p12,9999,No contesta
+p13,1,1
+p13,2,2
+p13,3,3
+p13,4,4
+p13,5,5
+p13,6,6
+p13,7,7
+p13,9999,No contesta
+p14,1,Monterrey
+p14,2,Guadalupe
+p14,3,San Nicolás de los Garza
+p14,4,Apodaca
+p14,5,Escobedo
+p14,6,San Pedro Garza García
+p14,7,Santiago
+p14,8,Juárez
+p14,9,García
+p14,10,Santa Catarina
+p14,11,Cadereyta
+p14,12,Pesquería
+p14,13,El Carmen
+p14,14,Ciénega de Flores
+p14,15,Zuazua
+p14,16,Salinas Victoria
+p14,17,Allende
+p14,18,Agualeguas
+p14,19,Allende
+p14,20,Anáhuac
+p14,21,Aramberri
+p14,22,Cerralvo
+p14,23,China
+p14,24,Doctor Arroyo
+p14,25,Doctor Coss
+p14,26,Galeana
+p14,27,General Bravo
+p14,28,General Terán
+p14,29,Hidalgo
+p14,30,Hualahuises
+p14,31,Iturbide
+p14,32,Lampazos
+p14,33,Linares
+p14,34,Los Aldamas
+p14,35,Marín
+p14,36,Matehuala
+p14,37,Mier y Noriega
+p14,38,Mina
+p14,39,Montemorelos
+p14,40,Nuevo Laredo
+p14,41,Sabinas Hidalgo
+p14,42,Saltillo
+p14,8888,No sabe
+p14,9999,No contesta
+p15,8888,No sabe
+p15,9999,No contesta
+p16,1,Pie/camina/en silla de ruedas
+p16,2,"Camión, microbús"
+p16,3,Taxi
+p16,4,Uber u otra aplicación móvil similar
+p16,5,Motocicleta
+p16,6,Bicicleta
+p16,7,Metro
+p16,8,Automóvil/acompañante de automóvil
+p16,9,Transmetro
+p16,10,Ecovía
+p16,11,Transporte escolar
+p16,12,Transporte de trabajo
+p16,13,Autobús privado (tipo Senda)
+p16,14,Triciclo
+p16,15,Taxi colectivo
+p16,8888,No sabe
+p16,9999,No contesta
+p16_3,9999,No contesta
+p16_4,9999,No contesta
+p16_8,9999,No contesta
+transporte_publico,0,No
+transporte_publico,1,Sí
+p17,1,La parada está lejos.
+p17,2,No hay una ruta que me lleve a mi destino.
+p17,3,Se tarda más tiempo que el transporte privado/ Es más rápido en auto
+p17,4,El pasaje es muy caro.
+p17,5,El transporte está feo/sucio
+p17,6,El transporte no me deja cerca de mi destino.
+p17,7,El transporte es inseguro / da miedo usarlo.
+p17,8,El transporte siempre va lleno.
+p17,9,"Mal servicio (choferes ebrios, groseros o que van jugando carreras)."
+p17,10,Comodidad
+p17,11,No es accesible para personas con discapacidad.
+p17,12,"Es taxista, chofer o es su herramienta de trabajo"
+p17,8888,No sabe
+p17,9999,No contesta
+p18_1,9999,No contesta
+p18_2,9999,No contesta
+tiempo_espera,9999,No contesta
+p19,0,NO
+p19,1,Sí
+p19,9999,No contesta
+p20,1,Uno
+p20,2,Dos
+p20,3,Tres
+p20,4,Cuatro
+p20,5,Cinco o Más
+p20,8888,No sabe
+p20,9999,No contesta
+p21,8888,No sabe
+p21,9999,No contesta
+p22,8888,No sabe
+p22,9999,No contesta
+costo_total_viaje,8888,No sabe
+costo_total_viaje,9999,No contesta
+p23,8888,No sabe
+p23,9999,No contesta
+p24_1,8888,No sabe
+p24_1,9999,No contesta
+p24_2,8888,No sabe
+p24_2,9999,No contesta
+tiempo_ida,8888,No sabe
+tiempo_ida,9999,No contesta
+p25_1,8888,No sabe
+p25_1,9999,No contesta
+p25_2,8888,No sabe
+p25_2,9999,No contesta
+tiempo_regreso,8888,No sabe
+tiempo_regreso,9999,No contesta
+tiempo_total_traslado,8888,No sabe
+tiempo_total_traslado,9999,No contesta
+p26,0,No
+p26,1,Sí
+p26,9999,No contesta
+p27_1,0,No
+p27_1,1,Sí
+p27_1,8888,No sabe
+p27_1,9999,No contesta
+p27_2,0,No
+p27_2,1,Sí
+p27_2,8888,No sabe
+p27_2,9999,No contesta
+p27_3,0,No
+p27_3,1,Sí
+p27_3,8888,No sabe
+p27_3,9999,No contesta
+p27_4,0,No
+p27_4,1,Sí
+p27_4,8888,No sabe
+p27_4,9999,No contesta
+p27_5,0,No
+p27_5,1,Sí
+p27_5,8888,No sabe
+p27_5,9999,No contesta
+p27_6,0,No
+p27_6,1,"Sí, todas"
+p27_6,2,"Sí, algunas"
+p27_6,8888,No sabe
+p27_6,9999,No contesta
+p28_1,0,No
+p28_1,1,Sí
+p28_1,8888,No sabe
+p28_1,9999,No contesta
+p28_2,0,No
+p28_2,1,Sí
+p28_2,8888,No sabe
+p28_2,9999,No contesta
+p28_3,0,No
+p28_3,1,Sí
+p28_3,8888,No sabe
+p28_3,9999,No contesta
+p28_4,0,No
+p28_4,1,Sí
+p28_4,8888,No sabe
+p28_4,9999,No contesta
+victima_tp,0,No
+victima_tp,1,Sí
+p29,1,Muy baja
+p29,2,Baja
+p29,3,Adecuada
+p29,4,Alta
+p29,5,Muy alta
+p29,8888,No sabe
+p29,9999,No contesta
+p30_1,0,NO
+p30_1,1,SÍ
+p30_1,8888,No sabe
+p30_1,9999,No contesta
+p30_2,0,NO
+p30_2,1,SÍ
+p30_2,8888,No sabe
+p30_2,9999,No contesta
+p30_3,0,NO
+p30_3,1,SÍ
+p30_3,8888,No sabe
+p30_3,9999,No contesta
+p30_4,0,NO
+p30_4,1,SÍ
+p30_4,8888,No sabe
+p30_4,9999,No contesta
+p30_5,0,NO
+p30_5,1,SÍ
+p30_5,8888,No sabe
+p30_5,9999,No contesta
+p30_6,0,NO
+p30_6,1,SÍ
+p30_6,8888,No sabe
+p30_6,9999,No contesta
+p30_7,0,NO
+p30_7,1,SÍ
+p30_7,8888,No sabe
+p30_7,9999,No contesta
+p30_8,0,NO
+p30_8,1,SÍ
+p30_8,8888,No sabe
+p30_8,9999,No contesta
+p30_9,0,NO
+p30_9,1,SÍ
+p30_9,8888,No sabe
+p30_9,9999,No contesta
+p31,1,1
+p31,2,2
+p31,3,3
+p31,4,4
+p31,5,5
+p31,6,6
+p31,7,7
+p31,8,8
+p31,9,9
+p31,10,10
+p31,8888,No sabe
+p31,9999,No contesta
+p32,1,Aumentar la cantidad de unidades de camión y destino de las rutas
+p32,2,"Mejorar las condiciones del transporte existente (comodidad, limpieza, funcionamiento)"
+p32,3,Aumentar la capacidad y líneas del metro
+p32,4,Implementar un sistema de bicicleta pública
+p32,5,Ampliar la capacidad de la ecovía
+p32,6,Mejorar la seguridad en el transporte
+p32,7,Otro ¿cuál?
+p32,8888,No sabe
+p32,9999,No contesta
+p33,9999,No contesta
+p34,0,No
+p34,1,Sí
+p34,9999,No contesta
+p35,1,"Es menos seguro desplazarme (frente a los autos, tráfico)/ me da miedo ser atropellado"
+p35,2,"Por la inseguridad pública (asalto, robos, acoso sexual)"
+p35,3,"Infraestructura para ciclistas inexistente, deficiente a insuficiente (señalización, carriles, ciclovías, estacionamientos)"
+p35,4,"Malas condiciones climatológicas (calor, lluvia, falta de sombra)"
+p35,5,Mayores tiempos de traslado.
+p35,6,Pocas o nulas facilidades para combinar bicicleta con el transporte público
+p35,7,Las bicicletas son muy caras
+p35,8,No se andar en bicicleta
+p35,9,Las distancias son muy largas
+p35,10,No tengo o está descompuesta
+p35,11,No la necesito o no me gusta
+p35,12,No puedo utilizarla por mi condición física
+p35,13,"La usamos solo como diversión o ejercicio, no como medio de transporte"
+p35,14,Por los perros que te corretean
+p35,9999,No contesta
+p36,9999,No contesta
+p37,8888,No sabe
+p37,9999,No contesta
+p38_1,0,No
+p38_1,1,Sí
+p38_1,2,No hay
+p38_1,8888,No sabe
+p38_1,9999,No contesta
+p38_2,0,No
+p38_2,1,Sí
+p38_2,2,No hay
+p38_2,8888,No sabe
+p38_2,9999,No contesta
+p38_3,0,No
+p38_3,1,Sí
+p38_3,8888,No sabe
+p38_3,9999,No contesta
+p38_4,0,No
+p38_4,1,Sí
+p38_4,2,No hay
+p38_4,8888,No sabe
+p38_4,9999,No contesta
+p38_5,0,No
+p38_5,1,Sí
+p38_5,2,No hay
+p38_5,8888,No sabe
+p38_5,9999,No contesta
+p38_6,0,No
+p38_6,1,Sí
+p38_6,2,No hay
+p38_6,8888,No sabe
+p38_6,9999,No contesta
+p38_7,0,No
+p38_7,1,Sí
+p38_7,2,No hay
+p38_7,8888,No sabe
+p38_7,9999,No contesta
+p38_8,0,No
+p38_8,1,Sí
+p38_8,2,No hay
+p38_8,8888,No sabe
+p38_8,9999,No contesta
+p39,1,1
+p39,2,2
+p39,3,3
+p39,4,4
+p39,5,5
+p39,6,6
+p39,7,7
+p39,8,8
+p39,9,9
+p39,10,10
+p39,8888,No sabe
+p39,9999,No contesta
+p40,1,"Transporte público: no hay rutas, son de mala calidad, el tiempo de espera es elevado."
+p40,2,Congestión vehicular (Tráfico).
+p40,3,"Inseguridad en el desplazamiento vial (choques entre vehículos, atropellos)"
+p40,4,"Calidad de la infraestructura vial para automóviles: baches, semáforos descompuestos, deficiencias viales."
+p40,5,No hay infraestructura para peatones y ciclistas.
+p40,6,Cultura vial: no se conduce de acuerdo con el reglamento.
+p40,7,Ninguno
+p40,8,Todas las anteriores
+p40,8888,No sabe
+p40,9999,No contesta
+p41,0,NO
+p41,1,SÍ
+p41,8888,No sabe
+p41,9999,No contesta
+p42,1,Hace menos de un año
+p42,2,Hace 1-5 años
+p42,3,Hace más de 5-10 años
+p42,4,Hace más de 10 años
+p42,5,Nunca se ha mudado de casa
+p42,8888,No sabe
+p42,9999,No contesta
+p43,0,Nueva
+p43,1,Previamente habitada
+p43,8888,No sabe
+p43,9999,No contesta
+p44,1,"Allende, NL"
+p44,2,"Apodaca, NL"
+p44,3,"Abasolo, NL"
+p44,4,"Cadereyta, NL"
+p44,5,"Alamo, Veracruz"
+p44,6,"Altamira, Tamaulipas"
+p44,7,Argentina
+p44,8,"Aramberri, NL"
+p44,9,Burgos Tamaulipas
+p44,10,"Campeche ,Campeche"
+p44,11,"Coatzacoalcos, Veracruz"
+p44,12,"Carvajal, SLP"
+p44,13,"Ciudad Madero, Tamaulipas"
+p44,14,"Ciudad Valles, Tamaulipas"
+p44,15,"Ciudad Victoria, Tamaulipas"
+p44,16,"Celaya, Guanajuato"
+p44,17,San Luis Potosí
+p44,18,"Durango, Durango"
+p44,19,Cerralvo NL
+p44,20,"Charcas, SLP"
+p44,21,"Chiapas, Chiapas"
+p44,22,"Chihuahua, Chihuahua"
+p44,23,"China, NL"
+p44,24,"Ciénega de Flores, NL"
+p44,25,"Colima, Colima"
+p44,26,"Córdoba, Veracruz"
+p44,27,"Cuernavaca, Morelos"
+p44,28,"Culiacán, Sinaloa"
+p44,29,"Dr. Gonzalez, Nuevo León"
+p44,30,Dr. Arroyo
+p44,31,"Ecatepec, Estado de México"
+p44,32,Estado de México
+p44,33,"El Carmen, NL"
+p44,34,"García, NL"
+p44,35,"Escobedo, NL"
+p44,36,"Roma, Texas, USA"
+p44,37,Estados Unidos
+p44,38,"Fresnillo, Zacatecas"
+p44,39,"Galeana, Galeana"
+p44,40,"García, NL"
+p44,41,"Guadalajara, Jalisco"
+p44,42,"Guadalupe, NL"
+p44,43,"Guanajuato, Guanajuato"
+p44,44,"Guasave, Sinaloa"
+p44,45,"Hidalgo, NL"
+p44,46,"Hidalgo, Tamaulipas"
+p44,47,"Houston, Texas"
+p44,48,"Iturbude, NL"
+p44,49,Ixtapaluca Estado De México
+p44,50,"Jalapa, Veracruz"
+p44,51,"Jalapa de Méndez, Tabasco"
+p44,52,"Juárez, NL"
+p44,53,"Jicotepec, Puebla"
+p44,54,"Ciudad Juárez, Chihuahua"
+p44,55,"La Huasteca, SLP"
+p44,56,"Lápazos, NL"
+p44,57,"Laredo, Texas"
+p44,58,"Linares, NL"
+p44,59,"Las Guerras, Tamaulipas"
+p44,60,Ciudad Mante
+p44,61,"Marín, NL"
+p44,62,"Matehuala, SLP"
+p44,63,"Mérida, Yucatán"
+p44,64,Ciudad de México
+p44,65,"Miguel Alemán, Tamaulipas"
+p44,66,"Minatitlán, Veracruz"
+p44,67,"Monclova, Coahuila"
+p44,68,"Montemorelos, NL"
+p44,69,"Monterrey, NL"
+p44,70,"Nuevo Laredo, Tamaulipas"
+p44,71,Honduras
+p44,72,"Ostucán, Chiapas"
+p44,73,"Oaxaca, Oaxaca"
+p44,74,"Pánuco, Veracruz"
+p44,75,"Papantla, Veracruz"
+p44,76,"Pesquería, NL"
+p44,77,Otro estado
+p44,78,"Poza Rica, Veracruz"
+p44,79,"Ramos Arizpe, Coahuila"
+p44,80,"Rayones, NL"
+p44,81,"Reynosa,Tamaulipas"
+p44,82,"Sabinas, Coahuila"
+p44,83,"Sabinas Hidalgo, NL"
+p44,84,"Salinas Victoria, NL"
+p44,85,"Salinasde Hidalgo, SLP"
+p44,86,Saltillo Coahuila
+p44,87,"Salvatierra, Guanajuato"
+p44,88,"San Pedro Garza García, NL"
+p44,89,"San Andres , Zacatecas"
+p44,90,San Cristibal De Las Casas Chiapas
+p44,91,"San Luis Potosí, SLP"
+p44,92,"Ciudad Valles, SLP"
+p44,93,"San Rafael, Galeana NL"
+p44,94,"San Salvador, Zacaecas"
+p44,95,"Santa Catarina, NL"
+p44,96,"Santiago, NL"
+p44,97,"Soto La Marina, Tamaulipas"
+p44,98,Tabasco
+p44,99,Tamaulipas
+p44,100,"Encino, Tamaulipas"
+p44,101,"Tampacan,SLP"
+p44,102,"Tampico Alto Jalapa, Veracruz"
+p44,103,"Tampico, Tamaulipas"
+p44,104,"Tantoyuca, Veracruz"
+p44,105,"Tatahilcapa , Veracruz"
+p44,106,"Terán, NL"
+p44,107,"Tijuana, Baja California Norte"
+p44,108,"Tlaxcla,Tlaxcala"
+p44,109,"Torreón, Coahuila"
+p44,110,"Tula Allende, Hidalgo"
+p44,111,"Tuxpan, Veracruz"
+p44,112,"Venado, SLP"
+p44,113,"Zuazua, Zuazua"
+p44,114,"San Nicolás de los Garza, NL"
+p44,115,"Veracruz, Veracruz"
+p44,116,Zaragoza
+p44,117,"Xilitla, SLP"
+p44,118,"Zacatecas, Zacatecas"
+p44,119,Villa De Coss Zacatecas
+p44,120,"Villagrán, Tamaulipas"
+p44,121,"Consuelo, Linares"
+p44,122,"Naranjal, Veracruz"
+p44,123,"Zacoalco de Torres, Jalisco"
+p44,124,"Toluca, Estado de México"
+p44,9999,No contesta
+p45,1,Compré una casa / Tener casa propia
+p45,2,La renta de la casa es más barata
+p45,3,Más cerca de trabajo
+p45,4,Más cerca de familia/amistades
+p45,5,"Tiene servicios más cerca (escuelas, parques, centros comerciales, hospitales, etc)"
+p45,6,Mejor seguridad
+p45,7,"Dificultad para pagar lugar anterior (subió la renta, comenzó a recibir menos ingresos)"
+p45,8,Es privada
+p45,9,Me pidieron desalojar / Necesitaban el lugar dónde vivía
+p45,10,Me fui a vivir con mi pareja / esposo(a)
+p45,11,Me quería independizar
+p45,12,Una casa/departamento más grande
+p45,13,Divorcio / Me separé de mi pareja
+p45,15,Quería una casa más pequeña
+p45,16,Puedo vender tacos aquí porque hay más gente
+p45,17,Buscaba mejor nivel de vida
+p45,18,Quería vivir en el área metropolitana
+p45,19,Los reubicaron a esa colonia después del huracán Gilberto
+p45,8888,No sabe
+p45,9999,No contesta
+p46_1,1,1
+p46_1,2,2
+p46_1,3,3
+p46_1,4,4
+p46_1,5,5
+p46_1,6,6
+p46_1,7,7
+p46_1,8,8
+p46_1,9,9
+p46_1,10,10
+p46_1,8888,No sabe
+p46_1,9999,No contesta
+p46_2,1,1
+p46_2,2,2
+p46_2,3,3
+p46_2,4,4
+p46_2,5,5
+p46_2,6,6
+p46_2,7,7
+p46_2,8,8
+p46_2,9,9
+p46_2,10,10
+p46_2,8888,No sabe
+p46_2,9999,No contesta
+p46_3,1,1
+p46_3,2,2
+p46_3,3,3
+p46_3,4,4
+p46_3,5,5
+p46_3,6,6
+p46_3,7,7
+p46_3,8,8
+p46_3,9,9
+p46_3,10,10
+p46_3,8888,No sabe
+p46_3,9999,No contesta
+p46_4,1,1
+p46_4,2,2
+p46_4,3,3
+p46_4,4,4
+p46_4,5,5
+p46_4,6,6
+p46_4,7,7
+p46_4,8,8
+p46_4,9,9
+p46_4,10,10
+p46_4,8888,No sabe
+p46_4,9999,No contesta
+p46_5,1,1
+p46_5,2,2
+p46_5,3,3
+p46_5,4,4
+p46_5,5,5
+p46_5,6,6
+p46_5,7,7
+p46_5,8,8
+p46_5,9,9
+p46_5,10,10
+p46_5,8888,No sabe
+p46_5,9999,No contesta
+p47,0,No
+p47,1,Sí
+p47,8888,No sabe
+p47,9999,No contesta
+p48,1,"Grandes distancias entre viviendas y servicios básicos (escuelas, farmacias, trabajo, supermercados)."
+p48,2,Falta de áreas verdes o deportivas.
+p48,3,Invasión de áreas naturales/montañas por construcciones.
+p48,4,"Servicios públicos deficientes (luminarias, drenaje pluvial, recolección de residuos)."
+p48,5,"Desarrollo de construcciones en lugares sin infraestructura básica: calles, drenaje, luminarias, banquetas."
+p48,6,Viviendas abandonadas
+p48,7,Obras públicas sin terminar o muy lentas
+p48,8,Empresas contaminantes en el área metropolitana
+p48,9,Ninguno
+p48,10,Empresas contaminantes en el área metropolitana
+p48,8888,No sabe
+p48,9999,No contesta
+p49,1,"Sí, disminución de la presión del agua"
+p49,2,"Sí, cortes de agua"
+p49,3,"Sí, cortes de agua y dismusión de la presión del agua"
+p49,4,No ha tenido ningún problema
+p49,5,Otro____
+p49,8888,No sabe
+p49,9999,No contesta
+p50,0,Nada preocupado
+p50,1,Algo preocupado
+p50,2,Muy preocupado
+p50,9999,No contesta
+p51,1,7 días a la semana
+p51,2,5 - 6 días
+p51,3,3 - 4 días a la semana
+p51,4,1- 2 días a la semana
+p51,5,1 día cada 2 semanas
+p51,6,1 día al mes
+p51,7,1 día cada 2 o más meses
+p51,8,No visita los parques
+p51,8888,No sabe
+p51,9999,No contesta
+p52_1,0,NO
+p52_1,1,Sí
+p52_1,8888,No sabe
+p52_1,9999,No contesta
+p52_2,0,NO
+p52_2,1,Sí
+p52_2,8888,No sabe
+p52_2,9999,No contesta
+p52_3,0,NO
+p52_3,1,Sí
+p52_3,8888,No sabe
+p52_3,9999,No contesta
+p52_4,0,NO
+p52_4,1,Sí
+p52_4,8888,No sabe
+p52_4,9999,No contesta
+p52_5,0,NO
+p52_5,1,Sí
+p52_5,8888,No sabe
+p52_5,9999,No contesta
+p53,1,Pésima
+p53,2,Mala
+p53,3,Regular
+p53,4,Buena
+p53,5,Excelente
+p53,8888,No sabe
+p53,9999,No contesta
+p54_1,0,NO
+p54_1,1,Sí
+p54_1,8888,No sabe
+p54_1,9999,No contesta
+p54_2,0,NO
+p54_2,1,Sí
+p54_2,8888,No sabe
+p54_2,9999,No contesta
+p54_3,0,NO
+p54_3,1,Sí
+p54_3,8888,No sabe
+p54_3,9999,No contesta
+p54_4,0,NO
+p54_4,1,Sí
+p54_4,8888,No sabe
+p54_4,9999,No contesta
+p54_5,0,NO
+p54_5,1,Sí
+p54_5,8888,No sabe
+p54_5,9999,No contesta
+p54_6,0,NO
+p54_6,1,Sí
+p54_6,8888,No sabe
+p54_6,9999,No contesta
+p55_1,0,NO
+p55_1,1,Sí
+p55_1,8888,No sabe
+p55_1,9999,No contesta
+p55_2,0,NO
+p55_2,1,Sí
+p55_2,8888,No sabe
+p55_2,9999,No contesta
+p55_3,0,NO
+p55_3,1,Sí
+p55_3,8888,No sabe
+p55_3,9999,No contesta
+p55_4,0,NO
+p55_4,1,Sí
+p55_4,8888,No sabe
+p55_4,9999,No contesta
+p56,1,No es de mi interés
+p56,2,No sé cómo separarla
+p56,3,"Aun cuando la separe, el camión mezcla todos los residuos"
+p56,4,No me es posible separarla en casa y/o no existen puntos de reciclaje cerca de mi vivienda.
+p56,5,No utilizamos mucho embases reciclables
+p56,6,Las personas recolectoras se la llevan
+p56,8888,No sabe
+p56,9999,No contesta
+p57,1,Lo deposita con el resto de los residuos
+p57,2,Lo lleva a un centro de acopio o contenedor de residuos segregados
+p57,3,Pasa un camión por los residuos segregados.
+p57,4,Los vende
+p57,5,"Lo intercambio por otros productos, descuentos o cupones"
+p57,6,Los regala
+p57,7,Los reutiliza
+p57,8888,No sabe
+p57,9999,No contesta
+p58,0,NO
+p58,1,Sí
+p58,8888,No sabe
+p58,9999,No contesta
+p59,0,NO
+p59,1,Sí
+p59,8888,No sabe
+p59,9999,No contesta
+p60,0,NO
+p60,1,Sí
+p60,8888,No sabe
+p60,9999,No contesta
+p61,1,En el Río Santa Catarina se deberían realizar obras públicas de movilidad o recreación
+p61,2,El Río Santa Catarina debería preservar su ecosistema natural y no recibir ninguna intervención pública
+p61,8888,No sabe
+p61,9999,No contesta
+p62,1,Contaminación del aire
+p62,2,Contaminación de agua (ríos y arroyos)
+p62,3,"Falta de árboles, áreas verdes y mal estado de los ya existentes en la calle"
+p62,4,Basura/escombro en las calles y en terrenos baldíos
+p62,5,Escasez de agua/Desperdicio del agua
+p62,6,Falta de reciclaje
+p62,7,Cambio o Crisis climática
+p62,8,Contaminación auditiva
+p62,9,Ninguno
+p62,10,Todas las anteriores
+p62,8888,No sabe
+p62,9999,No contesta
+p63,1,Mejor
+p63,2,Igual de bien
+p63,3,Igual de mal
+p63,4,Peor
+p63,8888,No sabe
+p63,9999,No contesta
+p64,1,Mejor
+p64,2,Igual de bien
+p64,3,Igual de mal
+p64,4,Peor
+p64,8888,No sabe
+p64,9999,No contesta
+p65,1,Les alcanza bien y pueden ahorrar
+p65,2,"Les alcanza justo, sin grandes dificultades"
+p65,3,No les alcanza y tienen dificultades
+p65,4,No les alcanza y tienen grandes dificultades
+p65,8888,No Sabe
+p65,9999,No Contesta
+p66,1,Las empresas extranjeras contribuirán a la prosperidad económica de la ciudad.
+p66,2,Las empresas extranjeras pueden traer problemas ambientales (como la escasez de agua y contaminación) o de desarrollo urbano (como las grandes distancias y los precios de las propiedades).
+p66,8888,No Sabe
+p66,9999,No Contesta
+p67,0,NO
+p67,1,Sí
+p67,8888,No sabe
+p67,9999,No contesta
+p68_1,0,NO
+p68_1,1,Sí
+p68_1,8888,No sabe
+p68_1,9999,No contesta
+p68_2,0,NO
+p68_2,1,Sí
+p68_2,8888,No sabe
+p68_2,9999,No contesta
+p68_3,0,NO
+p68_3,1,Sí
+p68_3,8888,No sabe
+p68_3,9999,No contesta
+p68_4,0,NO
+p68_4,1,Sí
+p68_4,8888,No sabe
+p68_4,9999,No contesta
+p68_5,0,NO
+p68_5,1,Sí
+p68_5,8888,No sabe
+p68_5,9999,No contesta
+p68_6,0,NO
+p68_6,1,Sí
+p68_6,8888,No sabe
+p68_6,9999,No contesta
+p68_7,0,NO
+p68_7,1,Sí
+p68_7,8888,No sabe
+p68_7,9999,No contesta
+p68_8,0,NO
+p68_8,1,Sí
+p68_8,8888,No sabe
+p68_8,9999,No contesta
+p68_9,0,NO
+p68_9,1,Sí
+p68_9,8888,No sabe
+p68_9,9999,No contesta
+p68_10,0,NO
+p68_10,1,Sí
+p68_10,8888,No sabe
+p68_10,9999,No contesta
+p68_11,0,NO
+p68_11,1,Sí
+p68_11,8888,No sabe
+p68_11,9999,No contesta
+p68_12,0,NO
+p68_12,1,Sí
+p68_12,8888,No sabe
+p68_12,9999,No contesta
+p68_13,0,NO
+p68_13,1,Sí
+p68_13,8888,No sabe
+p68_13,9999,No contesta
+p68_14,0,NO
+p68_14,1,Sí
+p68_14,8888,No sabe
+p68_14,9999,No contesta
+p68_15,0,NO
+p68_15,1,Sí
+p68_15,8888,No sabe
+p68_15,9999,No contesta
+p68_16,0,NO
+p68_16,1,SÍ
+p68_16_cual,1,Por su religión
+p68_16_cual,2,Por ser madre soltera
+p68_16_cual,3,Por su preferencia política
+p68_16_cual,4,Por falta de experiencia
+p68_16_cual,5,Por ser divorciada
+num_discriminaciones,8888,No sabe
+num_discriminaciones,9999,No contesta
+al_menos_una_discriminacion,8888,No sabe
+al_menos_una_discriminacion,9999,No contesta
+p69,1,Ha incrementado y son de otro estado de México
+p69,2,Ha incrementado y son de otro país
+p69,3,Ha incrementado y son de otro estado de México y de otro país
+p69,4,Se ha mantenido igual
+p69,5,Ha disminuido
+p69,8888,No sabe
+p69,9999,No contesta
+p70_1,0,En desacuerdo
+p70_1,1,De acuerdo
+p70_1,8888,No sabe
+p70_1,9999,No contesta
+p70_2,0,En desacuerdo
+p70_2,1,De acuerdo
+p70_2,8888,No sabe
+p70_2,9999,No contesta
+p70_3,0,En desacuerdo
+p70_3,1,De acuerdo
+p70_3,8888,No sabe
+p70_3,9999,No contesta
+p70_4,0,En desacuerdo
+p70_4,1,De acuerdo
+p70_4,8888,No sabe
+p70_4,9999,No contesta
+p71,0,No
+p71,1,Sí
+p71,8888,No sabe
+p71,9999,No contesta
+p72,0,No
+p72,1,Sí
+p72,8888,No sabe
+p72,9999,No contesta
+p73,0,No
+p73,1,Sí
+p73,8888,No sabe
+p73,9999,No contesta
+p74,0,No
+p74,1,Sí
+p74,8888,No sabe
+p74,9999,No contesta
+p75,0,No
+p75,1,"Sí, una enfermedad Crónica (diabetes, hipertensión, cáncer, etc)"
+p75,2,"Sí, una enfermedad Aguda (resfriados, Covid-19, enfermedades gastrointestinales, fracturas, quemaduras, etc)"
+p75,9999,No contesta
+p76,0,No
+p76,1,Sí
+p76,8888,No sabe
+p76,9999,No contesta
+p77,1,Se automedicó
+p77,2,"No había citas, o las dan mucho tiempo después."
+p77,3,No tenía tiempo para ir.
+p77,4,No tenía una clínica cerca.
+p77,5,No tiene seguro médico/no puede pagar los tratamientos
+p77,6,No confía en el personal de salud/ tienen un mal trato.
+p77,7,Temor a contagiarse de alguna enfermedad
+p77,8,No tomó medicamento
+p77,9,Me atiendo con un familiar
+p77,8888,No sabe
+p77,9999,No contesta
+p78,0,No
+p78,1,Sí
+p78,8888,No sabe
+p78,9999,No contesta
+p79,0,No
+p79,1,Sí
+p79,8888,No sabe
+p79,9999,No contesta
+p80,1,IMSS
+p80,2,"Hospital naval, militar o PEMEX"
+p80,3,ISSSTE Federal
+p80,4,ISSSTELEON
+p80,5,"Secretaría de Salud (""Cuidar tu salud"")"
+p80,6,Servicios médicos UANL
+p80,7,Hospital o consultorio privado
+p80,8,"Medicina tradicional (Curandero, hierbero, etc.) o Medicina alternativa"
+p80,9,Consultorio de farmacia
+p80,10,"Servicios empresariales de salud (Heineken, Vitro)"
+p80,11,Hospital Materno
+p80,12,Clínica municipal
+p80,13,Me atiendo con un familiar
+p80,8888,No sabe
+p80,9999,No contesta
+p81,1,Siempre
+p81,2,La mayoría de las veces
+p81,3,Algunas veces
+p81,4,Nunca
+p81,8888,No sabe
+p81,9999,No contesta
+p81,7777,No Aplica
+p82,1,Esperar y volver a la unidad de salud en otra fecha para ver si la tenían
+p82,2,La adquirí de inmediato en una farmacia privada
+p82,3,No surtí la receta
+p82,8888,No sabe
+p82,9999,No contesta
+p82,7777,No Aplica
+p83,1,Consulta programada (cita previa)
+p83,2,Consulta no programada
+p83,3,Urgencia
+p83,8888,No Sabe
+p83,9999,No Contesta
+p83,7777,No Aplica
+p84,1,Menos de una semana
+p84,2,De 1 a 2 semanas
+p84,3,De 3 a 4 semanas
+p84,4,De 5 a 6 semanas
+p84,5,De 7 a 8 semanas
+p84,6,Más de 8 semanas
+p84,8888,No sabe
+p84,9999,No contesta
+p85,0,No lo atendieron
+p85,1,Sí lo atendieron
+p85,9999,No contesta
+p86_1,8888,No sabe
+p86_1,9999,No contesta
+p86_2,8888,No sabe
+p86_2,9999,No contesta
+tiempo_espera_consulta,8888,No sabe
+tiempo_espera_consulta,9999,No contesta
+p87,1,Pésimas
+p87,2,Malas
+p87,3,Regulares
+p87,4,Buenas
+p87,5,Excelentes
+p87,8888,No Sabe
+p87,9999,No Contesta
+p87,7777,No Aplica
+p88_1,1,Pésimo
+p88_1,2,Malo
+p88_1,3,Regular
+p88_1,4,Bueno
+p88_1,5,Excelente
+p88_1,8888,No Sabe
+p88_1,9999,No Contesta
+p88_1,7777,No Aplica
+p88_2,1,Pésimo
+p88_2,2,Malo
+p88_2,3,Regular
+p88_2,4,Bueno
+p88_2,5,Excelente
+p88_2,8888,No Sabe
+p88_2,9999,No Contesta
+p88_2,7777,No Aplica
+p88_3,1,Pésimo
+p88_3,2,Malo
+p88_3,3,Regular
+p88_3,4,Bueno
+p88_3,5,Excelente
+p88_3,8888,No Sabe
+p88_3,9999,No Contesta
+p88_3,7777,No Aplica
+p88_4,1,Pésimo
+p88_4,2,Malo
+p88_4,3,Regular
+p88_4,4,Bueno
+p88_4,5,Excelente
+p88_4,8888,No Sabe
+p88_4,9999,No Contesta
+p88_4,7777,No Aplica
+p88_5,1,Pésimo
+p88_5,2,Malo
+p88_5,3,Regular
+p88_5,4,Bueno
+p88_5,5,Excelente
+p88_5,8888,No Sabe
+p88_5,9999,No Contesta
+p88_5,7777,No Aplica
+p89,1,1
+p89,2,2
+p89,3,3
+p89,4,4
+p89,5,5
+p89,6,6
+p89,7,7
+p89,8,8
+p89,9,9
+p89,10,10
+p89,8888,No sabe
+p89,9999,No contesta
+p89,7777,No Aplica
+p90,1,Hospitales o clínicas insuficientes o lejanas
+p90,2,Los servicios de salud son caros
+p90,3,El personal médico es insuficiente
+p90,4,"Falta de insumos/medicamentos (camillas, equipo médico)"
+p90,5,La infraestructura de atención es deficiente
+p90,6,Falta de cobertura en tratamiento de padecimientos.
+p90,7,"Falta de programas preventivos (vacunación, control de peso, control de presión arterial)"
+p90,8,Ninguno
+p90,8888,No sabe
+p90,9999,No contesta
+p91_1,1,Sí y es muy frecuente
+p91_1,2,Sí y es frecuente
+p91_1,3,Sí y es poco frecuente
+p91_1,4,No me ocurre
+p91_1,9999,No contesta
+p91_2,1,Sí y es muy frecuente
+p91_2,2,Sí y es frecuente
+p91_2,3,Sí y es poco frecuente
+p91_2,4,No me ocurre
+p91_2,9999,No contesta
+p91_3,1,Sí y es muy frecuente
+p91_3,2,Sí y es frecuente
+p91_3,3,Sí y es poco frecuente
+p91_3,4,No me ocurre
+p91_3,9999,No contesta
+al_menos_un_problema_mental,0,No
+al_menos_un_problema_mental,1,Sí
+p92,1,El ingreso familiar no es suficiente.
+p92,2,Pocas oportunidades laborales.
+p92,3,"Servicios de salud poco accesibles (lejanos, caros, insuficientes)."
+p92,4,Mala calidad en los servicios de salud.
+p92,5,"Planteles educativos poco accesibles (lejanos, caros, cupo insuficiente)."
+p92,6,Mala calidad del servicio educativo.
+p92,7,"Discriminación hacia ciertos grupos (mujeres, personas migrantes, personas indigenas)"
+p92,8,Incremento de migrantes sin oportunidades laborales
+p92,9,"Falta de servicios de cuidado accesibles: guarderías, asilo de ancianos o centros para personas con discapacidad"
+p92,10,Ninguno
+p92,11,Todas las anteriores
+p92,8888,No sabe
+p92,9999,No contesta
+p93,1,Muy seguro
+p93,2,Seguro
+p93,3,Inseguro
+p93,4,Muy inseguro
+p93,8888,No sabe
+p93,9999,No contesta
+p94,1,Transporte público
+p94,2,Vía pública
+p94,3,Casa
+p94,4,Trabajo
+p94,5,Escuela
+p94,6,"Centros de entretenimiento (casinos, bares, antros)"
+p94,7,No me siento inseguro(a)
+p94,8,En todos los lugares
+p94,8888,No sabe
+p94,9999,No contesta
+p95,0,NO
+p95,1,SÍ
+p95,8888,No sabe
+p95,9999,No contesta
+p96,0,NO
+p96,1,SÍ
+p96,8888,No sabe
+p96,9999,No contesta
+p97,0,NO
+p97,1,SÍ
+p97,8888,No sabe
+p97,9999,No contesta
+p98,1,1
+p98,2,2
+p98,3,3
+p98,4,4
+p98,5,5
+p98,6,6
+p98,7,7
+p98,8,8
+p98,9,9
+p98,10,10
+p98,8888,No sabe
+p98,9999,No contesta
+p99,1,Muy probable
+p99,2,Probable
+p99,3,Poco probable
+p99,4,Improbable
+p99,8888,No sabe
+p99,9999,No contesta
+p100_1,0,NO
+p100_1,1,SÍ
+p100_1,8888,No sabe
+p100_1,9999,No contesta
+p100_2,0,NO
+p100_2,1,SÍ
+p100_2,8888,No sabe
+p100_2,9999,No contesta
+p100_3,0,NO
+p100_3,1,SÍ
+p100_3,8888,No sabe
+p100_3,9999,No contesta
+p100_4,0,NO
+p100_4,1,SÍ
+p100_4,8888,No sabe
+p100_4,9999,No contesta
+p100_5,0,NO
+p100_5,1,SÍ
+p100_5,8888,No sabe
+p100_5,9999,No contesta
+p100_6,0,NO
+p100_6,1,SÍ
+p100_6,8888,No sabe
+p100_6,9999,No contesta
+p101_1,1,1
+p101_1,2,2
+p101_1,3,3
+p101_1,4,4
+p101_1,5,5
+p101_1,6,6
+p101_1,7,7
+p101_1,8,8
+p101_1,9,9
+p101_1,10,10
+p101_1,8888,No sabe
+p101_1,9999,No contesta
+p101_2,1,1
+p101_2,2,2
+p101_2,3,3
+p101_2,4,4
+p101_2,5,5
+p101_2,6,6
+p101_2,7,7
+p101_2,8,8
+p101_2,9,9
+p101_2,10,10
+p101_2,8888,No sabe
+p101_2,9999,No contesta
+p101_3,1,1
+p101_3,2,2
+p101_3,3,3
+p101_3,4,4
+p101_3,5,5
+p101_3,6,6
+p101_3,7,7
+p101_3,8,8
+p101_3,9,9
+p101_3,10,10
+p101_3,8888,No sabe
+p101_3,9999,No contesta
+p101_4,1,1
+p101_4,2,2
+p101_4,3,3
+p101_4,4,4
+p101_4,5,5
+p101_4,6,6
+p101_4,7,7
+p101_4,8,8
+p101_4,9,9
+p101_4,10,10
+p101_4,8888,No sabe
+p101_4,9999,No contesta
+p101_5,1,1
+p101_5,2,2
+p101_5,3,3
+p101_5,4,4
+p101_5,5,5
+p101_5,6,6
+p101_5,7,7
+p101_5,8,8
+p101_5,9,9
+p101_5,10,10
+p101_5,8888,No sabe
+p101_5,9999,No contesta
+p102,0,NO
+p102,1,SÍ
+p102,8888,No sabe
+p102,9999,No contesta
+p103,1,Policía Estatal (Fuerza Civil)
+p103,2,Policía municipal
+p103,3,Policía federal (Guardia Nacional)
+p103,8888,No sabe
+p103,9999,No contesta
+p104_1,0,NO
+p104_1,1,SÍ
+p104_1,8888,No sabe
+p104_1,9999,No contesta
+p104_2,0,NO
+p104_2,1,SÍ
+p104_2,8888,No sabe
+p104_2,9999,No contesta
+p104_3,0,No
+p104_3,1,Sí y llegó en menos de 15 minutos
+p104_3,2,Sí y llegó entre 16 y 30 minutos
+p104_3,3,Sí y llegó entre 31 minutos y una hora
+p104_3,4,"Sí, y tardó más de una hora"
+p105,1,Nunca ocurre.
+p105,2,Casi no ocurre.
+p105,3,Ocurre con poca frecuencia.
+p105,4,Ocurre frecuentemente.
+p105,5,Siempre ocurre.
+p105,8888,No sabe
+p105,9999,No contesta
+p106,1,Nunca ocurre.
+p106,2,Casi no ocurre.
+p106,3,Ocurre con poca frecuencia.
+p106,4,Ocurre frecuentemente.
+p106,5,Siempre ocurre.
+p106,8888,No sabe
+p106,9999,No contesta
+p107_1,0,NO
+p107_1,1,SÍ
+p107_1,8888,No sabe
+p107_1,9999,No contesta
+p107_2,0,NO
+p107_2,1,SÍ
+p107_2,8888,No sabe
+p107_2,9999,No contesta
+p107_3,0,NO
+p107_3,1,SÍ
+p107_3,8888,No sabe
+p107_3,9999,No contesta
+p108,1,La Fiscalía General de Justicia
+p108,2,Policía Estatal
+p108,3,Policía Municipal
+p108,8888,No sabe
+p108,9999,No contesta
+p109,0,Desaprueba
+p109,1,Aprueba
+p109,8888,No sabe
+p109,9999,No contesta
+p110,0,No
+p110,1,Sí
+p110,8888,No sabe
+p110,9999,No contesta
+p111,1,"Delitos de alto impacto (homicidio, feminicidio, secuestro, violación, desaparición de personas)."
+p111,2,"Robos patrimoniales (robo a casa, vehículo, negocio o persona)."
+p111,3,"Delincuencia Organizada (venta de drogas, extorsiones, cobro de piso, presencia de grupos armados)."
+p111,4,Violencia familiar y/o violencia contra la mujer
+p111,5,"Violencia en la colonia (riñas, conflicto entre vecinos, pandillerismo)."
+p111,7,Ninguno
+p111,8,Todas las anteriores
+p111,8888,No sabe
+p111,9999,No contesta
+p112,1,Redes sociales
+p112,2,Periódico
+p112,3,Televisión
+p112,4,Radio
+p112,5,Portal de noticias en internet
+p112,6,Volanteo/perifoneo en la colonia
+p112,7,"Conversaciones con vecinos, familiares o amigos"
+p112,9,No se entera
+p112,8888,No sabe
+p112,9999,No contesta
+p113,1,Facebook
+p113,2,Twitter
+p113,3,Instagram
+p113,4,TikTok
+p113,5,WhatsApp
+p113,6,YouTube
+p113,8888,No sabe
+p113,9999,No contesta
+p114,1,No es de mi interés
+p114,2,No tengo tiempo
+p114,3,"La información no está disponible, ni a mi alcance"
+p114,8888,No sabe
+p114,9999,No contesta
+p115,0,NO
+p115,1,SÍ
+p115,8888,No sabe
+p115,9999,No contesta
+p116,0,NO
+p116,1,SÍ
+p116,8888,No sabe
+p116,9999,No contesta
+p117,0,NO
+p117,1,SÍ
+p117,8888,No sabe
+p117,9999,No contesta
+p118,1,Muy frecuente
+p118,2,Frecuente
+p118,3,Poco frecuente
+p118,4,No ocurre
+p118,8888,No sabe
+p118,9999,No contesta
+p119,1,Muy frecuente
+p119,2,Frecuente
+p119,3,Poco frecuente
+p119,4,No ocurre
+p119,8888,No sabe
+p119,9999,No contesta
+p120,0,NO
+p120,1,SÍ
+p120,8888,No sabe
+p120,9999,No contesta
+p121,1,Contacto con la policía
+p121,2,Contacto con tránsito
+p121,3,Trámites o servicios municipales
+p121,4,Trámites o servicios con el gobierno del estado
+p121,5,Trámites ante el ministerio público
+p121,8888,No sabe
+p121,9999,No contesta
+p122,0,No
+p122,1,Sí
+p122,8888,No sabe
+p122,9999,No contesta
+p123,0,No
+p123,1,Sí
+p123,8888,No sabe
+p123,9999,No contesta
+p124_1,0,NO
+p124_1,1,SÍ
+p124_1,8888,No sabe
+p124_1,9999,No contesta
+p124_2,0,NO
+p124_2,1,SÍ
+p124_2,8888,No sabe
+p124_2,9999,No contesta
+p124_3,0,NO
+p124_3,1,SÍ
+p124_3,8888,No sabe
+p124_3,9999,No contesta
+p124_4,0,NO
+p124_4,1,SÍ
+p124_4,8888,No sabe
+p124_4,9999,No contesta
+p125,1,Pensando en el bienestar del municipio.
+p125,2,Pensando en intereses particulares/personales
+p125,8888,No sabe
+p125,9999,No contesta
+p126,0,Desaprueba
+p126,1,Aprueba
+p126,8888,No sabe
+p126,9999,No contesta
+p127,1,Mejor de lo que esperaba
+p127,2,Igual de bien que lo que esperaba
+p127,3,Igual de lo mal que lo que esperaba
+p127,4,Peor de lo que esperaba
+p127,8888,No sabe
+p127,9999,No contesta
+p128_1,0,NO
+p128_1,1,SÍ
+p128_1,8888,No sabe
+p128_1,9999,No contesta
+p128_2,0,NO
+p128_2,1,SÍ
+p128_2,8888,No sabe
+p128_2,9999,No contesta
+p128_3,0,NO
+p128_3,1,SÍ
+p128_3,8888,No sabe
+p128_3,9999,No contesta
+p128_4,0,NO
+p128_4,1,SÍ
+p128_4,8888,No sabe
+p128_4,9999,No contesta
+p129,1,Pensando en el bienestar del estado
+p129,2,Pensando en intereses particulares/personales.
+p129,8888,No sabe
+p129,9999,No contesta
+p130,1,Mejor de lo que esperaba
+p130,2,Igual de bien que lo que esperaba
+p130,3,Igual de lo mal que lo que esperaba
+p130,4,Peor de lo que esperaba
+p130,8888,No sabe
+p130,9999,No contesta
+p131,0,En desacuerdo
+p131,1,De acuerdo
+p131,8888,No sabe
+p131,9999,No contesta
+p132,1,Su prioridad debe ser Nuevo León / Debería cumplir con el tiempo con el que se comprometió
+p132,2,No ha hecho buen trabajo en Nuevo León
+p132,3,No tiene posibilidades de ganar elecciones
+p132,4,Se desviarían recursos de Nuevo León para campañas políticas
+p132,5,Falta de experiencia
+p132,6,No tiene capacidad para ser presidente
+p132,7,Todas las anteriores
+p132,8888,No sabe
+p132,9999,No contesta
+p135,1,Mucho
+p135,2,Algo
+p135,3,Poco
+p135,4,Nada
+p135,8888,No sabe
+p135,9999,No contesta
+p136,1,Mucho
+p136,2,Algo
+p136,3,Poco
+p136,4,Nada
+p136,8888,No sabe
+p136,9999,No contesta
+p137,0,Desaprueba
+p137,1,Aprueba
+p137,8888,No sabe
+p137,9999,No contesta
+p139_1,0,NO
+p139_1,1,SÍ
+p139_1,8888,No sabe
+p139_1,9999,No contesta
+p139_2,0,NO
+p139_2,1,SÍ
+p139_2,8888,No sabe
+p139_2,9999,No contesta
+p139_3,0,NO
+p139_3,1,SÍ
+p139_3,8888,No sabe
+p139_3,9999,No contesta
+p139_4,0,NO
+p139_4,1,SÍ
+p139_4,8888,No sabe
+p139_4,9999,No contesta
+p139_5,0,NO
+p139_5,1,SÍ
+p139_5,3,No Aplica
+p139_5,8888,No sabe
+p139_5,9999,No contesta
+p139_6,0,NO
+p139_6,1,SÍ
+p139_6,8888,No sabe
+p139_6,9999,No contesta
+p139_7,0,NO
+p139_7,1,SÍ
+p139_7,8888,No sabe
+p139_7,9999,No contesta
+p139_8,0,NO
+p139_8,1,SÍ
+p139_8,8888,No sabe
+p139_8,9999,No contesta
+p139_9,0,NO
+p139_9,1,SÍ
+p139_9,8888,No sabe
+p139_9,9999,No contesta
+p139_10,0,NO
+p139_10,1,SÍ
+p139_10,8888,No sabe
+p139_10,9999,No contesta
+num_acciones_participacion_ciudadana,8888,No sabe
+num_acciones_participacion_ciudadana,9999,No contesta
+al_menos_una_accion_pc,0,No
+al_menos_una_accion_pc,1,Sí
+p141_1,0,NO
+p141_1,1,SÍ
+p141_1,8888,No sabe
+p141_1,9999,No contesta
+p142,1,El gobierno no atiende las demandas ciudadanas.
+p142,2,Los gobernantes no cumplen sus compromisos de campaña.
+p142,3,Los gobernantes hacen uso inadecuado de los recursos públicos.
+p142,4,No hay mecanismos efectivos de diálogo / participación ciudadana.
+p142,5,Los gobernantes son poco efectivos para resolver los problemas de la ciudad / estado.
+p142,6,Hay mucha corrupción en servidores públicos
+p142,7,Ninguno
+p142,8,Todas las anteriores
+p142,8888,No sabe
+p142,9999,No contesta
+p143,1,"Movilidad (mala calidad de transporte público, congestión vehicular)"
+p143,2,"Desarrollo Urbano (deficiencias en servicios públicos, dispersión de la ciudad)"
+p143,3,"Medio Ambiente (falta de agua, contaminación, falta de árboles)"
+p143,4,Desarrollo Social (desempleo/pobreza /discriminación/ educación/salud)
+p143,5,"Seguridad (incremento de índices delictivos/impunidad, violencia familiar)"
+p143,6,Gobierno Eficiente (corrupción/mal uso de los recursos)
+p143,9999,No contesta
+p144,1,Sin ingreso
+p144,2,"Menos de 1 SM ($1 - $6,223)"
+p144,3,"1-2 SM ($6,223 - $12,446)"
+p144,4,"2-3 SM ($12,446 - $18,670)"
+p144,5,"3-4 SM ($18,670 - $24,893)"
+p144,6,"4-5 SM ($24,893 - $31,116)"
+p144,7,"5-6 SM ($31,116 - $37,339)"
+p144,8,"6-7 SM ($37,339 - $43,562)"
+p144,9,"7-8 SM ($43,562 - $49,786)"
+p144,10,"8-9 SM ($49,786 - $56,009)"
+p144,11,"9-10 SM ($56,009 - $62,232)"
+p144,12,"10 o más SM ($62,232 o más)"
+p144,9999,No contesta
+al_menos_una_discriminacion,0,No
+al_menos_una_discriminacion,1,Sí

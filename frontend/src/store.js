@@ -54,6 +54,8 @@ const SECTION_LABELS = {
   orgullo_de_nuevo_leon: 'Orgullo de Nuevo León',
   principal_problema_de_nuevo_leon: 'Principal problema de Nuevo León',
   problema_de_desarrollo_social: 'Problema de desarrollo social',
+  eje_1_desarrollo_sustentable: 'Eje 1: Desarrollo sustentable',
+  datos_generales_de_la_poblacion_encuestada: 'Datos generales',
   derivadas: 'Variables derivadas',
 }
 

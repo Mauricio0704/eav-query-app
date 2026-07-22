@@ -235,7 +235,8 @@ def list_questions(wave: str | None = None):
                 q.q_section,
                 q.q_type,
                 q.q_info,
-                q.q_block
+                q.q_block,
+                q.concept_id
             FROM questions q
             WHERE q.wave_id = ?
             ORDER BY q.q_id
@@ -244,7 +245,7 @@ def list_questions(wave: str | None = None):
         ).fetchall()
 
         result = []
-        for q_id, q_text, q_section, q_type, q_info, q_block in questions:
+        for q_id, q_text, q_section, q_type, q_info, q_block, concept_id in questions:
             # For multiple-choice questions, fetch their options
             options = []
             if q_type != "numerica":
@@ -267,6 +268,7 @@ def list_questions(wave: str | None = None):
                     "q_type": q_type,
                     "q_info": q_info,
                     "q_block": q_block,
+                    "concept_id": concept_id,
                     "options": options,
                 }
             )
@@ -434,6 +436,218 @@ class QueryRequest(BaseModel):
     wave_id: str | None = None
 
 
+_YEAR_SENTINELS = {7777, 8888, 9999, 5555}
+
+
+def _year_comparison(req: QueryRequest):
+    """Cross-year comparison ("group_by=year").
+
+    Resolves the concept of the selected question, then runs the flat
+    distribution for that concept's question in EACH wave (each weighted by its
+    own factor_cvnl) and assembles a pivot with one column per year.
+
+    Categorical → % distribution within each year (options aligned by code).
+    Numérica    → weighted mean per year (a single "Promedio" row).
+    """
+    conn = get_conn()
+    try:
+        wave = req.wave_id or _default_wave()
+        if wave not in _wave_ids():
+            raise HTTPException(status_code=400, detail=f"Unknown wave_id: {wave}")
+        row = conn.execute(
+            "SELECT concept_id, q_text FROM questions WHERE wave_id = ? AND q_id = ?",
+            [wave, req.question_id],
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Question not found")
+        concept_id, q_text = row
+        if not concept_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Esta pregunta no tiene equivalencia entre años.",
+            )
+        crow = conn.execute(
+            "SELECT label, q_type, comparable FROM concepts WHERE concept_id = ?",
+            [concept_id],
+        ).fetchone()
+        if not crow or not crow[2]:
+            raise HTTPException(
+                status_code=400, detail="Concepto no comparable entre años."
+            )
+        concept_label, concept_type = crow[0], crow[1]
+        members = conn.execute(
+            "SELECT wave_id, q_id FROM questions WHERE concept_id = ? ORDER BY wave_id",
+            [concept_id],
+        ).fetchall()
+        # Catálogo canónico de opciones + mapa (ola, option_id) → opción canónica.
+        canon = conn.execute(
+            "SELECT concept_option_id, label, sort_order FROM concept_options "
+            "WHERE concept_id = ? ORDER BY sort_order",
+            [concept_id],
+        ).fetchall()
+        opt_to_canon = {}
+        for w, q in members:
+            for oid, coid in conn.execute(
+                "SELECT option_id, concept_option_id FROM options "
+                "WHERE wave_id = ? AND question_id = ?",
+                [w, q],
+            ).fetchall():
+                opt_to_canon[(w, oid)] = coid
+
+        # Traducción de filtros entre olas: el valor viene en la codificación de
+        # la ola base (`wave`); si un atributo se recodificó (p. ej. sexo 1/2 en
+        # 2022 vs 0/1), hay que traducir el valor a la codificación de cada ola
+        # vía la opción canónica, o el filtro daría 0 en esa ola.
+        years = [w for w, _ in members]
+        attr_qid = {}
+        for w2, a2, q2 in conn.execute(
+            "SELECT DISTINCT wave_id, attribute, question_id FROM respondent_attributes"
+        ).fetchall():
+            attr_qid[(w2, a2)] = q2
+
+        def _canon_of(w2, attr, v):
+            q2 = attr_qid.get((w2, attr))
+            if not q2:
+                return None
+            row = conn.execute(
+                "SELECT concept_option_id FROM options "
+                "WHERE wave_id = ? AND question_id = ? AND option_id = ?",
+                [w2, q2, v],
+            ).fetchone()
+            return row[0] if row and row[0] else None
+
+        def _raw_of(w2, attr, coid):
+            q2 = attr_qid.get((w2, attr))
+            if not q2:
+                return None
+            row = conn.execute(
+                "SELECT option_id FROM options "
+                "WHERE wave_id = ? AND question_id = ? AND concept_option_id = ?",
+                [w2, q2, coid],
+            ).fetchone()
+            return row[0] if row else None
+
+        translated = {}
+        for w2 in years:
+            tf = []
+            for f in req.filters:
+                attr = f["attribute"]
+                if attr == "city_id" or w2 == wave:
+                    tf.append(f)
+                    continue
+                vals = f["value"] if isinstance(f["value"], list) else [f["value"]]
+                nv = []
+                for v in vals:
+                    coid = _canon_of(wave, attr, v)
+                    tv = _raw_of(w2, attr, coid) if coid is not None else None
+                    nv.append(tv if tv is not None else v)
+                tf.append({"attribute": attr, "value": nv})
+            translated[w2] = tf
+    finally:
+        conn.close()
+
+    qid_by_year = {w: q for w, q in members}
+
+    # Distribución por año (reutiliza el path flat con el peso de cada ola).
+    per_year = {}
+    for w in years:
+        per_year[w] = run_query(
+            QueryRequest(
+                question_id=qid_by_year[w],
+                filters=translated[w],
+                group_by="answer",
+                initial_only=req.initial_only,
+                wave_id=w,
+            )
+        )
+
+    base = {
+        "format": "pivot",
+        "question": {"q_id": req.question_id, "q_text": q_text, "q_type": concept_type},
+        "filters_applied": req.filters,
+        "group_by": "year",
+        "concept": {"concept_id": concept_id, "label": concept_label},
+    }
+    columns = ["id_respuesta", "Respuesta", *years, "Total"]
+
+    if concept_type == "numerica":
+        # Promedio ponderado por año (usa option_id como valor si la ola guardó
+        # la escala como categórica).
+        prom = ["", "Promedio (media)"]
+        grand_n = 0
+        for w in years:
+            sub = per_year[w]
+            num = den = 0.0
+            for r in sub["rows"]:
+                if sub["question"]["q_type"] == "numerica":
+                    valor, cnt = r[0], r[2]
+                else:
+                    if r[0] in _YEAR_SENTINELS:
+                        continue
+                    valor, cnt = r[0], r[2]
+                if valor is None or not cnt:
+                    continue
+                num += valor * cnt
+                den += cnt
+            prom.append(round(num / den, 2) if den else "")
+            grand_n += sub["total_respondents"]
+        n_row = ["", "Base (ponderada)"] + [
+            per_year[w]["total_respondents"] for w in years
+        ] + [grand_n]
+        base.update(
+            {
+                "total_respondents": grand_n,
+                "counts": {"columns": columns, "rows": [prom, n_row]},
+                "percentages": {"columns": columns, "rows": []},
+            }
+        )
+        return base
+
+    # Categórica: alinear opciones por opción CANÓNICA (concept_option_id), de
+    # modo que códigos distintos entre años (recodes) se comparen como la misma
+    # opción. Cae al código crudo si una opción no tiene mapeo canónico.
+    canon_label = {coid: lbl for coid, lbl, _ in canon}
+    canon_order = {coid: so for coid, lbl, so in canon}
+    cnt = {}
+    denom = {w: 0 for w in years}
+    for w in years:
+        for r in per_year[w]["rows"]:
+            oid, label, c = r[0], r[1], r[2]
+            coid = opt_to_canon.get((w, oid)) or f"{concept_id}:{oid}"
+            cnt[(coid, w)] = cnt.get((coid, w), 0) + (c or 0)
+            denom[w] += c or 0
+            canon_label.setdefault(coid, label)
+    coids = sorted({k[0] for k in cnt}, key=lambda k: (canon_order.get(k, 9999), k))
+
+    counts_rows, pct_rows = [], []
+    for coid in coids:
+        disp_id = coid.split(":")[-1]
+        label = canon_label.get(coid, disp_id)
+        crow, prow = [disp_id, label], [disp_id, label]
+        row_total = 0
+        for w in years:
+            c = cnt.get((coid, w), 0)
+            crow.append(c if c else "")
+            prow.append(round(c * 100.0 / denom[w], 1) if denom[w] else "")
+            row_total += c or 0
+        crow.append(row_total if row_total else "")
+        prow.append("")
+        counts_rows.append(crow)
+        pct_rows.append(prow)
+
+    counts_rows.append(["Total", ""] + [denom[w] for w in years] + [sum(denom.values())])
+    pct_rows.append(["Total", ""] + [100.0 if denom[w] else "" for w in years] + [""])
+
+    base.update(
+        {
+            "total_respondents": sum(denom.values()),
+            "counts": {"columns": columns, "rows": counts_rows},
+            "percentages": {"columns": columns, "rows": pct_rows},
+        }
+    )
+    return base
+
+
 @app.post("/api/query")
 def run_query(req: QueryRequest):
     """
@@ -447,7 +661,13 @@ def run_query(req: QueryRequest):
     group_by != "answer" (pivot shape): two tables — counts and percentages —
     each with a Total row/column. Numeric questions add a single "Promedio"
     (weighted mean) row to the counts table.
+
+    group_by="year" (cross-year pivot): compares the selected question's concept
+    across the waves where it exists (see `_year_comparison`).
     """
+    if req.group_by in ("year", "año", "anio"):
+        return _year_comparison(req)
+
     conn = get_conn()
     try:
         # Resolve + validate the wave. `wave` comes from a known set, so it is
