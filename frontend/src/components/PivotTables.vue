@@ -1,7 +1,12 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   data: { type: Object, required: true },
 })
+
+// Vista "Año": redactado exacto de la pregunta por ola (nota al pie).
+const isYear = computed(() => props.data.group_by === 'year')
 
 function isNumeric(cell, i) {
   return i >= 2
@@ -120,5 +125,25 @@ function formatPercent(cell, ci) {
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Nota al pie: cómo se preguntó cada año (solo vista "Año") -->
+  <div
+    v-if="isYear && data.year_texts?.length"
+    class="border border-[#e2e8f0] rounded-lg p-4 bg-[rgba(248,250,252,0.5)]"
+  >
+    <h4 class="text-xs font-bold text-[#64748b] uppercase tracking-wide mb-2">
+      Cómo se preguntó cada año
+    </h4>
+    <ul class="space-y-1">
+      <li
+        v-for="t in data.year_texts"
+        :key="t.year"
+        class="text-sm text-[#475569] flex gap-2"
+      >
+        <span class="font-semibold text-[#1e293b] shrink-0">{{ t.year }}</span>
+        <span>{{ t.q_text }}</span>
+      </li>
+    </ul>
   </div>
 </template>

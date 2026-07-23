@@ -439,6 +439,15 @@ class QueryRequest(BaseModel):
 _YEAR_SENTINELS = {7777, 8888, 9999, 5555}
 
 
+def _fmt_num(v):
+    """Formatea un valor numérico como id/etiqueta legible (30.0 → '30')."""
+    try:
+        f = float(v)
+        return str(int(f)) if f == int(f) else str(f)
+    except (TypeError, ValueError):
+        return str(v)
+
+
 def _year_comparison(req: QueryRequest):
     """Cross-year comparison ("group_by=year").
 
@@ -479,6 +488,15 @@ def _year_comparison(req: QueryRequest):
             "SELECT wave_id, q_id FROM questions WHERE concept_id = ? ORDER BY wave_id",
             [concept_id],
         ).fetchall()
+        # Redactado exacto de la pregunta en cada ola (solo para la vista "Año";
+        # NO se incluye en el CSV). Siempre los N años, aunque el texto coincida.
+        year_texts = []
+        for w, q in members:
+            tr = conn.execute(
+                "SELECT q_text FROM questions WHERE wave_id = ? AND q_id = ?",
+                [w, q],
+            ).fetchone()
+            year_texts.append({"year": w, "q_id": q, "q_text": tr[0] if tr else ""})
         # Catálogo canónico de opciones + mapa (ola, option_id) → opción canónica.
         canon = conn.execute(
             "SELECT concept_option_id, label, sort_order FROM concept_options "
@@ -567,38 +585,74 @@ def _year_comparison(req: QueryRequest):
         "filters_applied": req.filters,
         "group_by": "year",
         "concept": {"concept_id": concept_id, "label": concept_label},
+        "year_texts": year_texts,
     }
-    columns = ["id_respuesta", "Respuesta", *years, "Total"]
+    # Sin columna "Total": sumar respondientes de olas distintas no tiene
+    # sentido (cada año es su propia población / su propio 100%).
+    columns = ["id_respuesta", "Respuesta", *years]
 
     if concept_type == "numerica":
-        # Promedio ponderado por año (usa option_id como valor si la ola guardó
-        # la escala como categórica).
+        # Distribución de respuestas por año + Promedio + Base. Se alinea por
+        # VALOR numérico (si una ola guardó la escala como categórica, el
+        # option_id es el valor). Centinelas excluidos.
+        dist = {}                       # (valor, w) -> conteo ponderado
+        vlabel = {}                     # valor -> etiqueta a mostrar
+        denom = {w: 0.0 for w in years}
+        for w in years:
+            sub = per_year[w]
+            numeric_sub = sub["question"]["q_type"] == "numerica"
+            for r in sub["rows"]:
+                valor = r[0]
+                cnt = r[1] if numeric_sub else r[2]
+                if valor is None or valor in _YEAR_SENTINELS or not cnt:
+                    continue
+                dist[(valor, w)] = dist.get((valor, w), 0) + cnt
+                denom[w] += cnt
+                if numeric_sub:
+                    vlabel.setdefault(valor, _fmt_num(valor))
+                else:
+                    vlabel[valor] = r[1]  # etiqueta categórica gana
+        valores = sorted({v for v, _ in dist}, key=lambda x: float(x))
+
+        counts_rows, pct_rows = [], []
+        for v in valores:
+            disp = _fmt_num(v)
+            crow, prow = [disp, vlabel.get(v, disp)], [disp, vlabel.get(v, disp)]
+            for w in years:
+                c = dist.get((v, w), 0)
+                crow.append(round(c) if c else "")
+                prow.append(round(c * 100.0 / denom[w], 1) if denom[w] else "")
+            counts_rows.append(crow)
+            pct_rows.append(prow)
+        counts_rows.append(
+            ["Total", ""] + [round(denom[w]) if denom[w] else "" for w in years]
+        )
+        pct_rows.append(
+            ["Total", ""] + [100.0 if denom[w] else "" for w in years]
+        )
+
+        # Promedio ponderado por año + base (ponderada, sin centinelas).
         prom = ["", "Promedio (media)"]
         grand_n = 0
         for w in years:
-            sub = per_year[w]
             num = den = 0.0
-            for r in sub["rows"]:
-                if sub["question"]["q_type"] == "numerica":
-                    valor, cnt = r[0], r[2]
-                else:
-                    if r[0] in _YEAR_SENTINELS:
-                        continue
-                    valor, cnt = r[0], r[2]
-                if valor is None or not cnt:
-                    continue
-                num += valor * cnt
-                den += cnt
+            for v in valores:
+                c = dist.get((v, w), 0)
+                if c:
+                    num += float(v) * c
+                    den += c
             prom.append(round(num / den, 2) if den else "")
-            grand_n += sub["total_respondents"]
+            grand_n += per_year[w]["total_respondents"]
         n_row = ["", "Base (ponderada)"] + [
             per_year[w]["total_respondents"] for w in years
-        ] + [grand_n]
+        ]
+        counts_rows.extend([prom, n_row])
+
         base.update(
             {
                 "total_respondents": grand_n,
-                "counts": {"columns": columns, "rows": [prom, n_row]},
-                "percentages": {"columns": columns, "rows": []},
+                "counts": {"columns": columns, "rows": counts_rows},
+                "percentages": {"columns": columns, "rows": pct_rows},
             }
         )
         return base
@@ -624,19 +678,15 @@ def _year_comparison(req: QueryRequest):
         disp_id = coid.split(":")[-1]
         label = canon_label.get(coid, disp_id)
         crow, prow = [disp_id, label], [disp_id, label]
-        row_total = 0
         for w in years:
             c = cnt.get((coid, w), 0)
             crow.append(c if c else "")
             prow.append(round(c * 100.0 / denom[w], 1) if denom[w] else "")
-            row_total += c or 0
-        crow.append(row_total if row_total else "")
-        prow.append("")
         counts_rows.append(crow)
         pct_rows.append(prow)
 
-    counts_rows.append(["Total", ""] + [denom[w] for w in years] + [sum(denom.values())])
-    pct_rows.append(["Total", ""] + [100.0 if denom[w] else "" for w in years] + [""])
+    counts_rows.append(["Total", ""] + [denom[w] for w in years])
+    pct_rows.append(["Total", ""] + [100.0 if denom[w] else "" for w in years])
 
     base.update(
         {

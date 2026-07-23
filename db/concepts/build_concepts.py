@@ -30,6 +30,10 @@ DB = ROOT / "data" / "encuesta_multianual.duckdb"
 OUT = ROOT / "db" / "concepts"
 
 SENT = {7777, 8888, 9999}  # No aplica / No sabe / No contesta (0 y 5555 son opciones reales)
+SENT_LABEL_RE = re.compile(r"no\s*(sabe|contest|aplica|respond)", re.I)
+# Centinela canónico por categoría. 2021 codifica No sabe/No contesta como 8/9 en
+# las categóricas → se normalizan al código estándar del app.
+SENT_CANON = {"ns": (8888, "No sabe"), "nc": (9999, "No contesta"), "na": (7777, "No aplica")}
 TH = 0.62  # umbral de similitud de texto
 
 # Falsos positivos confirmados con el usuario (medidas distintas mal emparejadas).
@@ -39,6 +43,12 @@ FALSE_POS_PAIRS = [
 ]
 # Atributos que NO se marcan comparables (rangos/códigos por confirmar en v2b).
 ATTR_NON_COMPARABLE = {"ingreso"}
+# `relabel?` = mismos códigos pero etiquetas distintas. Puede ser solo redacción
+# (comparable) o un cambio de DEFINICIÓN/renumeración de códigos (NO comparable,
+# p. ej. modo_transporte: cód. 7 "Metro" en 2022-23 → "Scooter" en 2025). Como no
+# se distingue automáticamente sinónimo de reasignación, se EXCLUYEN todos salvo
+# estos atributos verificados como puro sinónimo (sexo: Masculino↔Hombre, etc.).
+RELABEL_OK = {"sexo", "tipo_trabajo"}
 
 
 def _norm(t):
@@ -59,6 +69,23 @@ def _sim(a, b):
     return 0.5 * seq + 0.5 * jac
 
 
+def _is_sent(oid, label):
+    """Centinela (No sabe/No contesta/No aplica) por CÓDIGO estándar o por ETIQUETA.
+    Detectar por etiqueta reincorpora olas que codifican el centinela con otro
+    código (p. ej. 2021 usa 8/9 en categóricas) sin tumbar opciones reales que
+    reusan esos códigos (p. ej. afiliación 8=Seguro Popular)."""
+    return oid in SENT or bool(SENT_LABEL_RE.search(str(label or "")))
+
+
+def _sent_cat(label):
+    l = str(label or "").lower()
+    if "sabe" in l:
+        return "ns"
+    if "aplica" in l:
+        return "na"
+    return "nc"  # "no contesta" / "no contestó" / "no respondió"
+
+
 def main():
     con = duckdb.connect(str(DB), read_only=True)
     waves = [r[0] for r in con.execute("SELECT wave_id FROM waves ORDER BY wave_id").fetchall()]
@@ -77,14 +104,23 @@ def main():
         "SELECT DISTINCT wave_id,attribute,question_id FROM respondent_attributes"
     ).fetchall():
         attr_seed[attr][w] = qid
+    # Rango numérico (máx. no-centinela) por pregunta: sirve para decidir si una
+    # ola numérica cabe en la escala de un grupo categórico (p. ej. días crudos
+    # 0–120 NO caben en rangos 1–6, aunque compartan el mismo texto).
+    NUMMAX = {}
+    for w, qid, mx in con.execute(
+        "SELECT wave_id, question_id, max(value) FROM answers "
+        "WHERE value IS NOT NULL AND value NOT IN (7777, 8888, 9999) GROUP BY 1, 2"
+    ).fetchall():
+        NUMMAX[(w, qid)] = mx
     con.close()
 
     def opts_status(nodes):
         cats = [n for n in nodes if Q[n]["type"] == "categorica" and OPTS[n]]
         if len(cats) < 2:
             return "na"
-        codes = [frozenset(o for o in OPTS[n] if o not in SENT) for n in cats]
-        labs = lambda n: {o: _norm(OPTS[n][o]) for o in OPTS[n] if o not in SENT}
+        codes = [frozenset(o for o in OPTS[n] if not _is_sent(o, OPTS[n][o])) for n in cats]
+        labs = lambda n: {o: _norm(OPTS[n][o]) for o in OPTS[n] if not _is_sent(o, OPTS[n][o])}
         if all(s == codes[0] for s in codes):
             base = labs(cats[0])
             return "match" if all(labs(n) == base for n in cats[1:]) else "relabel?"
@@ -152,7 +188,7 @@ def main():
         """Firma de códigos (sin centinelas) de una pregunta categórica; None si
         es numérica en esa ola (comparable con cualquier subconjunto)."""
         if Q[n]["type"] == "categorica" and OPTS[n]:
-            return frozenset(o for o in OPTS[n] if o not in SENT)
+            return frozenset(o for o in OPTS[n] if not _is_sent(o, OPTS[n][o]))
         return None
 
     def emit(cid, label, nodes, is_attr):
@@ -165,9 +201,6 @@ def main():
         if is_attr and label in ATTR_NON_COMPARABLE:
             return
 
-        types = {Q[n]["type"] for n in nodes}
-        ctype = "numerica" if "numerica" in types else "categorica"
-
         # Comparabilidad por SUBCONJUNTO: quedarse con las olas cuyas opciones
         # coinciden por código (el grupo más grande). Las olas numéricas (None)
         # se suman a cualquier grupo. Así una recodificación en una ola (p. ej.
@@ -178,7 +211,13 @@ def main():
         cat_groups = {k: v for k, v in groups.items() if k is not None}
         if cat_groups:
             best = max(cat_groups.values(), key=lambda v: len({Q[n]["wave"] for n in v}))
-            chosen = best + groups.get(None, [])
+            # Una ola numérica solo se suma si su escala CABE en los códigos del
+            # grupo categórico (mismo eje). Si sus valores exceden el código máx.
+            # (p. ej. días crudos 0–120 vs rangos 1–6) NO es comparable → se omite.
+            cat_max = max(_code_key(best[0]), default=0)
+            num_ok = [n for n in groups.get(None, [])
+                      if (NUMMAX.get((Q[n]["wave"], Q[n]["qid"])) or 0) <= cat_max]
+            chosen = best + num_ok
         else:
             chosen = nodes  # todas numéricas
         chosen = list({(Q[n]["wave"]): n for n in chosen}.values())  # 1 por ola
@@ -186,8 +225,17 @@ def main():
         if len({Q[n]["wave"] for n in chosen}) < 2:
             return
         om = opts_status(chosen)
-        if om not in ("match", "relabel?", "na"):
+        keep = om in ("match", "na") or (
+            om == "relabel?" and is_attr and label in RELABEL_OK
+        )
+        if not keep:
             return
+
+        # El tipo del concepto se decide por las olas ELEGIDAS (no por el cluster
+        # completo): si el subconjunto comparable es todo categórico, es categórico
+        # aunque una ola numérica excluida haya estado en el cluster.
+        types = {Q[n]["type"] for n in chosen}
+        ctype = "numerica" if "numerica" in types else "categorica"
         concepts.append(
             {"concept_id": cid, "label": label[:80], "q_type": ctype,
              "comparable": True, "n_waves": len({Q[n]["wave"] for n in chosen}), "opts": om}
@@ -218,23 +266,35 @@ def main():
         cat_chosen = [n for n in chosen if Q[n]["type"] == "categorica" and OPTS[n]]
         if not cat_chosen:
             continue
-        # códigos canónicos = los del subconjunto alineado (todos comparten set)
-        canon_codes = sorted(OPTS[_latest(cat_chosen)].keys())
         lab_src = _latest(cat_chosen)
-        for oid in canon_codes:
+        # opciones REALES canónicas = las del subconjunto alineado (comparten set)
+        real_codes = sorted(o for o in OPTS[lab_src] if not _is_sent(o, OPTS[lab_src][o]))
+        for oid in real_codes:
             catalog.append({"concept_id": cid, "concept_option_id": f"{cid}:{oid}",
                             "label": OPTS[lab_src].get(oid, str(oid)), "sort_order": oid})
-        # mapa identidad para cada miembro categórico elegido
+        # centinelas canónicos: unión de categorías presentes en los miembros,
+        # normalizadas al código estándar (2021 usa 8/9 → 8888/9999).
+        sent_cats = {}
         for n in cat_chosen:
             for oid in OPTS[n]:
+                if _is_sent(oid, OPTS[n][oid]):
+                    cat = _sent_cat(OPTS[n][oid])
+                    sent_cats[cat] = SENT_CANON[cat]
+        for cat, (code, label) in sorted(sent_cats.items(), key=lambda kv: kv[1][0]):
+            catalog.append({"concept_id": cid, "concept_option_id": f"{cid}:{code}",
+                            "label": label, "sort_order": code})
+        # mapa por miembro: identidad para reales; centinelas → código canónico
+        for n in cat_chosen:
+            for oid in OPTS[n]:
+                code = SENT_CANON[_sent_cat(OPTS[n][oid])][0] if _is_sent(oid, OPTS[n][oid]) else oid
                 opt_map.append({"concept_id": cid, "wave_id": Q[n]["wave"], "q_id": Q[n]["qid"],
-                                "option_id": oid, "concept_option_id": f"{cid}:{oid}"})
+                                "option_id": oid, "concept_option_id": f"{cid}:{code}"})
         # --- propuestas de recode: olas excluidas con MISMO nº de opciones ---
-        canon_real = [o for o in canon_codes if o not in SENT]
+        canon_real = list(real_codes)
         excluded = [n for n in info["all"] if n not in chosen
                     and Q[n]["type"] == "categorica" and OPTS[n]]
         for e in excluded:
-            e_real = sorted(o for o in OPTS[e] if o not in SENT)
+            e_real = sorted(o for o in OPTS[e] if not _is_sent(o, OPTS[e][o]))
             c_real = sorted(canon_real)
             if len(e_real) != len(c_real) or not e_real:
                 continue  # no es recode "obvio" (cambió el nº de opciones)
@@ -247,13 +307,14 @@ def main():
                     "canon_label": OPTS[lab_src].get(c_oid, str(c_oid)),
                     "aprobar": "",
                 })
-            # centinelas → identidad (mismo código canónico si existe)
+            # centinelas → código canónico estándar
             for s in OPTS[e]:
-                if s in SENT:
+                if _is_sent(s, OPTS[e][s]):
+                    code = SENT_CANON[_sent_cat(OPTS[e][s])][0]
                     recode_review.append({
                         "concept_id": cid, "wave_id": Q[e]["wave"], "q_id": Q[e]["qid"],
                         "option_id": s, "option_label": OPTS[e][s],
-                        "canon_option_id": f"{cid}:{s}", "canon_label": OPTS[e][s],
+                        "canon_option_id": f"{cid}:{code}", "canon_label": OPTS[e][s],
                         "aprobar": "",
                     })
 
