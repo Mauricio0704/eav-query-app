@@ -1,0 +1,58 @@
+wave_id,question_id,filters,group_by,option_id,group_value,initial_only,expected_pct,tol,source
+2025,p88,[],answer,1,,TRUE,13.5,0.1,Revista CVNL 2025 p.9 economia: ingreso del hogar alcanza bien y pueden ahorrar
+2025,p107_1,[],answer,1,,TRUE,4.6,0.1,Revista CVNL 2025 p.11 salud mental: decaido/deprimido muy frecuente
+2025,p107_1,[],answer,4,,TRUE,77.5,0.1,Revista CVNL 2025 p.11 salud mental: decaido/deprimido no me ocurre
+2025,p107_2,[],answer,1,,TRUE,4.0,0.1,Revista CVNL 2025 p.11 salud mental: nervioso/ansioso muy frecuente
+2025,p107_2,[],answer,4,,TRUE,75.0,0.1,Revista CVNL 2025 p.11 salud mental: nervioso/ansioso no me ocurre
+2025,p107_3,[],answer,3,,TRUE,15.8,0.1,Revista CVNL 2025 p.11 salud mental: tardar en dormir poco frecuente
+2025,p92,[],answer,0,,TRUE,88.7,0.1,Revista CVNL 2025 p.12 padecimientos: sin problema de salud
+2025,p92,[],answer,1,,TRUE,7.5,0.1,Revista CVNL 2025 p.12 padecimientos: enfermedad cronica
+2025,p92,[],answer,2,,TRUE,2.9,0.1,Revista CVNL 2025 p.12 padecimientos: enfermedad aguda
+2025,p92,[],answer,3,,TRUE,0.7,0.1,Revista CVNL 2025 p.12 padecimientos: problema de salud mental
+2025,p109,[],answer,1,,TRUE,29.7,0.1,Revista CVNL 2025 p.20 principal problema salud: hospitales insuficientes o lejanas
+2025,p109,[],answer,2,,TRUE,18.5,0.1,Revista CVNL 2025 p.20 principal problema salud: servicios de salud caros
+2025,p109,[],answer,5,,TRUE,17.1,0.1,Revista CVNL 2025 p.20 principal problema salud: falta de medicamentos
+2025,cp6,[],answer,1,,FALSE,66.1,0.1,Revista CVNL 2025 p.10 afiliacion (sin factores): IMSS
+2025,cp6,[],answer,3,,FALSE,7.3,0.1,Revista CVNL 2025 p.10 afiliacion (sin factores): servicios estatales Cuidar tu Salud
+2025,cp6,[],answer,2,,FALSE,4.0,0.1,Revista CVNL 2025 p.10 afiliacion (sin factores): seguro medico privado
+2025,cp6,[],answer,13,,FALSE,18.6,0.1,Revista CVNL 2025 p.10 afiliacion (sin factores): ninguna institucion
+2025,cp7,[],answer,1,,FALSE,18.0,0.1,Revista CVNL 2025 p.22 educacion (sin factores): estudia actualmente si
+2025,p92,[],sexo,1,Hombre,TRUE,6.4,0.1,Revista CVNL 2025 p.12 padecimientos por sexo: hombres enfermedad cronica
+2025,p92,[],sexo,1,Mujer,TRUE,8.6,0.1,Revista CVNL 2025 p.12 padecimientos por sexo: mujeres enfermedad cronica
+2025,p88,[],year,1,2024,TRUE,22.5,0.1,Revista CVNL 2025 p.9 economia serie: ingreso alcanza bien y ahorra 2024
+2025,p88,[],year,1,2021,TRUE,21.4,0.1,Revista CVNL 2025 p.9 economia serie: ingreso alcanza bien y ahorra 2021
+2024,p41,[],answer,1,,TRUE,40.5,0.1,Revista CVNL 2024 p.59 movilidad: cuenta con licencia de conducir si
+2024,p42,[],answer,3,,TRUE,63.2,0.1,Revista CVNL 2024 p.60 movilidad: examen de manejo practico y teorico
+2024,p42,[],answer,1,,TRUE,19.1,0.1,Revista CVNL 2024 p.60 movilidad: examen de manejo solo teorico
+2024,p42,[],answer,0,,TRUE,5.9,0.1,Revista CVNL 2024 p.60 movilidad: examen de manejo ninguno
+2024,p36,[],answer,1,,TRUE,19.8,0.1,Revista CVNL 2024 p.58 movilidad: hogar con 1 bicicleta
+2024,p36,[],answer,2,,TRUE,4.4,0.1,Revista CVNL 2024 p.58 movilidad: hogar con 2 bicicletas
+2024,p18,[],answer,8,,TRUE,42.3,0.1,Revista CVNL 2024 p.51 movilidad: modo transporte automovil
+2024,p18,[],answer,2,,TRUE,28.1,0.1,Revista CVNL 2024 p.51 movilidad: modo transporte camion/microbus
+2024,p18,[],answer,1,,TRUE,13.0,0.1,Revista CVNL 2024 p.51 movilidad: modo transporte a pie
+2024,p32,[],answer,3,,TRUE,52.8,0.1,Revista CVNL 2024 p.56 movilidad: tarifa transporte publico adecuada
+2024,p32,[],answer,4,,TRUE,32.1,0.1,Revista CVNL 2024 p.56 movilidad: tarifa transporte publico alta
+2024,p21,[],answer,1,,TRUE,34.8,0.1,Revista CVNL 2024 p.57 movilidad: realizo algun transbordo si
+2024,p11,[],answer,0,,TRUE,39.2,0.1,Revista CVNL 2024 p.47 movilidad: no salio de casa el dia anterior
+2024,p11,[],sexo,0,Hombre,TRUE,30.1,0.1,Revista CVNL 2024 p.47 movilidad por sexo: hombres no salieron de casa
+2024,p11,[],sexo,0,Mujer,TRUE,48.1,0.1,Revista CVNL 2024 p.47 movilidad por sexo: mujeres no salieron de casa
+2024,p13,[],sexo,1,Hombre,TRUE,69.4,0.1,Revista CVNL 2024 p.48 movilidad por sexo: hombres motivo trabajo
+2024,p13,[],sexo,1,Mujer,TRUE,32.6,0.1,Revista CVNL 2024 p.48 movilidad por sexo: mujeres motivo trabajo
+2024,p18,[],sexo,8,Hombre,TRUE,43.5,0.1,Revista CVNL 2024 p.51 movilidad por sexo: hombres automovil
+2024,p18,[],sexo,1,Mujer,TRUE,17.5,0.1,Revista CVNL 2024 p.51 movilidad por sexo: mujeres a pie
+2023,p93,[],answer,2,,TRUE,54.6,0.1,Revista CVNL 2023 p.110 seguridad: se siente seguro en su municipio
+2023,p93,[],answer,3,,TRUE,35.1,0.1,Revista CVNL 2023 p.110 seguridad: se siente inseguro en su municipio
+2023,p93,[],answer,4,,TRUE,5.8,0.1,Revista CVNL 2023 p.110 seguridad: se siente muy inseguro
+2023,p99,[],answer,1,,TRUE,11.3,0.1,Revista CVNL 2023 p.113 justicia: castigo muy probable
+2023,p99,[],answer,2,,TRUE,36.0,0.1,Revista CVNL 2023 p.113 justicia: castigo probable
+2023,p99,[],answer,3,,TRUE,36.5,0.1,Revista CVNL 2023 p.113 justicia: castigo poco probable
+2023,p108,[],answer,1,,TRUE,66.4,0.1,Revista CVNL 2023 p.112 justicia: fiscalia principal responsable de perseguir delitos
+2023,p109,[],answer,1,,TRUE,50.3,0.1,Revista CVNL 2023 p.112 justicia: aprueba trabajo de la fiscalia
+2023,p109,[],answer,0,,TRUE,35.9,0.1,Revista CVNL 2023 p.112 justicia: desaprueba trabajo de la fiscalia
+2023,p102,[],answer,1,,TRUE,4.9,0.1,Revista CVNL 2023 p.118 seguridad: tuvo contacto con la policia si
+2023,p105,[],answer,4,,TRUE,33.5,0.1,Revista CVNL 2023 p.120 violencia mujeres: en hogares ocurre frecuentemente
+2023,p105,[],answer,5,,TRUE,8.2,0.1,Revista CVNL 2023 p.120 violencia mujeres: en hogares siempre ocurre
+2023,p107_2,[],answer,1,,TRUE,75.5,0.1,Revista CVNL 2023 p.105 violencia mujeres: mayor riesgo de ser agredidas si
+2023,p107_3,[],answer,1,,TRUE,29.7,0.1,Revista CVNL 2023 p.107 violencia mujeres: corresponsables por forma de vestir si
+2023,p93,[],sexo,3,Femenino,TRUE,37.2,0.1,Revista CVNL 2023 p.110 seguridad por sexo: mujeres se sienten inseguras
+2023,p93,[],sexo,3,Masculino,TRUE,33.0,0.1,Revista CVNL 2023 p.110 seguridad por sexo: hombres se sienten inseguros
