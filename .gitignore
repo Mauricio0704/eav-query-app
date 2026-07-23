@@ -9,3 +9,6 @@ dist/
 .DS_Store
 .vscode
 pyrightconfig.json
+
+# PDFs fuente de las cifras publicadas (pesados; la cita vive en published_figures.csv)
+tests/*.pdf
