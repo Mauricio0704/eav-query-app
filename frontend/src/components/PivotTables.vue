@@ -142,6 +142,11 @@ function formatPercent(cell, ci) {
         class="text-sm text-[#475569] flex gap-2"
       >
         <span class="font-semibold text-[#1e293b] shrink-0">{{ t.year }}</span>
+        <span
+          v-if="t.q_id"
+          class="shrink-0 font-mono text-xs text-[#0d9488] bg-[#f0fdfa] rounded px-1.5 py-0.5 self-start"
+          >{{ t.q_id }}</span
+        >
         <span>{{ t.q_text }}</span>
       </li>
     </ul>

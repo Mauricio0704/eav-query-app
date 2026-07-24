@@ -160,6 +160,43 @@ def _resolve_wave(wave: str | None) -> str:
     return w
 
 
+def _attr_question_id(conn, wave: str, attribute: str) -> str | None:
+    """The survey question_id that backs a friendly attribute in a given wave
+    (e.g. sexo → cp2 en 2025, cp2_1 en 2022)."""
+    row = conn.execute(
+        "SELECT DISTINCT question_id FROM respondent_attributes "
+        "WHERE wave_id = ? AND attribute = ?",
+        [wave, attribute],
+    ).fetchone()
+    return row[0] if row else None
+
+
+def _translate_attr_value(conn, attribute: str, value, from_wave: str, to_wave: str):
+    """Traduce el `option_id` de un atributo entre olas vía la opción canónica.
+    La codificación cambia entre años (p. ej. sexo 0=Hombre en 2025 pero 1 en
+    2022), así que un id fijo daría 0 filas o la categoría equivocada en otra ola.
+    Devuelve el valor original si no hay mapeo canónico (nada que traducir)."""
+    if from_wave == to_wave:
+        return value
+    q_from = _attr_question_id(conn, from_wave, attribute)
+    q_to = _attr_question_id(conn, to_wave, attribute)
+    if not q_from or not q_to:
+        return value
+    coid_row = conn.execute(
+        "SELECT concept_option_id FROM options "
+        "WHERE wave_id = ? AND question_id = ? AND option_id = ?",
+        [from_wave, q_from, value],
+    ).fetchone()
+    if not coid_row or not coid_row[0]:
+        return value
+    raw_row = conn.execute(
+        "SELECT option_id FROM options "
+        "WHERE wave_id = ? AND question_id = ? AND concept_option_id = ?",
+        [to_wave, q_to, coid_row[0]],
+    ).fetchone()
+    return raw_row[0] if raw_row else value
+
+
 # ---------------------------------------------------------------------------
 # Schema helpers
 # ---------------------------------------------------------------------------
@@ -356,13 +393,44 @@ def list_recodes():
 
 
 @app.get("/api/presets")
-def list_presets():
+def list_presets(wave: str | None = None):
     """
     Returns named preset configurations (group_by + filters combinations) that
     the UI can apply as one-click "analysis recipes". Each preset returns a
     payload directly compatible with the /api/query body (minus question_id).
+
+    Los presets están escritos en la codificación de la ola default (p. ej.
+    sexo 0=Hombre, 1=Mujer). Como esa codificación cambia entre años, aquí se
+    traducen los valores de filtro a la ola pedida (`wave`) vía la opción
+    canónica, para que "MUJERES por unidad geográfica" filtre a mujeres en
+    CUALQUIER ola y no caiga en la categoría equivocada o en cero filas.
     """
-    return PRESETS
+    target = _resolve_wave(wave)
+    default = _default_wave()
+    if target == default:
+        return PRESETS
+
+    conn = get_conn()
+    try:
+        out = []
+        for p in PRESETS:
+            new_filters = []
+            for f in p.get("filters") or []:
+                attr = f["attribute"]
+                val = f["value"]
+                if attr == "city_id":
+                    new_filters.append(f)
+                    continue
+                is_list = isinstance(val, list)
+                vals = val if is_list else [val]
+                nv = [
+                    _translate_attr_value(conn, attr, v, default, target) for v in vals
+                ]
+                new_filters.append({"attribute": attr, "value": nv if is_list else nv[0]})
+            out.append({**p, "filters": new_filters})
+        return out
+    finally:
+        conn.close()
 
 
 @app.get("/api/cities")
