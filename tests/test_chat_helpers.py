@@ -34,20 +34,23 @@ def test_jsonable_coerces_decimals():
 
 
 def test_exec_query_returns_serializable_summary(categorical_qid):
-    result, summary = chat._exec_query({"question_id": categorical_qid})
+    result, summary, effective = chat._exec_query({"question_id": categorical_qid})
     assert result is not None
     # the summary is fed back to Gemini as JSON, so it must serialize cleanly
     json.dumps(summary)
     assert summary["question"]["q_id"] == categorical_qid
+    # the effective query drives the chat UI card
+    assert effective["question_id"] == categorical_qid
+    assert effective["año"]
 
 
 def test_exec_query_numeric_summary_has_no_decimals(numeric_qid):
-    _, summary = chat._exec_query({"question_id": numeric_qid, "group_by": "sexo"})
+    _, summary, _ = chat._exec_query({"question_id": numeric_qid, "group_by": "sexo"})
     json.dumps(summary)  # numeric means come back as Decimal from DuckDB → must be coerced
 
 
 def test_exec_query_city_filter(numeric_qid, city_ids):
-    result, summary = chat._exec_query(
+    result, summary, _ = chat._exec_query(
         {
             "question_id": numeric_qid,
             "filters": [{"attribute": "city_id", "value": [city_ids["Monterrey"]]}],
@@ -60,6 +63,7 @@ def test_exec_query_city_filter(numeric_qid, city_ids):
 
 
 def test_exec_query_bad_question_returns_error(numeric_qid):
-    result, summary = chat._exec_query({"question_id": "__does_not_exist__"})
+    result, summary, effective = chat._exec_query({"question_id": "__does_not_exist__"})
     assert result is None
     assert "error" in summary
+    assert effective["question_id"] == "__does_not_exist__"
