@@ -30,7 +30,7 @@ function setTab(t) {
 
 <template>
   <div
-    class="flex-1 overflow-auto p-8 bg-linear-to-r from-[#fcf0e4] to-[#7e34c35a]"
+    class="flex-1 overflow-auto p-8 bg-[#fcf0e4]"
   >
     <!-- Loading -->
     <div
@@ -214,6 +214,12 @@ function setTab(t) {
             >
               {{ state.lastResult.question.q_id }} ·
               {{ state.lastResult.question.q_type }}
+            </span>
+            <span
+              v-if="state.lastResult.wave_id"
+              class="inline-block ml-2 bg-[#f5f3ff] text-[#7e34c3] px-2 py-1 rounded text-xs font-bold"
+            >
+              Año {{ state.lastResult.wave_id }}
             </span>
           </div>
         </div>
