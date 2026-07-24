@@ -56,3 +56,39 @@ wave_id,question_id,filters,group_by,option_id,group_value,initial_only,expected
 2023,p107_3,[],answer,1,,TRUE,29.7,0.1,Revista CVNL 2023 p.107 violencia mujeres: corresponsables por forma de vestir si
 2023,p93,[],sexo,3,Femenino,TRUE,37.2,0.1,Revista CVNL 2023 p.110 seguridad por sexo: mujeres se sienten inseguras
 2023,p93,[],sexo,3,Masculino,TRUE,33.0,0.1,Revista CVNL 2023 p.110 seguridad por sexo: hombres se sienten inseguros
+2022,p102,[],answer,3,,TRUE,60.6,0.1,Revista CVNL 2022 p.111 ciudadania informada: medio por el que mas se entera television
+2022,p102,[],answer,1,,TRUE,31.9,0.1,Revista CVNL 2022 p.111 ciudadania informada: medio por el que mas se entera redes sociales
+2022,p102,[],answer,7,,TRUE,2.3,0.1,Revista CVNL 2022 p.111 ciudadania informada: medio por el que mas se entera conversaciones con vecinos
+2022,p102,[],answer,2,,TRUE,2.2,0.1,Revista CVNL 2022 p.111 ciudadania informada: medio por el que mas se entera periodico
+2022,p104,[],answer,1,,TRUE,25.0,0.1,Revista CVNL 2022 p.113 corrupcion en NL es una practica: muy frecuente
+2022,p104,[],answer,2,,TRUE,45.1,0.1,Revista CVNL 2022 p.113 corrupcion en NL es una practica: frecuente
+2022,p104,[],answer,3,,TRUE,16.5,0.1,Revista CVNL 2022 p.113 corrupcion en NL es una practica: poco frecuente
+2022,p104,[],answer,4,,TRUE,5.7,0.1,Revista CVNL 2022 p.113 corrupcion en NL es una practica: no ocurre
+2022,p108,[],answer,1,,TRUE,48.6,0.1,Revista CVNL 2022 p.114 quien es mas corrupto: el gobierno
+2022,p108,[],answer,4,,TRUE,32.0,0.1,Revista CVNL 2022 p.114 quien es mas corrupto: todos incluyendo a usted
+2022,p108,[],answer,3,,TRUE,8.4,0.1,Revista CVNL 2022 p.114 quien es mas corrupto: la ciudadania
+2022,p108,[],answer,2,,TRUE,4.8,0.1,Revista CVNL 2022 p.114 quien es mas corrupto: las empresas
+2022,p105,[],answer,1,,TRUE,6.3,0.1,Revista CVNL 2022 p.115 incidencia de corrupcion: experimento acto de corrupcion si
+2022,p106,[],answer,2,,TRUE,51.0,0.1,Revista CVNL 2022 p.115 tipo de tramite o contacto: contacto con transito
+2022,p106,[],answer,1,,TRUE,21.1,0.1,Revista CVNL 2022 p.115 tipo de tramite o contacto: contacto con la policia
+2022,p106,[],answer,3,,TRUE,16.5,0.1,Revista CVNL 2022 p.115 tipo de tramite o contacto: tramites o servicios municipales
+2022,p119,[],answer,1,,TRUE,21.7,0.1,Revista CVNL 2022 p.116 influencia en decisiones de gobierno: mucho
+2022,p119,[],answer,2,,TRUE,40.8,0.1,Revista CVNL 2022 p.116 influencia en decisiones de gobierno: algo
+2022,p119,[],answer,3,,TRUE,15.5,0.1,Revista CVNL 2022 p.116 influencia en decisiones de gobierno: poco
+2022,p119,[],answer,4,,TRUE,20.3,0.1,Revista CVNL 2022 p.116 influencia en decisiones de gobierno: nada
+2022,p105,[],city_id,1,Monterrey,TRUE,3.7,0.1,Revista CVNL 2022 p.115 incidencia de corrupcion por municipio: Monterrey si
+2022,p105,[],city_id,1,Santa Catarina,TRUE,3.1,0.1,Revista CVNL 2022 p.115 incidencia de corrupcion por municipio: Santa Catarina si
+2022,p105,[],city_id,1,Apodaca,TRUE,8.0,0.1,Revista CVNL 2022 p.115 incidencia de corrupcion por municipio: Apodaca si
+2022,p105,[],city_id,1,Guadalupe,TRUE,9.0,0.1,Revista CVNL 2022 p.115 incidencia de corrupcion por municipio: Guadalupe si
+2021,p79_2,[],answer,0,,TRUE,20.6,0.1,Revista CVNL 2021 p.23 educacion a distancia: hogar cuenta con conexion a internet no
+2021,p79_2,[],answer,1,,TRUE,79.3,0.1,Revista CVNL 2021 p.23 educacion a distancia: hogar cuenta con conexion a internet si
+2021,p79_1,[],answer,0,,TRUE,24.4,0.1,Revista CVNL 2021 p.22 educacion a distancia: dispositivos electronicos suficientes no
+2021,p79_1,[],answer,1,,TRUE,75.2,0.1,Revista CVNL 2021 p.22 educacion a distancia: dispositivos electronicos suficientes si
+2021,p1,[],sexo,1,Hombre,TRUE,48.3,0.1,Revista CVNL 2021 p.25 actividad laboral por sexo: hombres empleado
+2021,p1,[],sexo,1,Mujer,TRUE,16.1,0.1,Revista CVNL 2021 p.25 actividad laboral por sexo: mujeres empleada
+2021,p1,[],sexo,5,Hombre,TRUE,1.0,0.1,Revista CVNL 2021 p.25 actividad laboral por sexo: hombres trabajo domestico no remunerado
+2021,p1,[],sexo,5,Mujer,TRUE,63.4,0.1,Revista CVNL 2021 p.25 actividad laboral por sexo: mujeres trabajo domestico no remunerado
+2021,p1,[],sexo,6,Hombre,TRUE,22.0,0.1,Revista CVNL 2021 p.25 actividad laboral por sexo: hombres jubilado o pensionado
+2021,p1,[],sexo,6,Mujer,TRUE,6.0,0.1,Revista CVNL 2021 p.25 actividad laboral por sexo: mujeres jubilada o pensionada
+2021,p79_2,[],city_id,0,Monterrey,TRUE,21.2,0.1,Revista CVNL 2021 p.23 educacion por municipio: Monterrey sin conexion a internet
+2021,p79_2,[],city_id,0,Santiago,TRUE,35.1,0.1,Revista CVNL 2021 p.23 educacion por municipio: Santiago sin conexion a internet
