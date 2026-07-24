@@ -35,6 +35,7 @@ function toolSummary(calls) {
   if (!calls || !calls.length) return ''
   return calls
     .map((c) => {
+      const y = c['año'] ? ` · ${c['año']}` : ''
       const g =
         !c.group_by || c.group_by === 'answer'
           ? ''
@@ -46,7 +47,7 @@ function toolSummary(calls) {
               .map((fl) => `${fl.attribute}=${filterValueLabel(fl)}`)
               .join(', ')
           : ''
-      return `${c.question_id}${g}${f}`
+      return `${c.question_id}${y}${g}${f}`
     })
     .join('  |  ')
 }
@@ -63,7 +64,7 @@ watch(
 
 <template>
   <div
-    class="flex-1 flex flex-col overflow-hidden bg-linear-to-r from-[#fcf0e4] to-[#7e34c35a]"
+    class="flex-1 flex flex-col overflow-hidden bg-[#fcf0e4]"
   >
     <!-- Messages -->
     <div ref="scroller" class="flex-1 overflow-auto p-8">

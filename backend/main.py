@@ -886,6 +886,7 @@ def run_query(req: QueryRequest):
                     "q_text": q_text,
                     "q_type": q_type,
                 },
+                "wave_id": wave,
                 "filters_applied": req.filters,
                 "group_by": req.group_by,
                 "total_respondents": total_respondents,
@@ -1189,6 +1190,7 @@ def run_query(req: QueryRequest):
                     "q_text": q_text,
                     "q_type": q_type,
                 },
+                "wave_id": wave,
                 "filters_applied": req.filters,
                 "group_by": req.group_by,
                 "total_respondents": total_respondents,
@@ -1295,6 +1297,7 @@ def run_query(req: QueryRequest):
         return {
             "format": "pivot",
             "question": {"q_id": req.question_id, "q_text": q_text, "q_type": q_type},
+            "wave_id": wave,
             "filters_applied": req.filters,
             "group_by": req.group_by,
             "total_respondents": total_respondents,

@@ -43,17 +43,31 @@ def _get_client():
 
 @lru_cache(maxsize=1)
 def _schema_context() -> str:
-    from main import list_questions, list_attributes
+    from main import list_questions, list_attributes, _wave_ids, _default_wave
     from metadata import RECODES, AMM_ID, PERIFERIA_ID, ID_TO_CITY_NAME
 
     questions = list_questions()
     attributes = list_attributes()
     amm_cities = ", ".join(ID_TO_CITY_NAME[c] for c in AMM_ID)
     periferia_cities = ", ".join(ID_TO_CITY_NAME[c] for c in PERIFERIA_ID)
+    waves = sorted(_wave_ids())
+    default_wave = _default_wave()
 
-    lines = ["PREGUNTAS DISPONIBLES (usa el q_id EXACTO como question_id):"]
+    lines = [
+        "AÑOS/OLAS de la encuesta disponibles: "
+        + ", ".join(waves)
+        + f" (el catálogo de preguntas de abajo es el del año {default_wave}, "
+        "que es el default cuando no se especifica año).",
+        "",
+        "PREGUNTAS DISPONIBLES (usa el q_id EXACTO como question_id). Las marcadas "
+        "con ⟳ son COMPARABLES entre años: admiten group_by='year' para ver su "
+        "evolución, y pueden consultarse en un año pasado con wave_id:",
+    ]
     for q in questions:
-        lines.append(f"- {q['q_id']} [{q['q_type']}] ({q['q_section']}): {q['q_text']}")
+        mark = " ⟳" if q.get("concept_id") else ""
+        lines.append(
+            f"- {q['q_id']}{mark} [{q['q_type']}] ({q['q_section']}): {q['q_text']}"
+        )
 
     lines.append("")
     lines.append(
@@ -128,14 +142,25 @@ def _schema_context() -> str:
 def _system_instruction() -> str:
     return (
         "Eres un asistente de análisis de datos de la Encuesta de percepción "
-        "ciudadana de Cómo Vamos Nuevo León (Nuevo León, México, 2025). "
+        "ciudadana de Cómo Vamos Nuevo León (Nuevo León, México). La encuesta es "
+        "MULTI-AÑO: hay varias olas (ver años disponibles abajo); si no se indica "
+        "año, se usa el más reciente por defecto.\n"
         "Respondes preguntas en lenguaje natural consultando la base de datos "
         "ÚNICAMENTE mediante la herramienta `query`.\n\n"
         "REGLAS:\n"
         "- Para cualquier cifra, SIEMPRE llama a `query`. Nunca inventes números.\n"
         "- `question_id` debe ser uno de los q_id listados abajo, exactamente.\n"
-        '- `group_by`: "answer" (sin agrupar), "city_id" (por municipio), o el '
-        "nombre de un atributo o recode listado abajo.\n"
+        '- `group_by`: "answer" (sin agrupar), "city_id" (por municipio), "year" '
+        "(comparación entre años), o el nombre de un atributo o recode listado abajo.\n"
+        "- EVOLUCIÓN ENTRE AÑOS: si preguntan por la evolución, tendencia, histórico, "
+        "cómo ha cambiado algo 'a lo largo de los años', o por comparar/contrastar "
+        "varios años, usa group_by='year'. Solo funciona en preguntas COMPARABLES "
+        "(marcadas con ⟳ abajo); si la pregunta no está marcada, dilo en vez de "
+        "forzarlo. Para group_by='year' usa el q_id del catálogo (año default) tal "
+        "cual: el sistema alinea los demás años automáticamente.\n"
+        "- AÑO ESPECÍFICO: si preguntan por un año concreto (p. ej. 'en 2023'), pasa "
+        "wave_id con ese año (string, p. ej. \"2023\") y el q_id del catálogo; el "
+        "sistema traduce la pregunta a ese año. Omite wave_id para el año más reciente.\n"
         "- `filters`: lista de objetos {attribute, value}. `attribute` debe ser "
         "EXACTAMENTE uno de los nombres de atributo del catálogo de abajo (o "
         "'city_id'), copiado tal cual; NUNCA lo abrevies ni lo traduzcas (usa "
@@ -151,7 +176,15 @@ def _system_instruction() -> str:
         "- Si la pregunta no se puede responder con las preguntas/atributos "
         "disponibles, dilo claramente en vez de forzar una consulta.\n"
         "- Tras obtener los datos, responde en español, claro y conciso, citando los "
-        "porcentajes o cifras relevantes e indicando la pregunta de la encuesta usada.\n\n"
+        "porcentajes o cifras relevantes e indicando la pregunta de la encuesta usada.\n"
+        "- INDICA SIEMPRE EL AÑO de las cifras. El resultado de `query` incluye el "
+        "campo 'año'; menciónalo explícitamente en tu respuesta (p. ej. 'en 2025' o "
+        "'según la ola 2023'), sobre todo cuando no se pidió un año concreto y se usó "
+        "el más reciente por defecto.\n"
+        "- Si una pregunta NO es comparable entre años (no está marcada con ⟳) y "
+        "piden un año pasado, `query` devolverá un error de 'no comparable'. En ese "
+        "caso NO inventes ni sustituyas por otra pregunta con el mismo código: explica "
+        "que esa pregunta no está disponible/armonizada para ese año.\n\n"
         "=== CATÁLOGO DE DATOS ===\n" + _schema_context()
     )
 
@@ -179,8 +212,17 @@ def _query_tool():
                         "group_by": types.Schema(
                             type=types.Type.STRING,
                             description=(
-                                "'answer', 'city_id', o el nombre de un atributo "
-                                "o recode. Por defecto 'answer'."
+                                "'answer', 'city_id', 'year' (comparación entre "
+                                "años, solo preguntas comparables ⟳), o el nombre "
+                                "de un atributo o recode. Por defecto 'answer'."
+                            ),
+                        ),
+                        "wave_id": types.Schema(
+                            type=types.Type.STRING,
+                            description=(
+                                "Año/ola a consultar (p. ej. '2023'). Omitir para "
+                                "el año más reciente. No lo uses junto con "
+                                "group_by='year'."
                             ),
                         ),
                         "initial_only": types.Schema(
@@ -224,9 +266,55 @@ def _norm_value(v):
     return int(v)
 
 
-def _exec_query(args: dict) -> tuple[dict | None, dict[str, Any]]:
-    """Run one `query` tool call. Returns (full_result_for_frontend, summary_for_model)."""
-    from main import run_query, QueryRequest
+def _resolve_question_for_wave(question_id: str, target_wave: str) -> str | None:
+    """Traduce un q_id del catálogo (año default) a su equivalente en `target_wave`
+    vía concepto. """
+    from main import get_conn, _default_wave
+
+    default_wave = _default_wave()
+    if not target_wave or target_wave == default_wave:
+        return question_id
+    conn = get_conn()
+    try:
+        crow = conn.execute(
+            "SELECT concept_id FROM questions WHERE wave_id = ? AND q_id = ?",
+            [default_wave, question_id],
+        ).fetchone()
+        if not crow or not crow[0]:
+            return None
+        m = conn.execute(
+            "SELECT q_id FROM questions WHERE wave_id = ? AND concept_id = ?",
+            [target_wave, crow[0]],
+        ).fetchone()
+        return m[0] if m else None
+    finally:
+        conn.close()
+
+
+def _exec_query(args: dict) -> tuple[dict | None, dict[str, Any], dict[str, Any]]:
+    """Run one `query` tool call. Returns
+    (full_result_for_frontend, summary_for_model, effective_query_for_ui).
+
+    `effective_query_for_ui` describe la consulta que REALMENTE se ejecutó
+    (q_id ya traducido a la ola pedida + año), para que la tarjeta del chat no
+    muestre el q_id del catálogo (p. ej. p111 de 2025) cuando en realidad se
+    consultó otra ola (p93 de 2023)."""
+    from main import run_query, QueryRequest, _default_wave
+
+    group_by = args.get("group_by") or "answer"
+    wave_id = args.get("wave_id") or None
+    question_id = args.get("question_id")
+    year_label = (
+        "comparación entre años" if group_by == "year" else (wave_id or _default_wave())
+    )
+
+    def _effective(qid):
+        return {
+            "question_id": qid,
+            "group_by": group_by,
+            "filters": args.get("filters") or [],
+            "año": year_label,
+        }
 
     try:
         norm_filters = []
@@ -240,19 +328,35 @@ def _exec_query(args: dict) -> tuple[dict | None, dict[str, Any]]:
             else:
                 norm_filters.append({"attribute": attr, "value": _norm_value(val)})
 
+        # Para un año específico (no la comparación 'year') hay que traducir el q_id
+        # a la numeración de esa ola. 'year' usa el q_id default y se alinea solo.
+        if wave_id and group_by != "year":
+            resolved = _resolve_question_for_wave(question_id, wave_id)
+            if resolved is None:
+                return None, {
+                    "error": f"La pregunta no existe o no es comparable en {wave_id}."
+                }, _effective(question_id)
+            question_id = resolved
+
         req = QueryRequest(
-            question_id=args["question_id"],
+            question_id=question_id,
             filters=norm_filters,
-            group_by=args.get("group_by") or "answer",
+            group_by=group_by,
             initial_only=args.get("initial_only", True),
+            wave_id=wave_id,
         )
         result = run_query(req)
     except HTTPException as e:
-        return None, {"error": str(e.detail)}
+        return None, {"error": str(e.detail)}, _effective(question_id)
     except (ValueError, TypeError, KeyError) as e:
-        return None, {"error": f"Argumentos inválidos: {e}"}
+        return None, {"error": f"Argumentos inválidos: {e}"}, _effective(question_id)
 
-    return result, _summarize(result)
+    summary = _summarize(result)
+    summary["año"] = year_label
+    # El q_id resuelto (traducido a la ola pedida) para la tarjeta del chat.
+    effective = _effective(question_id)
+    effective["filters"] = norm_filters
+    return result, summary, effective
 
 
 def _norm_city_value(v):
@@ -385,8 +489,10 @@ def _run_chat(message: str, history: list) -> dict:
             if fc is None:
                 continue
             args = dict(fc.args) if fc.args else {}
-            result, summary = _exec_query(args)
-            tool_calls.append(args)
+            result, summary, effective = _exec_query(args)
+            # Registramos la consulta EFECTIVA (q_id ya traducido a la ola + año),
+            # no los args crudos del modelo, para que la tarjeta del chat sea fiel.
+            tool_calls.append(effective)
             if result is not None:
                 data_result = result
             response_parts.append(
