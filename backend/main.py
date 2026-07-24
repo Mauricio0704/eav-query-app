@@ -654,6 +654,11 @@ def _year_comparison(req: QueryRequest):
         "group_by": "year",
         "concept": {"concept_id": concept_id, "label": concept_label},
         "year_texts": year_texts,
+        # Base (universo) por año: cada ola es su propia población, así que se
+        # muestran por separado en vez de sumarlas (la suma no tiene sentido).
+        "year_bases": [
+            {"year": w, "base": per_year[w]["total_respondents"]} for w in years
+        ],
     }
     # Sin columna "Total": sumar respondientes de olas distintas no tiene
     # sentido (cada año es su propia población / su propio 100%).

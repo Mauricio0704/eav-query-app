@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { Table2, BarChart3, Database, Download } from 'lucide-vue-next'
+import { Table2, BarChart3, Download } from 'lucide-vue-next'
 import { state, exportCurrentCSV, filterValueLabel } from '../store.js'
 import DataTable from './DataTable.vue'
 import PivotTables from './PivotTables.vue'
@@ -17,6 +17,10 @@ const exportDisabled = computed(() => !state.lastResult || state.loading)
 const totalRespondents = computed(
   () => state.lastResult?.total_respondents?.toLocaleString('es-MX') ?? '—',
 )
+const isYear = computed(() => state.lastResult?.group_by === 'year')
+const yearBases = computed(() => state.lastResult?.year_bases ?? [])
+const appliedFilters = computed(() => state.lastResult?.filters_applied ?? [])
+const fmtNum = (n) => (n == null ? '—' : Number(n).toLocaleString('es-MX'))
 const groupByLabel = computed(() => {
   const g = state.lastResult?.group_by
   if (!g || g === 'answer') return 'Respuesta'
@@ -199,79 +203,79 @@ function setTab(t) {
 
     <!-- Results -->
     <div v-else class="max-w-7xl mx-auto space-y-8">
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-3 gap-6">
-        <div
-          class="col-span-2 bg-white rounded-lg border border-[#e2e8f0] shadow-sm p-8 relative overflow-hidden"
+      <!-- Info strip (metadata compacta de la consulta) -->
+      <div
+        class="bg-white border border-[#e2e8f0] rounded-lg px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
+      >
+        <!-- Pregunta -->
+        <span class="inline-flex items-center gap-2">
+          <span
+            class="font-mono text-xs bg-[#f0fdfa] text-[#0d9488] px-2 py-0.5 rounded font-bold"
+            >{{ state.lastResult.question.q_id }}</span
+          >
+          <span class="text-[#64748b]">{{
+            state.lastResult.question.q_type
+          }}</span>
+        </span>
+
+        <span class="w-px h-4 bg-[#e2e8f0]"></span>
+
+        <!-- Año / comparación -->
+        <span v-if="!isYear">
+          <span class="text-[#94a3b8]">Año</span>
+          <span class="font-semibold text-[#334155] ml-1">{{
+            state.lastResult.wave_id ?? '—'
+          }}</span>
+        </span>
+        <span v-else class="font-semibold text-[#334155]"
+          >Comparación por año</span
         >
-          <div class="relative">
-            <p
-              class="text-xs font-bold text-[#64748b] uppercase tracking-wider mb-2"
-            >
-              Universo de la pregunta
-            </p>
-            <h3
-              class="font-['Manrope'] font-bold text-[32px] text-[#0f172a] tracking-tight mb-2"
-            >
-              {{ totalRespondents }} personas
-            </h3>
-            <span
-              class="inline-block bg-[#f0fdfa] text-[#0d9488] px-2 py-1 rounded text-xs font-bold"
-            >
-              {{ state.lastResult.question.q_id }} ·
-              {{ state.lastResult.question.q_type }}
-            </span>
-            <span
-              v-if="state.lastResult.wave_id"
-              class="inline-block ml-2 bg-[#f5f3ff] text-[#7e34c3] px-2 py-1 rounded text-xs font-bold"
-            >
-              Año {{ state.lastResult.wave_id }}
-            </span>
-          </div>
-        </div>
 
-        <div class="bg-[#00685f] rounded-lg shadow-lg p-8 flex gap-8">
-          <!-- Agrupación -->
-          <div class="flex flex-col justify-between shrink-0">
-            <p class="text-xs font-bold text-white/80 uppercase tracking-wide">
-              Agrupado por
-            </p>
-            <div>
-              <p
-                class="font-['Manrope'] font-semibold text-[24px] text-white mb-1"
-              >
-                {{ groupByLabel }}
-              </p>
-              <p class="text-xs font-medium text-[#ccfbf1]">
-                Modo: {{ state.lastResult.format }}
-              </p>
-            </div>
-          </div>
+        <span class="w-px h-4 bg-[#e2e8f0]"></span>
 
-          <!-- Filtros (a la derecha de la agrupación) -->
-          <div class="flex-1 min-w-0 border-l border-white/15 pl-8">
-            <p
-              class="text-xs font-bold text-white/80 uppercase tracking-wide mb-1.5"
+        <!-- Agrupación -->
+        <span>
+          <span class="text-[#94a3b8]">Agrupado por</span>
+          <span class="font-semibold text-[#334155] ml-1">{{
+            groupByLabel
+          }}</span>
+        </span>
+
+        <span class="w-px h-4 bg-[#e2e8f0]"></span>
+
+        <!-- Universo -->
+        <span v-if="!isYear">
+          <span class="text-[#94a3b8]">Universo</span>
+          <span class="font-semibold text-[#334155] ml-1"
+            >{{ totalRespondents }} personas</span
+          >
+        </span>
+        <span v-else class="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span class="text-[#94a3b8]">Universo por año</span>
+          <span
+            v-for="yb in yearBases"
+            :key="yb.year"
+            class="font-semibold text-[#334155]"
+          >
+            <span class="text-[#64748b] font-normal">{{ yb.year }}:</span>
+            {{ fmtNum(yb.base) }}
+          </span>
+        </span>
+
+        <!-- Filtros -->
+        <template v-if="appliedFilters.length">
+          <span class="w-px h-4 bg-[#e2e8f0]"></span>
+          <span class="inline-flex flex-wrap items-center gap-1.5">
+            <span class="text-[#94a3b8]">Filtros</span>
+            <span
+              v-for="(f, i) in appliedFilters"
+              :key="i"
+              class="bg-[#f0fdfa] text-[#0d9488] text-xs font-medium px-2 py-0.5 rounded"
             >
-              Filtros
-            </p>
-            <div
-              v-if="state.lastResult.filters_applied?.length"
-              class="flex flex-wrap gap-1.5"
-            >
-              <span
-                v-for="(f, i) in state.lastResult.filters_applied"
-                :key="i"
-                class="inline-block bg-white/15 text-white text-xs font-medium px-2 py-1 rounded"
-              >
-                {{ attributeLabel(f.attribute) }}: {{ filterValueLabel(f) }}
-              </span>
-            </div>
-            <p v-else class="text-xs font-medium text-[#ccfbf1]/70 italic">
-              Sin filtros
-            </p>
-          </div>
-        </div>
+              {{ attributeLabel(f.attribute) }}: {{ filterValueLabel(f) }}
+            </span>
+          </span>
+        </template>
       </div>
 
       <!-- Data Visualization Card -->
