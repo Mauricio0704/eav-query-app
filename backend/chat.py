@@ -9,9 +9,11 @@ from decimal import Decimal
 from functools import lru_cache
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
+
+import ratelimit
 
 logger = logging.getLogger("encuesta.chat")
 
@@ -407,7 +409,7 @@ def _history_to_contents(history):
     from google.genai import types
 
     out = []
-    for msg in history or []:
+    for msg in ratelimit.trim_history(history or []):
         text = (msg.get("text") or "").strip()
         if not text:
             continue
@@ -541,11 +543,26 @@ def _friendly_error(e: Exception) -> tuple[int, str]:
 
 
 @router.post("/api/chat")
-async def chat(req: ChatRequest):
-    if not req.message.strip():
+async def chat(req: ChatRequest, request: Request):
+    message = req.message.strip()
+    if not message:
         raise HTTPException(status_code=400, detail="El mensaje está vacío.")
+    if len(message) > ratelimit.CHAT_MAX_MESSAGE_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"El mensaje es demasiado largo (máx "
+                f"{ratelimit.CHAT_MAX_MESSAGE_CHARS} caracteres). Acórtalo."
+            ),
+        )
+    # Controles de abuso ANTES de gastar cuota de Gemini.
     try:
-        return await run_in_threadpool(_run_chat, req.message, req.history)
+        ratelimit.check_and_consume(ratelimit.client_ip(request))
+    except ratelimit.RateLimited as e:
+        headers = {"Retry-After": str(e.retry_after)} if e.retry_after else None
+        raise HTTPException(status_code=429, detail=e.message, headers=headers)
+    try:
+        return await run_in_threadpool(_run_chat, message, req.history)
     except HTTPException:
         raise
     except Exception as e:
