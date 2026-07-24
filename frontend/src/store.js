@@ -194,27 +194,29 @@ export const canRun = computed(() => !!state.questionId && !state.loading)
 
 // Load the wave-scoped catalogs (questions/attributes/cities) for state.waveId.
 async function loadCatalog() {
-  const [qs, attrs, cities] = await Promise.all([
+  // Presets are wave-scoped: their filter values (e.g. sexo) are recoded per
+  // wave so "MUJERES por unidad geográfica" filters women in every wave.
+  const [qs, attrs, cities, presets] = await Promise.all([
     api.fetchQuestions(state.waveId),
     api.fetchAttributes(state.waveId),
     api.fetchCities(state.waveId),
+    api.fetchPresets(state.waveId),
   ])
   state.questions = qs
   state.attributes = attrs
   state.cities = cities
+  state.presets = presets
 }
 
 export async function init() {
   try {
-    const [waves, recodes, presets] = await Promise.all([
+    const [waves, recodes] = await Promise.all([
       api.fetchWaves(),
       api.fetchRecodes(),
-      api.fetchPresets(),
     ])
     state.waves = waves
     state.waveId = (waves.find((w) => w.is_default) || waves[0] || {}).wave_id || ''
     state.recodes = recodes
-    state.presets = presets
     await loadCatalog()
     loadConversations()
   } catch (e) {

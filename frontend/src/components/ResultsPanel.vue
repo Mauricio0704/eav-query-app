@@ -1,10 +1,16 @@
 <script setup>
 import { computed } from 'vue'
 import { Table2, BarChart3, Database, Download } from 'lucide-vue-next'
-import { state, exportCurrentCSV } from '../store.js'
+import { state, exportCurrentCSV, filterValueLabel } from '../store.js'
 import DataTable from './DataTable.vue'
 import PivotTables from './PivotTables.vue'
 import ChartView from './ChartView.vue'
+
+function attributeLabel(attr) {
+  if (attr === 'city_id') return 'Ciudad'
+  const a = state.attributes.find((x) => x.attribute === attr)
+  return a?.label || attr
+}
 
 const isPivot = computed(() => state.lastResult?.format === 'pivot')
 const exportDisabled = computed(() => !state.lastResult || state.loading)
@@ -224,20 +230,45 @@ function setTab(t) {
           </div>
         </div>
 
-        <div
-          class="bg-[#00685f] rounded-lg shadow-lg p-8 flex flex-col justify-between"
-        >
-          <p class="text-xs font-bold text-white/80 uppercase tracking-wide">
-            Agrupado por
-          </p>
-          <div>
-            <p
-              class="font-['Manrope'] font-semibold text-[24px] text-white mb-1"
-            >
-              {{ groupByLabel }}
+        <div class="bg-[#00685f] rounded-lg shadow-lg p-8 flex gap-8">
+          <!-- Agrupación -->
+          <div class="flex flex-col justify-between shrink-0">
+            <p class="text-xs font-bold text-white/80 uppercase tracking-wide">
+              Agrupado por
             </p>
-            <p class="text-xs font-medium text-[#ccfbf1]">
-              Modo: {{ state.lastResult.format }}
+            <div>
+              <p
+                class="font-['Manrope'] font-semibold text-[24px] text-white mb-1"
+              >
+                {{ groupByLabel }}
+              </p>
+              <p class="text-xs font-medium text-[#ccfbf1]">
+                Modo: {{ state.lastResult.format }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Filtros (a la derecha de la agrupación) -->
+          <div class="flex-1 min-w-0 border-l border-white/15 pl-8">
+            <p
+              class="text-xs font-bold text-white/80 uppercase tracking-wide mb-1.5"
+            >
+              Filtros
+            </p>
+            <div
+              v-if="state.lastResult.filters_applied?.length"
+              class="flex flex-wrap gap-1.5"
+            >
+              <span
+                v-for="(f, i) in state.lastResult.filters_applied"
+                :key="i"
+                class="inline-block bg-white/15 text-white text-xs font-medium px-2 py-1 rounded"
+              >
+                {{ attributeLabel(f.attribute) }}: {{ filterValueLabel(f) }}
+              </span>
+            </div>
+            <p v-else class="text-xs font-medium text-[#ccfbf1]/70 italic">
+              Sin filtros
             </p>
           </div>
         </div>
