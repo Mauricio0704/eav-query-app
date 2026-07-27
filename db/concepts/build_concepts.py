@@ -59,6 +59,14 @@ def _norm(t):
     return re.sub(r"\s+", " ", t).strip()
 
 
+def _norm_opt(t):
+    """Como _norm pero además ignora la marca de género inclusivo (a)/(o)/(as)/(os).
+    SOLO para COMPARAR ETIQUETAS de opción: 'Seguro (a)' ≡ 'Seguro'. NO se usa en la
+    similitud de texto de preguntas (esa sigue con _norm), así que no altera la
+    agrupación de clusters — evita el 'relabel?' espurio por puro lenguaje inclusivo."""
+    return re.sub(r"\b[oa]s?\b", " ", _norm(t)).strip()
+
+
 def _sim(a, b):
     na, nb = _norm(a), _norm(b)
     if not na or not nb:
@@ -120,7 +128,7 @@ def main():
         if len(cats) < 2:
             return "na"
         codes = [frozenset(o for o in OPTS[n] if not _is_sent(o, OPTS[n][o])) for n in cats]
-        labs = lambda n: {o: _norm(OPTS[n][o]) for o in OPTS[n] if not _is_sent(o, OPTS[n][o])}
+        labs = lambda n: {o: _norm_opt(OPTS[n][o]) for o in OPTS[n] if not _is_sent(o, OPTS[n][o])}
         if all(s == codes[0] for s in codes):
             base = labs(cats[0])
             return "match" if all(labs(n) == base for n in cats[1:]) else "relabel?"

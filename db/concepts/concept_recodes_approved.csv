@@ -2,3 +2,6 @@ concept_id,wave_id,q_id,option_id,concept_option_id
 attr_sexo,2022,cp2_1,1,attr_sexo:0
 attr_sexo,2022,cp2_1,2,attr_sexo:1
 attr_sexo,2022,cp2_1,9999,attr_sexo:9999
+attr_sexo,2021,cp2_1,1,attr_sexo:0
+attr_sexo,2021,cp2_1,2,attr_sexo:1
+attr_sexo,2021,cp2_1,9,attr_sexo:9999

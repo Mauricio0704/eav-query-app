@@ -140,6 +140,7 @@ c269,cuantas veces a la semana se dirige a este destino,numerica,True,4,match
 c271,a primaria,categorica,True,2,match
 c272,b secundaria,categorica,True,3,match
 c273,c media superior preparatoria bachillerato,categorica,True,3,match
+c275,que tan seguro se siente en su municipio,categorica,True,4,match
 c276,en el ultimo ano usted o algun miembro del hogar ha sido victima de algun delito,categorica,True,4,match
 c277,usted o la persona que fue victima denuncio el delito,categorica,True,4,match
 c278,si contesto que si a la pregunta anterior como califica la experiencia de su den,numerica,True,4,match
