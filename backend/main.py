@@ -506,6 +506,56 @@ class QueryRequest(BaseModel):
 
 _YEAR_SENTINELS = {7777, 8888, 9999, 5555}
 
+# Códigos-centinela "sospechosos" que algunas olas usan para No sabe/No contesta/
+# No aplica en preguntas NUMÉRICAS, además del estándar 7777/8888/9999. No se
+# excluyen a ciegas: sólo cuentan como centinela en una pregunta si SUPERAN el
+# techo de valores reales de esa pregunta (ver _extra_numeric_sentinels), para
+# no tirar valores legítimos como una edad de 88 o un gasto de $96.
+_NUM_SENT_SUSPECT = (88, 96, 97, 98, 99, 888, 997, 998, 999, 5555, 9995, 9996, 9998)
+_NUM_SENT_CACHE = None
+
+
+def _extra_numeric_sentinels():
+    """(wave, question) → set de códigos sospechosos que exceden el máximo valor
+    real de esa pregunta ⇒ son centinelas (ej. 99 "días a la semana", 999
+    "bicicletas") y deben salir del promedio. Un código sospechoso DENTRO del
+    rango real (edad 88, gasto 96) se conserva. Se calcula una vez y se cachea."""
+    global _NUM_SENT_CACHE
+    if _NUM_SENT_CACHE is None:
+        s = ", ".join(str(x) for x in _NUM_SENT_SUSPECT)
+        rows = get_conn().execute(
+            f"""
+            WITH nq AS (SELECT wave_id, q_id FROM questions WHERE q_type='numerica'),
+            vals AS (
+                SELECT a.wave_id, a.question_id, a.value
+                FROM answers a
+                JOIN nq ON nq.wave_id = a.wave_id AND nq.q_id = a.question_id
+                WHERE a.value IS NOT NULL AND a.value NOT IN (7777, 8888, 9999)
+                GROUP BY 1, 2, 3
+            ),
+            ceil AS (
+                SELECT wave_id, question_id,
+                       MAX(value) FILTER (WHERE value NOT IN ({s})) AS hi
+                FROM vals GROUP BY 1, 2
+            )
+            SELECT v.wave_id, v.question_id, v.value
+            FROM vals v JOIN ceil c USING (wave_id, question_id)
+            WHERE v.value IN ({s}) AND v.value > COALESCE(c.hi, 0)
+            """
+        ).fetchall()
+        cache = {}
+        for w, q, val in rows:
+            cache.setdefault((w, q), set()).add(int(val))
+        _NUM_SENT_CACHE = cache
+    return _NUM_SENT_CACHE
+
+
+def _numeric_sentinel_sql(wave, qid):
+    """Lista para `a.value NOT IN (...)`: el estándar 7777/8888/9999 unido a los
+    centinelas no estándar detectados para esta pregunta."""
+    vals = sorted({7777, 8888, 9999} | _extra_numeric_sentinels().get((wave, qid), set()))
+    return ", ".join(str(v) for v in vals)
+
 
 def _fmt_num(v):
     """Formatea un valor numérico como id/etiqueta legible (30.0 → '30')."""
@@ -866,8 +916,11 @@ def run_query(req: QueryRequest):
         # Categorical answers store the response in `option_id` and leave
         # `a.value` NULL, so applying the sentinel filter there would drop
         # every row (NULL NOT IN (...) is NULL/falsy).
+        num_sentinels = (
+            _numeric_sentinel_sql(wave, req.question_id) if q_type == "numerica" else ""
+        )
         sentinel_filter = (
-            "AND a.value NOT IN (7777, 8888, 9999)" if q_type == "numerica" else ""
+            f"AND a.value NOT IN ({num_sentinels})" if q_type == "numerica" else ""
         )
         if weighted:
             total_sql = f"""
@@ -909,7 +962,7 @@ def run_query(req: QueryRequest):
                         INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                         {join_clauses}
                         WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                          AND a.value NOT IN (7777, 8888, 9999)
+                          AND a.value NOT IN ({num_sentinels})
                           {initial_filter}
                           {city_where}
                         GROUP BY a.value
@@ -1117,7 +1170,7 @@ def run_query(req: QueryRequest):
                 INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                 {join_clauses}
                 WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                  AND a.value NOT IN (7777, 8888, 9999)
+                  AND a.value NOT IN ({num_sentinels})
                   {initial_filter}
                   {city_where}
                 GROUP BY grupo
@@ -1133,7 +1186,7 @@ def run_query(req: QueryRequest):
                 INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                 {join_clauses}
                 WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                  AND a.value NOT IN (7777, 8888, 9999)
+                  AND a.value NOT IN ({num_sentinels})
                   {initial_filter}
                   {city_where}
             """
@@ -1184,7 +1237,7 @@ def run_query(req: QueryRequest):
                         INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
                         {join_clauses}
                         WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                          AND a.value NOT IN (7777, 8888, 9999)
+                          AND a.value NOT IN ({num_sentinels})
                           AND r.city_id IN ({in_clause})
                           {initial_filter}
                           {city_where}
