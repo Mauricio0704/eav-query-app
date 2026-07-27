@@ -793,6 +793,12 @@ c273,c273:10,10,10
 c273,c273:7777,No aplica,7777
 c273,c273:8888,No sabe,8888
 c273,c273:9999,No contesta,9999
+c275,c275:1,Muy seguro (a),1
+c275,c275:2,Seguro (a),2
+c275,c275:3,Inseguro (a),3
+c275,c275:4,Muy inseguro (a),4
+c275,c275:8888,No sabe,8888
+c275,c275:9999,No contesta,9999
 c276,c276:0,No,0
 c276,c276:1,Sí,1
 c276,c276:8888,No sabe,8888
