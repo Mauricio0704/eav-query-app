@@ -152,6 +152,51 @@ def load_wave_csv(con: duckdb.DuckDBPyConnection, wave: str, year: int, label: s
 
 
 # ---------------------------------------------------------------------------
+# Capa B — reparación del catálogo de opciones (overlay curado a mano)
+# ---------------------------------------------------------------------------
+def apply_option_fixes(con: duckdb.DuckDBPyConnection) -> None:
+    """Upsert de db/concepts/options_fixes_approved.csv sobre `options`.
+
+    Las fuentes crudas (CSV de olas / BD 2025) a veces no traen etiqueta para
+    códigos que sí aparecen en `answers` (huecos de catálogo). Este overlay,
+    revisado contra el cuestionario original, agrega/corrige esas etiquetas
+    SIN tocar las fuentes crudas. Semántica: si (wave, q, option) existe, se
+    reemplaza la etiqueta; si no, se inserta."""
+    ffile = HERE / "concepts" / "options_fixes_approved.csv"
+    if not ffile.exists():
+        print("\n(∅ sin options_fixes_approved.csv — se omite Capa B)")
+        return
+    con.execute(
+        f"""
+        CREATE TEMP TABLE _ofix AS
+        SELECT CAST(wave_id AS VARCHAR)     AS wave_id,
+               CAST(question_id AS VARCHAR) AS question_id,
+               CAST(option_id AS BIGINT)    AS option_id,
+               CAST(option_label AS VARCHAR) AS option_label
+        FROM read_csv_auto('{ffile}', header=true)
+        """
+    )
+    con.execute(
+        """
+        DELETE FROM options o
+        USING _ofix f
+        WHERE o.wave_id = f.wave_id
+          AND o.question_id = f.question_id
+          AND o.option_id = f.option_id
+        """
+    )
+    con.execute(
+        """
+        INSERT INTO options (wave_id, question_id, option_id, option_label, concept_option_id)
+        SELECT wave_id, question_id, option_id, option_label, NULL FROM _ofix
+        """
+    )
+    n = con.execute("SELECT COUNT(*) FROM _ofix").fetchone()[0]
+    con.execute("DROP TABLE _ofix")
+    print(f"\n▶ Capa B: {n} etiquetas de opción reparadas desde {ffile.name}")
+
+
+# ---------------------------------------------------------------------------
 # Conceptos (Fase 2) — armonización entre años
 # ---------------------------------------------------------------------------
 def load_concepts(con: duckdb.DuckDBPyConnection) -> None:
@@ -277,6 +322,7 @@ def main() -> None:
         load_wave_csv(con, "2022", 2022, "Encuesta 2022")
         load_wave_csv(con, "2021", 2021, "Encuesta 2021")
 
+        apply_option_fixes(con)
         load_concepts(con)
 
         _validate(con)

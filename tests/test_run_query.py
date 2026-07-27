@@ -44,19 +44,12 @@ def test_flat_categorical_shape(categorical_qid):
 
 
 # ── Capa A: catálogo incompleto NO debe tirar respuestas (base intacta) ──────
-def test_flat_categorical_counts_uncatalogued_options():
-    """Regresión Capa A: un option_id ausente del catálogo `options` debe
-    seguir contándose (LEFT JOIN + 'Código N'), no caerse en silencio — si se
-    cae, la base se encoge y todos los % se inflan (la clase de bug de p128).
-    p8/2021 tenía el catálogo roto (una sola fila basura 1234567), así que
-    antes del fix devolvía base 0; ahora recupera sus 7 opciones reales."""
-    wave, qid = "2021", "p8"
-    r = run_query(
-        QueryRequest(question_id=qid, group_by="answer", wave_id=wave, initial_only=True)
-    )
-    base = sum(row[2] for row in r["rows"] if isinstance(row[2], (int, float)))
+def _flat_base(r):
+    return sum(row[2] for row in r["rows"] if isinstance(row[2], (int, float)))
 
-    expected = main.get_conn().execute(
+
+def _raw_weighted_total(wave, qid):
+    return main.get_conn().execute(
         """
         SELECT ROUND(SUM(r.factor_cvnl))::BIGINT
         FROM answers a
@@ -68,10 +61,44 @@ def test_flat_categorical_counts_uncatalogued_options():
         [wave, qid],
     ).fetchone()[0]
 
+
+def test_flat_categorical_base_equals_raw_total(categorical_qid):
+    """Regresión Capa A (invariante que sobrevive a Capa B): la base del flat
+    categórico = total ponderado crudo de `answers`. El LEFT JOIN no tira nada;
+    si volviera a INNER JOIN, las respuestas sin catálogo se caerían, la base se
+    encogería y TODOS los % se inflarían (la clase de bug de p128/2021)."""
+    r = run_query(QueryRequest(question_id=categorical_qid, initial_only=True))
+    base = _flat_base(r)
     assert base > 0
-    # nada se cayó: la base del flat = total ponderado crudo de answers
-    assert base == pytest.approx(expected, abs=len(r["rows"]))
-    # las opciones sin etiqueta se muestran como "Código N", no desaparecen
+    assert base == pytest.approx(_raw_weighted_total("2025", categorical_qid),
+                                 abs=len(r["rows"]))
+
+
+def test_flat_categorical_uncatalogued_surfaces_as_codigo():
+    """Capa A: donde el catálogo aún tiene huecos (olas sin Capa B), el código
+    sin etiqueta aflora como 'Código N' y se cuenta — no desaparece. Busca una
+    pregunta con hueco dinámicamente; si ya no queda ninguna (Capa B completa en
+    todas las olas), se omite."""
+    hit = main.get_conn().execute(
+        """
+        SELECT a.wave_id, a.question_id
+        FROM answers a
+        JOIN responses r ON r.wave_id=a.wave_id AND r.respondent_id=a.respondent_id
+                        AND r.is_initial_respondent=1
+        JOIN questions q ON q.wave_id=a.wave_id AND q.q_id=a.question_id AND q.q_type='categorica'
+        LEFT JOIN options o
+          ON o.wave_id=a.wave_id AND o.question_id=a.question_id AND o.option_id=a.option_id
+        WHERE a.option_id IS NOT NULL AND o.option_id IS NULL
+        LIMIT 1
+        """
+    ).fetchone()
+    if not hit:
+        pytest.skip("no quedan huecos de catálogo en ninguna ola (Capa B completa)")
+    wave, qid = hit
+    r = run_query(
+        QueryRequest(question_id=qid, group_by="answer", wave_id=wave, initial_only=True)
+    )
+    assert _flat_base(r) == pytest.approx(_raw_weighted_total(wave, qid), abs=len(r["rows"]))
     assert any(str(row[1]).startswith("Código ") for row in r["rows"])
 
 
