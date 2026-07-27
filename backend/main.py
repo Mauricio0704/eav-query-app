@@ -924,14 +924,19 @@ def run_query(req: QueryRequest):
                 rows = conn.execute(sql).fetchall()
                 col_labels = ["Respuesta", "Respuestas", "%"]
             else:
+                # LEFT JOIN (not INNER): answers whose option_id is missing from
+                # the `options` catalog must still be COUNTED — dropping them
+                # shrinks the base and inflates every percentage (see the
+                # catalog-gap audit). Uncatalogued codes surface as "Código N"
+                # until the catalog is repaired (Capa B). Mirrors the pivot path.
                 sql = f"""
                     WITH base AS (
                         SELECT a.option_id     AS id_respuesta,
-                               o.option_label  AS respuesta,
+                               COALESCE(o.option_label, 'Código ' || a.option_id::TEXT) AS respuesta,
                                {count_expr}    AS cnt
                         FROM answers a
                         INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                        INNER JOIN options o
+                        LEFT JOIN options o
                             ON o.wave_id = '{wave}'
                             AND o.question_id = a.question_id
                             AND o.option_id = a.option_id
@@ -1336,7 +1341,7 @@ def run_query(req: QueryRequest):
             label = (
                 label_in_opts
                 if label_in_opts is not None
-                else (str(opt_id) if opt_id is not None else "")
+                else (f"Código {opt_id}" if opt_id is not None else "")
             )
             row_total = sum(cell_map.get((opt_id, g), 0) for g in atomic_keys)
             count_row = [opt_id, label]

@@ -43,6 +43,38 @@ def test_flat_categorical_shape(categorical_qid):
     assert _pct_sum(r["rows"]) == pytest.approx(100, abs=tol)
 
 
+# ── Capa A: catálogo incompleto NO debe tirar respuestas (base intacta) ──────
+def test_flat_categorical_counts_uncatalogued_options():
+    """Regresión Capa A: un option_id ausente del catálogo `options` debe
+    seguir contándose (LEFT JOIN + 'Código N'), no caerse en silencio — si se
+    cae, la base se encoge y todos los % se inflan (la clase de bug de p128).
+    p8/2021 tenía el catálogo roto (una sola fila basura 1234567), así que
+    antes del fix devolvía base 0; ahora recupera sus 7 opciones reales."""
+    wave, qid = "2021", "p8"
+    r = run_query(
+        QueryRequest(question_id=qid, group_by="answer", wave_id=wave, initial_only=True)
+    )
+    base = sum(row[2] for row in r["rows"] if isinstance(row[2], (int, float)))
+
+    expected = main.get_conn().execute(
+        """
+        SELECT ROUND(SUM(r.factor_cvnl))::BIGINT
+        FROM answers a
+        JOIN responses r
+          ON r.respondent_id = a.respondent_id AND r.wave_id = a.wave_id
+        WHERE a.wave_id = ? AND a.question_id = ? AND a.option_id IS NOT NULL
+          AND r.is_initial_respondent = 1
+        """,
+        [wave, qid],
+    ).fetchone()[0]
+
+    assert base > 0
+    # nada se cayó: la base del flat = total ponderado crudo de answers
+    assert base == pytest.approx(expected, abs=len(r["rows"]))
+    # las opciones sin etiqueta se muestran como "Código N", no desaparecen
+    assert any(str(row[1]).startswith("Código ") for row in r["rows"])
+
+
 # ── pivot (group_by != "answer") ────────────────────────────────────────────
 def test_pivot_by_attribute(categorical_qid):
     r = run_query(QueryRequest(question_id=categorical_qid, group_by="sexo"))
