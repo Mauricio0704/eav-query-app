@@ -1,0 +1,8 @@
+wave_id,question_id,q_type,reason
+2021,p9_2,categorica,"colonia de destino (identificador codificado, no numerico)"
+2021,p10_b,categorica,"ruta de camion (identificador codificado, no numerico)"
+2021,p11_b_1,categorica,"ruta de camion (identificador codificado, no numerico)"
+2022,p13,categorica,"colonia de destino (identificador codificado, no numerico)"
+2022,p14_b,categorica,"ruta de camion (identificador codificado, no numerico)"
+2023,p15,categorica,"colonia de destino (identificador codificado, no numerico)"
+2024,p17,categorica,"colonia de destino (identificador codificado, no numerico)"

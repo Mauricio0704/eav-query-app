@@ -196,6 +196,64 @@ def apply_option_fixes(con: duckdb.DuckDBPyConnection) -> None:
     print(f"\n▶ Capa B: {n} etiquetas de opción reparadas desde {ffile.name}")
 
 
+def apply_question_type_fixes(con: duckdb.DuckDBPyConnection) -> None:
+    """Re-tipa preguntas desde db/concepts/question_type_fixes_approved.csv.
+
+    Algunas preguntas vienen catalogadas como `numerica` en la fuente pero son
+    en realidad IDENTIFICADORES codificados (colonia de destino, ruta de camión):
+    sus valores son códigos, no cantidades, así que promediarlos no tiene sentido
+    (p13/2022 daba media de ~24 mil millones). Este overlay corrige `q_type`
+    SIN tocar las fuentes crudas, para que el motor las trate como categóricas
+    (desglose de frecuencias, sin 'Promedio').
+
+    Como venían tipadas numéricas, sus respuestas se cargaron en `answers.value`
+    (con `option_id` NULO); el motor categórico agrupa por `option_id`, así que
+    aquí también se migra el código `value → option_id` para esas preguntas."""
+    ffile = HERE / "concepts" / "question_type_fixes_approved.csv"
+    if not ffile.exists():
+        print("\n(∅ sin question_type_fixes_approved.csv — se omite re-tipado)")
+        return
+    con.execute(
+        f"""
+        CREATE TEMP TABLE _tfix AS
+        SELECT CAST(wave_id AS VARCHAR)     AS wave_id,
+               CAST(question_id AS VARCHAR) AS question_id,
+               CAST(q_type AS VARCHAR)      AS q_type
+        FROM read_csv_auto('{ffile}', header=true)
+        """
+    )
+    con.execute(
+        """
+        UPDATE questions q
+        SET q_type = f.q_type
+        FROM _tfix f
+        WHERE q.wave_id = f.wave_id AND q.q_id = f.question_id
+        """
+    )
+    n = con.execute(
+        """
+        SELECT COUNT(*) FROM _tfix f
+        JOIN questions q ON q.wave_id = f.wave_id AND q.q_id = f.question_id
+                        AND q.q_type = f.q_type
+        """
+    ).fetchone()[0]
+    # Migrar el código de `value` a `option_id` sólo para las re-tipadas a
+    # categórica (sus respuestas se cargaron como numéricas).
+    migr = con.execute(
+        """
+        UPDATE answers a
+        SET option_id = CAST(a.value AS BIGINT), value = NULL
+        FROM _tfix f
+        WHERE a.wave_id = f.wave_id AND a.question_id = f.question_id
+          AND f.q_type = 'categorica'
+          AND a.option_id IS NULL AND a.value IS NOT NULL
+        """
+    )
+    con.execute("DROP TABLE _tfix")
+    print(f"\n▶ Re-tipado: {n} preguntas identificador → categórica desde {ffile.name}"
+          f" (código value→option_id migrado)")
+
+
 # ---------------------------------------------------------------------------
 # Conceptos (Fase 2) — armonización entre años
 # ---------------------------------------------------------------------------
@@ -323,6 +381,7 @@ def main() -> None:
         load_wave_csv(con, "2021", 2021, "Encuesta 2021")
 
         apply_option_fixes(con)
+        apply_question_type_fixes(con)
         load_concepts(con)
 
         _validate(con)
