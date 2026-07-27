@@ -1,0 +1,342 @@
+wave_id,question_id,option_id,option_label
+2021,cp4_1,11,Otro
+2021,cp4_1,12,Otro
+2021,cp4_1,13,Otro
+2021,cp4_1,14,Otro
+2021,cp4_1,15,Otro
+2021,cp4_1,16,Otro
+2021,cp4_1,17,Otro
+2021,cp4_1,18,Otro
+2021,cp4_1,21,Otro
+2021,cp4_1,27,Otro
+2021,cp6_1_1,10,Doctorado
+2021,cp6_1_1,96,NS/NC
+2021,cp6_2_1,10,Doctorado
+2021,cp6_2_1,96,NS/NC
+2021,cp8_1,10,Ninguna institución
+2021,cp8_1,11,Otro
+2021,cp8_1,12,Otro
+2021,cp8_1,13,Otro
+2021,cp8_1,14,Otro
+2021,cp8_1,15,Otro
+2021,cp8_1,96,Otro
+2021,p1,7,"Ni estudia, ni trabaja, ni busca empleo"
+2021,p1,8,Otro
+2021,p1,9,Otro
+2021,p1,10,Otro
+2021,p1,11,Otro
+2021,p1,12,Otro
+2021,p102,7,Porque tenía COVID
+2021,p102,8,Otro
+2021,p102,9,Otro
+2021,p109,5,Los gobernantes son poco efectivos para resolver los problemas de la ciudad / estado.
+2021,p109,6,Otro
+2021,p109,7,Otro
+2021,p109,8,Otro
+2021,p109,9,Otro
+2021,p111,9,No contesta
+2021,p114,6,Mejorar la cantidad/calidad espacios públicos como parques y plazas
+2021,p114,7,Otro
+2021,p114,8,Otro
+2021,p114,9,Otro
+2021,p114,10,Otro
+2021,p114,11,Otro
+2021,p114,12,Otro
+2021,p114,13,Otro
+2021,p114,14,Otro
+2021,p114,15,Otro
+2021,p114,16,Otro
+2021,p114,17,Otro
+2021,p114,18,Otro
+2021,p114,19,Otro
+2021,p12,11,Comodidad
+2021,p12,12,No es accesible para personas con discapacidad.
+2021,p12,13,Para evitar contagiarme/contagiar.
+2021,p12,14,No utilizó estos modos
+2021,p12,15,Otro. Explicar
+2021,p12,16,Otro
+2021,p12,17,Otro
+2021,p12,18,Otro
+2021,p12,19,Otro
+2021,p12,98,No sabe/No contesta
+2021,p122,10,Otro
+2021,p122,11,Otro
+2021,p122,12,Otro
+2021,p122,13,Otro
+2021,p122,14,Otro
+2021,p122,15,Otro
+2021,p122,16,Otro
+2021,p122,17,Otro
+2021,p122,18,Otro
+2021,p122,19,Otro
+2021,p122,20,Otro
+2021,p122,21,Otro
+2021,p122,22,Otro
+2021,p122,23,Otro
+2021,p122,24,Otro
+2021,p122,25,Otro
+2021,p122,26,Otro
+2021,p122,27,Otro
+2021,p122,28,Otro
+2021,p126,4,Otro
+2021,p126,5,Otro
+2021,p126,8,Otro
+2021,p128,10,"8-9 SM (34,008 - 38,258)"
+2021,p128,11,"9-10 SM (38,259 - 42,509)"
+2021,p128,12,"10 o más SM (42,510 o más)"
+2021,p128,13,No contesta
+2021,p21_1,99,NO APLICA
+2021,p21_2,99,NO APLICA
+2021,p21_3,99,NO APLICA
+2021,p21_4,99,NO APLICA
+2021,p21_5,99,NO APLICA
+2021,p21_6,99,NO APLICA
+2021,p21_7,99,NO APLICA
+2021,p21_8,99,NO APLICA
+2021,p21_9,99,NO APLICA
+2021,p22,10,10
+2021,p22,99,NO SABE
+2021,p28,8,No se andar en bicicleta
+2021,p28,9,Otro
+2021,p28,10,Otro
+2021,p28,11,Otro
+2021,p28,12,Otro
+2021,p28,13,Otro
+2021,p28,14,Otro
+2021,p28,15,Otro
+2021,p28,16,Otro
+2021,p28,17,Otro
+2021,p28,18,Otro
+2021,p29_1_1,99,NO APLICA
+2021,p29_1_2,99,NO APLICA
+2021,p29_1_3,99,NO APLICA
+2021,p29_1_4,99,NO APLICA
+2021,p29_1_5,99,NO APLICA
+2021,p29_1_6,99,NO APLICA
+2021,p29_1_7,99,NO APLICA
+2021,p29_1_8,99,NO APLICA
+2021,p30,9,No contesta
+2021,p31_1,99,NO APLICA
+2021,p31_10,99,NO APLICA
+2021,p31_11,99,NO APLICA
+2021,p31_2,99,NO APLICA
+2021,p31_3,99,NO APLICA
+2021,p31_4,99,NO APLICA
+2021,p31_5,99,NO APLICA
+2021,p31_6,99,NO APLICA
+2021,p31_7,99,NO APLICA
+2021,p31_8,99,NO APLICA
+2021,p31_9,99,NO APLICA
+2021,p33,7,Otro
+2021,p33,10,Otro
+2021,p33,99,NO APLICA
+2021,p34_1,99,NO APLICA
+2021,p34_10,99,NO APLICA
+2021,p34_11,99,NO APLICA
+2021,p34_12,99,NO APLICA
+2021,p34_13,99,NO APLICA
+2021,p34_14,99,NO APLICA
+2021,p34_2,99,NO APLICA
+2021,p34_3,99,NO APLICA
+2021,p34_4,99,NO APLICA
+2021,p34_5,99,NO APLICA
+2021,p34_6,99,NO APLICA
+2021,p34_7,99,NO APLICA
+2021,p34_8,99,NO APLICA
+2021,p34_9,99,NO APLICA
+2021,p35_1,99,NO APLICA
+2021,p35_2,99,NO APLICA
+2021,p35_3,99,NO APLICA
+2021,p38,10,Me fui a vivir con mi pareja/ esposo(a)
+2021,p38,11,Me quería independizar
+2021,p38,12,Una casa/departamento más grande
+2021,p38,13,Divorcio
+2021,p38,14,Otro
+2021,p38,15,Otro
+2021,p38,16,Otro
+2021,p38,17,Otro
+2021,p38,18,Otro
+2021,p38,19,Otro
+2021,p38,20,Otro
+2021,p38,21,Otro
+2021,p38,22,Otro
+2021,p38,23,Otro
+2021,p38,24,Otro
+2021,p38,25,Otro
+2021,p38,26,Otro
+2021,p38,27,Otro
+2021,p38,28,Otro
+2021,p40,6,Otro
+2021,p40,7,Otro
+2021,p40,8,Otro
+2021,p40,98,No sabe/No contesta
+2021,p46,4,No me es posible separarla en casa y/o no existen puntos de reciclaje cerca de mi vivienda.
+2021,p46,5,Otro
+2021,p46,6,Otro
+2021,p46,7,Otro
+2021,p46,98,No sabe/No contesta
+2021,p47,8,Falta de reciclaje
+2021,p47,9,Otro
+2021,p47,10,Otro
+2021,p47,11,Otro
+2021,p47,12,Otro
+2021,p47,13,Otro
+2021,p47,14,Otro
+2021,p47,15,Otro
+2021,p58,0,No
+2021,p59,7,No confía en el personal de salud/ tienen un mal trato.
+2021,p59,9,Otro
+2021,p59,10,Otro
+2021,p61,10,Consultorio de farmacia
+2021,p61,11,Otro
+2021,p61,12,Otro
+2021,p61,13,Otro
+2021,p61,14,Otro
+2021,p61,98,No Sabe/No Contesta
+2021,p62,99,No Aplica
+2021,p66,99,No aplica
+2021,p67_3,99,No Aplica
+2021,p68,10,10
+2021,p69,8,Otro
+2021,p69,9,Otro
+2021,p69,10,Otro
+2021,p73,6,Otro
+2021,p73,7,Otro
+2021,p73,8,Otro
+2021,p73,9,Otro
+2021,p73,10,Otro
+2021,p73,11,Otro
+2021,p73,12,Otro
+2021,p73,13,Otro
+2021,p77_1_1,99,NS/NC
+2021,p77_2_1,99,NS/NC
+2021,p77_3_1,99,NS/NC
+2021,p8,1,1
+2021,p8,2,2
+2021,p8,3,3
+2021,p8,4,4
+2021,p8,5,5
+2021,p8,6,6
+2021,p8,7,7
+2021,p81_a,10,10
+2021,p81_a,96,No aplica
+2021,p81_a,99,NA
+2021,p81_b,10,10
+2021,p81_b,96,No aplica
+2021,p81_b,99,NA
+2021,p81_c,10,10
+2021,p81_c,96,No aplica
+2021,p81_c,99,NA
+2021,p82,7,Discriminación hacia las personas
+2021,p82,9,Otro
+2021,p82,10,Otro
+2021,p82,98,No sabe/No contesta
+2021,p86,10,10
+2021,p89_1,10,10
+2021,p89_1,98,No sabe
+2021,p89_1,99,No contestó
+2021,p89_2,10,10
+2021,p89_2,98,No sabe
+2021,p89_2,99,No contestó
+2021,p89_3,10,10
+2021,p89_3,98,No sabe
+2021,p89_3,99,No contestó
+2021,p89_4,10,10
+2021,p89_4,98,No sabe
+2021,p89_4,99,No contestó
+2021,p89_5,10,10
+2021,p89_5,98,No sabe
+2021,p89_5,99,No contestó
+2021,p91_2,99,NO APLICA
+2021,p96,6,Otro
+2021,p96,9,NC
+2021,p99,7,Otro
+2021,p99,11,Otro
+2021,p9_1,10,Santa Catarina
+2021,p9_1,11,Cadereyta
+2021,p9_1,12,Otro
+2021,p9_1,13,Otro
+2021,p9_1,14,Otro
+2021,p9_1,15,Otro
+2021,p9_1,16,Otro
+2021,p9_1,17,Otro
+2021,p9_1,18,Otro
+2021,p9_1,19,Otro
+2021,p9_1,20,Otro
+2021,p9_1,21,Otro
+2021,p9_1,22,Otro
+2021,p9_1,23,Otro
+2021,p9_1,24,Otro
+2021,p9_1,25,Otro
+2021,p9_1,26,Otro
+2021,p9_1,27,Otro
+2021,p9_1,28,Otro
+2021,p9_1,29,Otro
+2021,p9_1,30,Otro
+2021,p9_1,31,Otro
+2021,p9_1,32,Otro
+2021,p9_1,33,Otro
+2021,p9_1,34,Otro
+2021,p9_1,35,Otro
+2021,p9_1,36,Otro
+2021,p9_1,37,Otro
+2021,p9_1,38,Otro
+2021,p9_1,39,Otro
+2021,p9_1,40,Otro
+2021,p9_1,41,Otro
+2022,cp12_1,3,Otro
+2022,cp5_1,8,Nieto
+2022,p101,6,Otro
+2022,p109,6,Otro
+2022,p11,999,No contesta
+2022,p124,8,"6-7 SM ($31,116 - $36,302)"
+2022,p124,8888,No sabe
+2022,p35,999,No contesta
+2022,p37,888,No sabe
+2022,p37,999,No contesta
+2022,p38,8,Otro
+2022,p38,9,Otro
+2022,p38,10,Otro
+2022,p39,8,Otro
+2022,p40_4,7777,No aplica
+2022,p45_2,888,No sabe
+2022,p45_2,999,No contesta
+2022,p45_3,888,No sabe
+2022,p45_3,999,No contesta
+2022,p45_4,888,No sabe
+2022,p45_4,999,No contesta
+2022,p45_5,888,No sabe
+2022,p45_5,999,No contesta
+2022,p45_6,888,No sabe
+2022,p45_6,999,No contesta
+2022,p59,8888,No sabe
+2022,p59,9999,No contesta
+2022,p83,888,No sabe
+2022,p84,8,Otro
+2022,p86,10,Otro
+2022,p92_1,888,No sabe
+2022,p92_1,999,No contesta
+2022,p92_2,888,No sabe
+2022,p92_2,999,No contesta
+2022,p92_3,888,No sabe
+2022,p92_3,999,No contesta
+2022,p92_4,888,No sabe
+2022,p92_4,999,No contesta
+2022,p92_5,888,No sabe
+2022,p92_5,999,No contesta
+2022,p93_3,7777,No aplica
+2022,p93_3,8888,No sabe
+2023,p4,9999,No contesta
+2023,p45,14,Otro
+2024,p1,3,Otro
+2024,p1,7777,No aplica
+2024,p1,8888,No sabe
+2024,p1,9999,No contesta
+2024,p112_2,1,Sí
+2024,p158_2,0,No
+2024,p38,11,Otro
+2024,p49,10,"García, NL"
+2024,p49,11,"Guadalupe, NL"
+2024,p68,2,Mayor consumo de electricidad
+2024,p72,8,Otro
+2025,cp10_b,7777,No aplica
