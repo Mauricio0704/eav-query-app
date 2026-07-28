@@ -719,7 +719,9 @@ def _year_comparison(req: QueryRequest):
     }
     # Sin columna "Total": sumar respondientes de olas distintas no tiene
     # sentido (cada año es su propia población / su propio 100%).
-    columns = ["id_respuesta", "Respuesta", *years]
+    # Sin columna "id_respuesta": en la vista entre años el código canónico no es
+    # estable (cambia por ola); el crudo por año va en `year_option_map`.
+    columns = ["Respuesta", *years]
 
     if concept_type == "numerica":
         # Distribución de respuestas por año + Promedio + Base. Se alinea por
@@ -747,7 +749,7 @@ def _year_comparison(req: QueryRequest):
         counts_rows, pct_rows = [], []
         for v in valores:
             disp = _fmt_num(v)
-            crow, prow = [disp, vlabel.get(v, disp)], [disp, vlabel.get(v, disp)]
+            crow, prow = [vlabel.get(v, disp)], [vlabel.get(v, disp)]
             for w in years:
                 c = dist.get((v, w), 0)
                 crow.append(round(c) if c else "")
@@ -755,14 +757,14 @@ def _year_comparison(req: QueryRequest):
             counts_rows.append(crow)
             pct_rows.append(prow)
         counts_rows.append(
-            ["Total", ""] + [round(denom[w]) if denom[w] else "" for w in years]
+            ["Total"] + [round(denom[w]) if denom[w] else "" for w in years]
         )
         pct_rows.append(
-            ["Total", ""] + [100.0 if denom[w] else "" for w in years]
+            ["Total"] + [100.0 if denom[w] else "" for w in years]
         )
 
         # Promedio ponderado por año + base (ponderada, sin centinelas).
-        prom = ["", "Promedio (media)"]
+        prom = ["Promedio (media)"]
         grand_n = 0
         for w in years:
             num = den = 0.0
@@ -773,7 +775,7 @@ def _year_comparison(req: QueryRequest):
                     den += c
             prom.append(round(num / den, 2) if den else "") # type: ignore
             grand_n += per_year[w]["total_respondents"]
-        n_row = ["", "Base (ponderada)"] + [
+        n_row = ["Base (ponderada)"] + [
             per_year[w]["total_respondents"] for w in years
         ]
         counts_rows.extend([prom, n_row])
@@ -793,6 +795,10 @@ def _year_comparison(req: QueryRequest):
     canon_label = {coid: lbl for coid, lbl, _ in canon}
     canon_order = {coid: so for coid, lbl, so in canon}
     cnt = {}
+    # Crudo por (opción canónica, año): el código y etiqueta REALES que usó cada
+    # ola. La fila muestra el canónico (alineado), pero esto conserva cómo se
+    # llamó/codificó cada año → transparencia sin romper la comparación.
+    raw_by_coid = {}  # coid -> {año: {"option_id": oid, "label": label}}
     denom = {w: 0 for w in years}
     for w in years:
         for r in per_year[w]["rows"]:
@@ -801,13 +807,17 @@ def _year_comparison(req: QueryRequest):
             cnt[(coid, w)] = cnt.get((coid, w), 0) + (c or 0)
             denom[w] += c or 0
             canon_label.setdefault(coid, label)
+            raw_by_coid.setdefault(coid, {}).setdefault(
+                w, {"option_id": oid, "label": label}
+            )
     coids = sorted({k[0] for k in cnt}, key=lambda k: (canon_order.get(k, 9999), k))
 
     counts_rows, pct_rows = [], []
+    year_option_map = []
     for coid in coids:
         disp_id = coid.split(":")[-1]
         label = canon_label.get(coid, disp_id)
-        crow, prow = [disp_id, label], [disp_id, label]
+        crow, prow = [label], [label]
         for w in years:
             c = cnt.get((coid, w), 0)
             crow.append(c if c else "")
@@ -815,14 +825,31 @@ def _year_comparison(req: QueryRequest):
         counts_rows.append(crow)
         pct_rows.append(prow)
 
-    counts_rows.append(["Total", ""] + [denom[w] for w in years])
-    pct_rows.append(["Total", ""] + [100.0 if denom[w] else "" for w in years])
+        # Metadata de transparencia, en paralelo a los renglones de datos.
+        # `differs` = el código crudo o la etiqueta cruda no son iguales en todos
+        # los años donde la opción aparece (relabel/recode) → la UI lo marca.
+        per = raw_by_coid.get(coid, {})
+        ids_seen = {str(v["option_id"]) for v in per.values()}
+        labels_seen = {(v["label"] or "").strip().lower() for v in per.values()}
+        year_option_map.append(
+            {
+                "id_respuesta": disp_id,
+                "label": label,
+                "years": {w: per.get(w) for w in years},
+                "differs": len(ids_seen) > 1 or len(labels_seen) > 1,
+            }
+        )
+
+    counts_rows.append(["Total"] + [denom[w] for w in years])
+    pct_rows.append(["Total"] + [100.0 if denom[w] else "" for w in years])
 
     base.update(
         {
             "total_respondents": sum(denom.values()),
             "counts": {"columns": columns, "rows": counts_rows},
             "percentages": {"columns": columns, "rows": pct_rows},
+            # Crudo por año y opción (solo vista "Año"; NO va al CSV).
+            "year_option_map": year_option_map,
         }
     )
     return base

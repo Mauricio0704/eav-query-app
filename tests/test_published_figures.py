@@ -101,10 +101,19 @@ def test_published_figure(case):
         cols = r["percentages"]["columns"]
         assert gv in cols, f"{case['source']}: columna '{gv}' no existe en {cols}"
         ci = cols.index(gv)
-        row = next(
-            (row for row in r["percentages"]["rows"] if _id_match(row[0], target)),
-            None,
-        )
+        rows = r["percentages"]["rows"]
+        if r.get("group_by") == "year":
+            # La vista Año no expone id_respuesta como columna; el código canónico
+            # vive en year_option_map, alineado EN ORDEN con las filas de datos.
+            yom = r.get("year_option_map") or []
+            data_rows = [row for row in rows if row[0] != "Total"]
+            idx = next(
+                (i for i, e in enumerate(yom) if _id_match(e["id_respuesta"], target)),
+                None,
+            )
+            row = data_rows[idx] if idx is not None and idx < len(data_rows) else None
+        else:
+            row = next((row for row in rows if _id_match(row[0], target)), None)
         got = row[ci] if row else None
 
     assert isinstance(got, (int, float)), (
