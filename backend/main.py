@@ -1,10 +1,14 @@
 """
-Encuesta NL — DuckDB Backend
-Usage:  uvicorn main:app --reload --port 8000
+Encuesta NL — Backend sobre DuckDB.
+
+Motor de consultas de la encuesta CVNL (FastAPI + DuckDB de solo lectura).
+Arranque:  uvicorn main:app --reload --port 8000
+Docs de arquitectura: ver docs/ en la raíz del repo.
 """
 
 import os
 import re
+import logging
 from functools import lru_cache
 
 import duckdb
@@ -28,6 +32,8 @@ from metadata import (
 )
 
 DB_PATH = os.getenv("DB_PATH", "../data/encuesta_multianual.duckdb")
+
+log = logging.getLogger("encuesta")
 
 # ── Metadata-driven ordering helpers ──────────────────────────────────────────
 # City buckets used when grouping by city_id (mirrors DESIRED_ORDERS["municipio"]).
@@ -493,14 +499,15 @@ def list_waves():
 
 class QueryRequest(BaseModel):
     question_id: str
-    # Each filter: {"attribute": "sexo", "value": 1} or {"attribute": "tipo_trabajo", "value": [1, 4, 6]}
-    # For city filter use attribute="city_id"
+    # Cada filtro: {"attribute": "sexo", "value": 1} o {"attribute": "tipo_trabajo", "value": [1, 4, 6]}
+    # Para filtrar por ciudad usar attribute="city_id".
     filters: list[dict] = []
     group_by: str = "answer"
-    # When True, restrict to is_initial_respondent=1 and weight by factor_cvnl
-    # (population projection). When False, count every row unweighted.
+    # True  → restringe a is_initial_respondent=1 y pondera por factor_cvnl
+    #         (proyección a población). False → cuenta cada fila sin ponderar.
     initial_only: bool = True
-    # Survey wave (year). None → most recent wave. All tables are wave-scoped.
+    # Ola (año) de la encuesta. None → ola más reciente. Todas las tablas están
+    # particionadas por ola.
     wave_id: str | None = None
 
 
@@ -764,7 +771,7 @@ def _year_comparison(req: QueryRequest):
                 if c:
                     num += float(v) * c
                     den += c
-            prom.append(round(num / den, 2) if den else "")
+            prom.append(round(num / den, 2) if den else "") # type: ignore
             grand_n += per_year[w]["total_respondents"]
         n_row = ["", "Base (ponderada)"] + [
             per_year[w]["total_respondents"] for w in years
@@ -821,35 +828,220 @@ def _year_comparison(req: QueryRequest):
     return base
 
 
+# ---------------------------------------------------------------------------
+# Helpers del motor de query (compartidos por los cuatro caminos de run_query)
+# ---------------------------------------------------------------------------
+
+
+def _base_from_where(
+    wave: str,
+    qid: str,
+    join_clauses: str,
+    initial_filter: str,
+    city_where: str,
+    extra_where: str = "",
+    with_options: bool = False,
+) -> str:
+    """Bloque FROM/JOIN/WHERE común a todas las consultas del motor.
+
+    Slots variables:
+      - `extra_where`   inyecta el filtro de centinelas o de no-nulos según el caso.
+      - `with_options`  agrega el LEFT JOIN al catálogo de opciones (trae etiquetas
+                        sin tirar códigos sin catálogo; ver Capa A).
+    `wave` y `qid` vienen de un conjunto validado.
+    El SELECT y el GROUP BY los pone cada llamador porque difieren por caso."""
+    opt_join = (
+        f"""
+        LEFT JOIN options o
+            ON o.wave_id = '{wave}'
+            AND o.question_id = a.question_id
+            AND o.option_id = a.option_id"""
+        if with_options
+        else ""
+    )
+    return f"""
+        FROM answers a
+        INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'{opt_join}
+        {join_clauses}
+        WHERE a.wave_id = '{wave}' AND a.question_id = '{qid}'
+          {extra_where}
+          {initial_filter}
+          {city_where}"""
+
+
+def _collapse_city_cells(items, cell_map, group_totals_raw, city_bucket_labels,
+                         label_to_city_ids):
+    """Colapsa los `city_id` crudos en los buckets curados de metadata (las 11
+    ciudades del AMM + agregados AMM/Periferia/Resto NL/Nuevo León).
+
+    Suma, por cada bucket, los conteos de sus ciudades. Idéntico para numérica y
+    categórica (sólo cambia qué son los `items`: valores numéricos u option_ids).
+    Devuelve `(cell_map_colapsado, totales_por_bucket)`. Los stats de las
+    numéricas se recalculan aparte (no componen desde los stats por ciudad)."""
+    new_cell_map, new_totals = {}, {}
+    for label in city_bucket_labels:
+        ids = label_to_city_ids.get(label, set())
+        new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
+        for it in items:
+            s = sum(cell_map.get((it, c), 0) for c in ids)
+            if s:
+                new_cell_map[(it, label)] = s
+    return new_cell_map, new_totals
+
+
+def _pivot_count_pct_rows(items, label_of, cell_map, group_keys, group_totals,
+                          grand_total, is_city):
+    """Ensambla las filas de conteos y porcentajes de una tabla pivote.
+
+    Un renglón por `item` (option_id o valor numérico) con una celda por grupo,
+    más la columna Total y la fila Total. La lógica es idéntica para numérica y
+    categórica; sólo cambia `label_of(item)` → etiqueta a mostrar.
+
+    Con `is_city=True` la fila Total se suma sólo sobre buckets mutuamente
+    excluyentes (excluye AMM y Nuevo León, que son superconjuntos y duplicarían)."""
+    atomic_keys = (
+        [g for g in group_keys if g not in ("AMM", "Nuevo León")]
+        if is_city
+        else list(group_keys)
+    )
+    counts_rows, pct_rows = [], []
+    for it in items:
+        label = label_of(it)
+        row_total = sum(cell_map.get((it, g), 0) for g in atomic_keys)
+        count_row = [it, label]
+        pct_row = [it, label]
+        for g in group_keys:
+            cnt = cell_map.get((it, g), 0)
+            grp_t = group_totals.get(g, 0)
+            count_row.append(cnt if cnt else "")
+            pct_row.append(round(cnt * 100.0 / grp_t, 1) if grp_t else "")
+        count_row.append(row_total if row_total else "")
+        pct_row.append(
+            round(row_total * 100.0 / grand_total, 1) if grand_total else ""
+        )
+        counts_rows.append(count_row)
+        pct_rows.append(pct_row)
+
+    counts_rows.append(
+        ["Total", ""] + [group_totals.get(g, 0) for g in group_keys] + [grand_total]
+    )
+    pct_rows.append(
+        ["Total", ""]
+        + [100.0 if group_totals.get(g, 0) else "" for g in group_keys]
+        + [100.0 if grand_total else ""]
+    )
+    return counts_rows, pct_rows
+
+
+def _group_expr_sql(group_by: str, wave: str) -> str:
+    """Expresión SQL que produce la etiqueta de columna del pivote para cada
+    respondiente, según `group_by`. Se embebe en consultas donde `r` (responses)
+    está en scope:
+      - city_id   → el city_id crudo (se colapsa a buckets después, en Python).
+      - edad_anos → subconsulta que bucketiza la edad en rangos en vez de una
+                    columna por año (serían ~80 columnas).
+      - recode    → subconsulta con el CASE del recode (agrupa opciones).
+      - atributo  → subconsulta que resuelve la etiqueta desde `options` por el
+                    question_id que respalda al atributo; cae al valor crudo si no
+                    hay etiqueta (p. ej. edad_anos)."""
+    if group_by == "city_id":
+        return "r.city_id::TEXT"
+    if group_by == "edad_anos":
+        return f"""(
+                SELECT {_edad_bin_sql('rg.value')}
+                FROM respondent_attributes rg
+                WHERE rg.respondent_id = r.respondent_id
+                  AND rg.wave_id = '{wave}'
+                  AND rg.attribute = 'edad_anos'
+                LIMIT 1
+            )"""
+    if group_by in RECODES:
+        recode_src = RECODES[group_by]["source_attribute"]
+        return f"""(
+                SELECT {_recode_case_sql(group_by, 'rg.value')}
+                FROM respondent_attributes rg
+                WHERE rg.respondent_id = r.respondent_id
+                  AND rg.wave_id = '{wave}'
+                  AND rg.attribute = '{recode_src}'
+                LIMIT 1
+            )"""
+    # `respondent_attributes` guarda el question_id de la encuesta (p. ej. 'cp2')
+    # junto al nombre amigable del atributo ('sexo'). La etiqueta vive en `options`
+    # keyeada por ese question_id + valor, NO por el nombre del atributo.
+    return f"""(
+                SELECT COALESCE(o2.option_label, rg.value::TEXT)
+                FROM respondent_attributes rg
+                LEFT JOIN options o2
+                  ON o2.wave_id     = '{wave}'
+                 AND o2.question_id = rg.question_id
+                 AND o2.option_id   = rg.value
+                WHERE rg.respondent_id = r.respondent_id
+                  AND rg.wave_id = '{wave}'
+                  AND rg.attribute = '{group_by}'
+                LIMIT 1
+            )"""
+
+
+def _city_buckets(city_filter):
+    """Define los buckets de columna al agrupar por ciudad.
+
+    Sin filtro de ciudad: el set curado completo (las 11 ciudades del AMM + los 4
+    agregados AMM/Periferia/Resto NL/Nuevo León). Con filtro: una columna por
+    municipio filtrado (sin agregados), en el orden canónico de metadata.
+    Devuelve `(label_to_city_ids, city_bucket_labels)`."""
+    city_filter_ids = None
+    if city_filter:
+        raw_vals = city_filter["value"]
+        city_filter_ids = raw_vals if isinstance(raw_vals, list) else [raw_vals]
+    if city_filter_ids:
+        label_to_city_ids = {}
+        for cid in city_filter_ids:
+            lbl = ID_TO_CITY_NAME.get(int(cid), str(cid))
+            label_to_city_ids.setdefault(lbl, set()).add(str(int(cid)))
+        muni_rank = {m: i for i, m in enumerate(DESIRED_ORDERS["municipio"])}
+        city_bucket_labels = sorted(
+            label_to_city_ids.keys(),
+            key=lambda l: (muni_rank.get(l, 10_000), l.lower()),
+        )
+    else:
+        label_to_city_ids = {ID_TO_CITY_NAME[cid]: {str(cid)} for cid in AMM_ID}
+        label_to_city_ids["AMM"] = {str(c) for c in AMM_ID}
+        label_to_city_ids["Periferia"] = {str(c) for c in PERIFERIA_ID}
+        label_to_city_ids["Resto NL"] = {str(c) for c in _RESTO_NL}
+        label_to_city_ids["Nuevo León"] = {str(c) for c in _NL_CITY_IDS}
+        city_bucket_labels = list(DESIRED_ORDERS["municipio"])
+    return label_to_city_ids, city_bucket_labels
+
+
 @app.post("/api/query")
 def run_query(req: QueryRequest):
     """
-    Core query endpoint. Builds and executes a SQL query against DuckDB.
+    Endpoint central del motor. Arma y ejecuta el SQL contra DuckDB.
 
-    group_by="answer" (flat shape):
-      - Multiple-choice questions: one row per option with count + percentage.
-      - Numeric questions: one row per distinct value with count + percentage
-        (a frequency breakdown; sentinels 7777/8888/9999 excluded).
+    group_by="answer" (forma plana):
+      - Preguntas categóricas: un renglón por opción con conteo + porcentaje.
+      - Preguntas numéricas: un renglón por valor distinto con conteo + %
+        (distribución de frecuencias; centinelas 7777/8888/9999 excluidos).
 
-    group_by != "answer" (pivot shape): two tables — counts and percentages —
-    each with a Total row/column. Numeric questions add a single "Promedio"
-    (weighted mean) row to the counts table.
+    group_by != "answer" (forma pivote): dos tablas — conteos y porcentajes —
+    cada una con fila/columna Total. Las numéricas agregan una fila "Promedio"
+    (media ponderada) a la tabla de conteos.
 
-    group_by="year" (cross-year pivot): compares the selected question's concept
-    across the waves where it exists (see `_year_comparison`).
+    group_by="year" (pivote entre años): compara el concepto de la pregunta
+    seleccionada a través de las olas donde existe (ver `_year_comparison`).
     """
     if req.group_by in ("year", "año", "anio"):
         return _year_comparison(req)
 
     conn = get_conn()
     try:
-        # Resolve + validate the wave. `wave` comes from a known set, so it is
-        # safe to inline into the SQL strings below alongside question_id.
+        # Resolver + validar la ola. `wave` viene de un conjunto conocido, así que
+        # es seguro interpolarla en los strings SQL junto con question_id.
         wave = req.wave_id or _default_wave()
         if wave not in _wave_ids():
             raise HTTPException(status_code=400, detail=f"Unknown wave_id: {wave}")
 
-        # Determine question type (within this wave)
+        # Tipo de pregunta (dentro de esta ola)
         q_info = conn.execute(
             "SELECT q_type, q_text FROM questions WHERE wave_id = ? AND q_id = ?",
             [wave, req.question_id],
@@ -911,99 +1103,75 @@ def run_query(req: QueryRequest):
         if city_filter:
             city_where = "AND " + _value_clause("r.city_id", city_filter["value"])
 
-        # Total respondents for this query (sentinel-filtered for numerica).
-        # Weighted form sums factor_cvnl over distinct (respondent, factor) rows.
-        # Categorical answers store the response in `option_id` and leave
-        # `a.value` NULL, so applying the sentinel filter there would drop
-        # every row (NULL NOT IN (...) is NULL/falsy).
+        # Base (universo) de la consulta. Centinelas filtrados sólo en numéricas:
+        # las categóricas guardan la respuesta en `option_id` y dejan `a.value`
+        # NULL, así que aplicar el filtro de centinelas ahí tiraría todas las filas
+        # (NULL NOT IN (...) es NULL/falsy).
         num_sentinels = (
             _numeric_sentinel_sql(wave, req.question_id) if q_type == "numerica" else ""
         )
         sentinel_filter = (
             f"AND a.value NOT IN ({num_sentinels})" if q_type == "numerica" else ""
         )
+        base_fw = _base_from_where(
+            wave, req.question_id, join_clauses, initial_filter, city_where,
+            extra_where=sentinel_filter,
+        )
         if weighted:
+            # Suma factor_cvnl sobre (respondiente, factor) distintos.
             total_sql = f"""
                 SELECT ROUND(SUM(factor_cvnl))::BIGINT FROM (
                     SELECT DISTINCT a.respondent_id, r.factor_cvnl
-                    FROM answers a
-                    INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                    {join_clauses}
-                    WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                      {sentinel_filter}
-                      {initial_filter}
-                      {city_where}
+                    {base_fw}
                 )
             """
         else:
-            total_sql = f"""
-                SELECT COUNT(DISTINCT a.respondent_id)
-                FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                {join_clauses}
-                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                  {sentinel_filter}
-                  {initial_filter}
-                  {city_where}
-            """
+            total_sql = f"SELECT COUNT(DISTINCT a.respondent_id) {base_fw}"
         total_respondents = (conn.execute(total_sql).fetchone() or (0,))[0]
 
         # ── group_by="answer" → flat shape (no pivot) ─────────────────────
         if req.group_by == "answer":
             if q_type == "numerica":
-                # Frequency breakdown: one row per distinct numeric value (the
-                # value IS the answer, so no separate option label/id), with
-                # weighted count + percentage. Sentinels excluded.
+                # Distribución de frecuencias: un renglón por valor numérico
+                # distinto (el valor ES la respuesta, sin id/etiqueta aparte) con
+                # conteo ponderado + %. Centinelas excluidos (ya en `base_fw`).
                 sql = f"""
                     WITH base AS (
-                        SELECT a.value      AS valor,
-                               {count_expr} AS cnt
-                        FROM answers a
-                        INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                        {join_clauses}
-                        WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                          AND a.value NOT IN ({num_sentinels})
-                          {initial_filter}
-                          {city_where}
+                        SELECT a.value AS valor, {count_expr} AS cnt
+                        {base_fw}
                         GROUP BY a.value
                     ),
                     totals AS (SELECT SUM(cnt) AS total FROM base)
                     SELECT b.valor,
-                           ROUND(b.cnt)::BIGINT                 AS total,
-                           ROUND(b.cnt * 100.0 / t.total, 1)    AS pct
+                           ROUND(b.cnt)::BIGINT              AS total,
+                           ROUND(b.cnt * 100.0 / t.total, 1) AS pct
                     FROM base b CROSS JOIN totals t
                     ORDER BY b.valor ASC
                 """
                 rows = conn.execute(sql).fetchall()
                 col_labels = ["Respuesta", "Respuestas", "%"]
             else:
-                # LEFT JOIN (not INNER): answers whose option_id is missing from
-                # the `options` catalog must still be COUNTED — dropping them
-                # shrinks the base and inflates every percentage (see the
-                # catalog-gap audit). Uncatalogued codes surface as "Código N"
-                # until the catalog is repaired (Capa B). Mirrors the pivot path.
+                # LEFT JOIN (no INNER) al catálogo: las respuestas cuyo option_id
+                # falta en `options` igual deben CONTARSE — tirarlas encoge la base
+                # e infla todos los porcentajes (Capa A). Los códigos sin catálogo
+                # afloran como "Código N" hasta reparar el catálogo (Capa B).
+                cat_fw = _base_from_where(
+                    wave, req.question_id, join_clauses, initial_filter,
+                    city_where, with_options=True,
+                )
                 sql = f"""
                     WITH base AS (
-                        SELECT a.option_id     AS id_respuesta,
+                        SELECT a.option_id AS id_respuesta,
                                COALESCE(o.option_label, 'Código ' || a.option_id::TEXT) AS respuesta,
-                               {count_expr}    AS cnt
-                        FROM answers a
-                        INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                        LEFT JOIN options o
-                            ON o.wave_id = '{wave}'
-                            AND o.question_id = a.question_id
-                            AND o.option_id = a.option_id
-                        {join_clauses}
-                        WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                          {initial_filter}
-                          {city_where}
+                               {count_expr} AS cnt
+                        {cat_fw}
                         GROUP BY id_respuesta, respuesta
                     ),
                     totals AS (SELECT SUM(cnt) AS total FROM base)
                     SELECT b.id_respuesta,
                            b.respuesta,
-                           ROUND(b.cnt)::BIGINT                 AS total,
-                           ROUND(b.cnt * 100.0 / t.total, 1)    AS pct
+                           ROUND(b.cnt)::BIGINT              AS total,
+                           ROUND(b.cnt * 100.0 / t.total, 1) AS pct
                     FROM base b CROSS JOIN totals t
                     ORDER BY b.id_respuesta ASC
                 """
@@ -1027,58 +1195,13 @@ def run_query(req: QueryRequest):
             }
 
         # ── pivot mode (group_by != "answer") ─────────────────────────────
-        if req.group_by == "city_id":
-            group_expr = "r.city_id::TEXT"
-        elif req.group_by == "edad_anos":
-            # Bucket integer ages into AGE_LABELS instead of producing one
-            # column per integer year (would yield ~80 cols).
-            group_expr = f"""(
-                SELECT {_edad_bin_sql('rg.value')}
-                FROM respondent_attributes rg
-                WHERE rg.respondent_id = r.respondent_id
-                  AND rg.wave_id = '{wave}'
-                  AND rg.attribute = 'edad_anos'
-                LIMIT 1
-            )"""
-        elif req.group_by in RECODES:
-            recode_src = RECODES[req.group_by]["source_attribute"]
-            group_expr = f"""(
-                SELECT {_recode_case_sql(req.group_by, 'rg.value')}
-                FROM respondent_attributes rg
-                WHERE rg.respondent_id = r.respondent_id
-                  AND rg.wave_id = '{wave}'
-                  AND rg.attribute = '{recode_src}'
-                LIMIT 1
-            )"""
-        else:
-            # `respondent_attributes` stores the survey question_id (e.g. 'cp2')
-            # alongside the friendly attribute name (e.g. 'sexo'). The option
-            # label lives in `options` keyed by that question_id + value, NOT
-            # by the attribute name. Fall back to the raw value when the
-            # attribute has no entries in `options` (e.g. edad_anos).
-            group_expr = f"""(
-                SELECT COALESCE(o2.option_label, rg.value::TEXT)
-                FROM respondent_attributes rg
-                LEFT JOIN options o2
-                  ON o2.wave_id     = '{wave}'
-                 AND o2.question_id = rg.question_id
-                 AND o2.option_id   = rg.value
-                WHERE rg.respondent_id = r.respondent_id
-                  AND rg.wave_id = '{wave}'
-                  AND rg.attribute = '{req.group_by}'
-                LIMIT 1
-            )"""
+        group_expr = _group_expr_sql(req.group_by, wave)
 
-        # Per-group totals INCLUDING sentinels — these are the column denominators
-        # for the percentage table and the "Total" row in the count table.
+        # Totales por grupo INCLUYENDO centinelas — son los denominadores de
+        # columna del % y la fila "Total" de la tabla de conteos.
         per_group_total_sql = f"""
             SELECT {group_expr} AS grupo, {count_int} AS total
-            FROM answers a
-            INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-            {join_clauses}
-            WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-              {initial_filter}
-              {city_where}
+            {_base_from_where(wave, req.question_id, join_clauses, initial_filter, city_where)}
             GROUP BY grupo
             HAVING grupo IS NOT NULL
         """
@@ -1087,37 +1210,12 @@ def run_query(req: QueryRequest):
         }
         grand_total_incl = sum(group_totals_raw.values())
 
-        # Initial group_keys keep the raw shape returned by the SQL (city_ids
-        # for city_id grouping, attribute labels otherwise). For non-city
-        # groupings we already apply the metadata-driven order here. For
-        # `city_id` we keep raw ids for now; cell_map / stats are remapped
-        # to metadata labels (11 AMM cities + 4 aggregates) further down.
+        # Para agrupaciones no-ciudad ya aplicamos aquí el orden canónico de
+        # metadata. Para `city_id` conservamos los ids crudos por ahora; el
+        # cell_map / stats se remapean a los buckets de metadata (11 ciudades AMM
+        # + 4 agregados) más abajo.
         if req.group_by == "city_id":
-            # When the user ALSO filters by city, show one column per filtered
-            # municipality (no AMM/Periferia/Resto NL/Nuevo León aggregates) so
-            # only the requested cities appear. Otherwise show the full curated
-            # set: the 11 AMM cities + the 4 aggregates.
-            city_filter_ids = None
-            if city_filter:
-                raw_vals = city_filter["value"]
-                city_filter_ids = raw_vals if isinstance(raw_vals, list) else [raw_vals]
-            if city_filter_ids:
-                label_to_city_ids = {}
-                for cid in city_filter_ids:
-                    lbl = ID_TO_CITY_NAME.get(int(cid), str(cid))
-                    label_to_city_ids.setdefault(lbl, set()).add(str(int(cid)))
-                muni_rank = {m: i for i, m in enumerate(DESIRED_ORDERS["municipio"])}
-                city_bucket_labels = sorted(
-                    label_to_city_ids.keys(),
-                    key=lambda l: (muni_rank.get(l, 10_000), l.lower()),
-                )
-            else:
-                label_to_city_ids = {ID_TO_CITY_NAME[cid]: {str(cid)} for cid in AMM_ID}
-                label_to_city_ids["AMM"] = {str(c) for c in AMM_ID}
-                label_to_city_ids["Periferia"] = {str(c) for c in PERIFERIA_ID}
-                label_to_city_ids["Resto NL"] = {str(c) for c in _RESTO_NL}
-                label_to_city_ids["Nuevo León"] = {str(c) for c in _NL_CITY_IDS}
-                city_bucket_labels = list(DESIRED_ORDERS["municipio"])
+            label_to_city_ids, city_bucket_labels = _city_buckets(city_filter)
             group_keys = list(group_totals_raw.keys())
             group_labels = group_keys  # placeholder, replaced below
         else:
@@ -1147,32 +1245,25 @@ def run_query(req: QueryRequest):
         }
 
         if q_type == "numerica":
+            # Distribución de frecuencias por grupo (todos los valores no nulos;
+            # los centinelas se excluyen sólo del promedio, no de la distribución).
             freq_sql = f"""
-                SELECT a.value AS id_respuesta,
-                       {group_expr} AS grupo,
-                       {count_int} AS cnt
-                FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                {join_clauses}
-                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                  AND a.value IS NOT NULL
-                  {initial_filter}
-                  {city_where}
+                SELECT a.value AS id_respuesta, {group_expr} AS grupo, {count_int} AS cnt
+                {_base_from_where(wave, req.question_id, join_clauses, initial_filter, city_where, extra_where="AND a.value IS NOT NULL")}
                 GROUP BY id_respuesta, grupo
                 ORDER BY id_respuesta
             """
             freq_rows = conn.execute(freq_sql).fetchall()
 
+            # Promedio ponderado por grupo (centinelas excluidos). El mismo
+            # FROM/WHERE sirve para el promedio global.
+            stats_fw = _base_from_where(
+                wave, req.question_id, join_clauses, initial_filter, city_where,
+                extra_where=sentinel_filter,
+            )
             stats_sql = f"""
-                SELECT {group_expr} AS grupo,
-                       {avg_expr} AS promedio
-                FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                {join_clauses}
-                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                  AND a.value NOT IN ({num_sentinels})
-                  {initial_filter}
-                  {city_where}
+                SELECT {group_expr} AS grupo, {avg_expr} AS promedio
+                {stats_fw}
                 GROUP BY grupo
                 HAVING grupo IS NOT NULL
             """
@@ -1180,17 +1271,9 @@ def run_query(req: QueryRequest):
                 row[0]: list(row[1:]) for row in conn.execute(stats_sql).fetchall()
             }
 
-            overall_stats_sql = f"""
-                SELECT {avg_expr}
-                FROM answers a
-                INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                {join_clauses}
-                WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                  AND a.value NOT IN ({num_sentinels})
-                  {initial_filter}
-                  {city_where}
-            """
-            overall_stats = list(conn.execute(overall_stats_sql).fetchone() or [None])
+            overall_stats = list(
+                conn.execute(f"SELECT {avg_expr} {stats_fw}").fetchone() or [None]
+            )
 
             distinct_values = sorted(
                 {r[0] for r in freq_rows}, key=lambda v: (v is None, v)
@@ -1202,24 +1285,17 @@ def run_query(req: QueryRequest):
             # for the four aggregates are recomputed via SQL because they
             # don't compose from per-city pre-aggregated stats.
             if req.group_by == "city_id":
-                new_cell_map = {}
-                new_totals = {}
-                for label in city_bucket_labels:
-                    ids = label_to_city_ids.get(label, set())
-                    new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
-                    for v in distinct_values:
-                        s = sum(cell_map.get((v, c), 0) for c in ids)
-                        if s:
-                            new_cell_map[(v, label)] = s
-                cell_map = new_cell_map
-                group_totals_raw = new_totals
-                grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
+                cell_map, group_totals_raw = _collapse_city_cells(
+                    distinct_values, cell_map, group_totals_raw,
+                    city_bucket_labels, label_to_city_ids,
+                )
+                grand_total_incl = group_totals_raw.get("Nuevo León", grand_total_incl)
                 group_keys = list(city_bucket_labels)
                 group_labels = list(group_keys)
 
-                # Per-bucket stats: a single-city bucket reuses the precomputed
-                # per-city stats; an aggregate bucket (>1 city) is recomputed via
-                # SQL because stats don't compose from per-city aggregates.
+                # Stats por bucket: un bucket de una sola ciudad reutiliza el stat
+                # ya calculado; un agregado (>1 ciudad) se recalcula por SQL porque
+                # los promedios no se componen desde los stats por ciudad.
                 new_stats = {}
                 for label in city_bucket_labels:
                     ids = sorted(int(c) for c in label_to_city_ids.get(label, set()))
@@ -1231,17 +1307,12 @@ def run_query(req: QueryRequest):
                             new_stats[label] = raw
                         continue
                     in_clause = ",".join(str(i) for i in ids)
-                    agg_row = conn.execute(f"""
-                        SELECT {avg_expr}
-                        FROM answers a
-                        INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-                        {join_clauses}
-                        WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-                          AND a.value NOT IN ({num_sentinels})
-                          AND r.city_id IN ({in_clause})
-                          {initial_filter}
-                          {city_where}
-                    """).fetchone()
+                    agg_fw = _base_from_where(
+                        wave, req.question_id, join_clauses, initial_filter,
+                        city_where,
+                        extra_where=f"{sentinel_filter} AND r.city_id IN ({in_clause})",
+                    )
+                    agg_row = conn.execute(f"SELECT {avg_expr} {agg_fw}").fetchone()
                     if agg_row and agg_row[0] is not None:
                         new_stats[label] = list(agg_row)
                 stats_per_group = new_stats
@@ -1253,66 +1324,25 @@ def run_query(req: QueryRequest):
                     else value
                 )
                 lbl = opt_lookup.get(key)
-                return (
-                    lbl
-                    if lbl is not None
-                    else (str(value) if value is not None else "")
-                )
+                return lbl if lbl is not None else (str(value) if value is not None else "")
 
             counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]
             pct_columns = list(counts_columns)
 
-            # When grouping by city_id, the column list includes overlapping
-            # aggregate buckets (AMM ⊃ the 11 cities, Nuevo León ⊃ everything).
-            # Sum only over the mutually-exclusive subset for the row total.
-            atomic_keys = (
-                [g for g in group_keys if g not in ("AMM", "Nuevo León")]
-                if req.group_by == "city_id"
-                else list(group_keys)
+            counts_rows, pct_rows = _pivot_count_pct_rows(
+                distinct_values, label_for, cell_map, group_keys,
+                group_totals_raw, grand_total_incl,
+                is_city=req.group_by == "city_id",
             )
 
-            counts_rows = []
-            pct_rows = []
-            for v in distinct_values:
-                row_total = sum(cell_map.get((v, g), 0) for g in atomic_keys)
-                count_row = [v, label_for(v)]
-                pct_row = [v, label_for(v)]
-                for g in group_keys:
-                    cnt = cell_map.get((v, g), 0)
-                    grp_t = group_totals_raw.get(g, 0)
-                    count_row.append(cnt if cnt else "")
-                    pct_row.append(round(cnt * 100.0 / grp_t, 1) if grp_t else "")
-                count_row.append(row_total if row_total else "")
-                pct_row.append(
-                    round(row_total * 100.0 / grand_total_incl, 1)
-                    if grand_total_incl
-                    else ""
-                )
-                counts_rows.append(count_row)
-                pct_rows.append(pct_row)
-
-            # Total row
-            counts_rows.append(
-                ["Total", ""]
-                + [group_totals_raw.get(g, 0) for g in group_keys]
-                + [grand_total_incl]
-            )
-            pct_rows.append(
-                ["Total", ""]
-                + [100.0 if group_totals_raw.get(g, 0) else "" for g in group_keys]
-                + [100.0 if grand_total_incl else ""]
-            )
-
-            # Stat rows (counts table only — they aren't percentages)
-            stat_names = ["Promedio"]
-            for i, name in enumerate(stat_names):
-                row = [name, ""]
-                for g in group_keys:
-                    v = stats_per_group.get(g, [None])[i]
-                    row.append(v if v is not None else "")
-                stat_val = overall_stats[i]
-                row.append(stat_val if stat_val is not None else "")
-                counts_rows.append(row)
+            # Fila de promedio (sólo en la tabla de conteos — no es un porcentaje).
+            promedio_row = ["Promedio", ""]
+            for g in group_keys:
+                v = stats_per_group.get(g, [None])[0]
+                promedio_row.append(v if v is not None else "")
+            ov = overall_stats[0]
+            promedio_row.append(ov if ov is not None else "")
+            counts_rows.append(promedio_row)
 
             return {
                 "format": "pivot",
@@ -1330,22 +1360,13 @@ def run_query(req: QueryRequest):
                 "sql": freq_sql.strip(),
             }
 
-        # categórica + non-answer pivot
+        # categórica + pivot (group_by != "answer"). LEFT JOIN al catálogo (Capa A).
         freq_sql = f"""
             SELECT a.option_id AS id_respuesta,
                    o.option_label AS respuesta,
                    {group_expr} AS grupo,
                    {count_int} AS cnt
-            FROM answers a
-            INNER JOIN responses r ON r.respondent_id = a.respondent_id AND r.wave_id = '{wave}'
-            LEFT JOIN options o
-                ON o.wave_id = '{wave}'
-                AND o.question_id = a.question_id
-                AND o.option_id = a.option_id
-            {join_clauses}
-            WHERE a.wave_id = '{wave}' AND a.question_id = '{req.question_id}'
-              {initial_filter}
-              {city_where}
+            {_base_from_where(wave, req.question_id, join_clauses, initial_filter, city_where, with_options=True)}
             GROUP BY id_respuesta, respuesta, grupo
             ORDER BY id_respuesta
         """
@@ -1363,66 +1384,27 @@ def run_query(req: QueryRequest):
         # Same metadata-driven collapse for city groupings as in the numérica
         # branch — sum per-city counts into the AMM/Periferia/RestoNL/NL buckets.
         if req.group_by == "city_id":
-            new_cell_map = {}
-            new_totals = {}
-            for label in city_bucket_labels:
-                ids = label_to_city_ids.get(label, set())
-                new_totals[label] = sum(group_totals_raw.get(c, 0) for c in ids)
-                for opt_id in option_keys:
-                    s = sum(cell_map.get((opt_id, c), 0) for c in ids)
-                    if s:
-                        new_cell_map[(opt_id, label)] = s
-            cell_map = new_cell_map
-            group_totals_raw = new_totals
-            grand_total_incl = new_totals.get("Nuevo León", grand_total_incl)
+            cell_map, group_totals_raw = _collapse_city_cells(
+                option_keys, cell_map, group_totals_raw,
+                city_bucket_labels, label_to_city_ids,
+            )
+            grand_total_incl = group_totals_raw.get("Nuevo León", grand_total_incl)
             group_keys = list(city_bucket_labels)
             group_labels = list(group_keys)
 
         counts_columns = ["id_respuesta", "Respuesta", *group_labels, "Total"]
         pct_columns = list(counts_columns)
 
-        atomic_keys = (
-            [g for g in group_keys if g not in ("AMM", "Nuevo León")]
-            if req.group_by == "city_id"
-            else list(group_keys)
-        )
+        def label_for_opt(opt_id):
+            lbl = opt_lookup.get(opt_id)
+            if lbl is not None:
+                return lbl
+            return f"Código {opt_id}" if opt_id is not None else ""
 
-        counts_rows = []
-        pct_rows = []
-        for opt_id in option_keys:
-            label_in_opts = opt_lookup.get(opt_id)
-            label = (
-                label_in_opts
-                if label_in_opts is not None
-                else (f"Código {opt_id}" if opt_id is not None else "")
-            )
-            row_total = sum(cell_map.get((opt_id, g), 0) for g in atomic_keys)
-            count_row = [opt_id, label]
-            pct_row = [opt_id, label]
-            for g in group_keys:
-                cnt = cell_map.get((opt_id, g), 0)
-                grp_t = group_totals_raw.get(g, 0)
-                count_row.append(cnt if cnt else "")
-                pct_row.append(round(cnt * 100.0 / grp_t, 1) if grp_t else "")
-            count_row.append(row_total if row_total else "")
-            pct_row.append(
-                round(row_total * 100.0 / grand_total_incl, 1)
-                if grand_total_incl
-                else ""
-            )
-            counts_rows.append(count_row)
-            pct_rows.append(pct_row)
-
-        # Total row
-        counts_rows.append(
-            ["Total", ""]
-            + [group_totals_raw.get(g, 0) for g in group_keys]
-            + [grand_total_incl]
-        )
-        pct_rows.append(
-            ["Total", ""]
-            + [100.0 if group_totals_raw.get(g, 0) else "" for g in group_keys]
-            + [100.0 if grand_total_incl else ""]
+        counts_rows, pct_rows = _pivot_count_pct_rows(
+            option_keys, label_for_opt, cell_map, group_keys,
+            group_totals_raw, grand_total_incl,
+            is_city=req.group_by == "city_id",
         )
 
         return {
@@ -1439,8 +1421,15 @@ def run_query(req: QueryRequest):
 
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        # No filtrar detalles internos al cliente, pero dejar rastro en el log
+        # (Render captura stdout/stderr). Incluye la pregunta y el group_by para
+        # poder reproducir la consulta que falló.
+        log.exception(
+            "run_query falló: q=%s group_by=%s wave=%s",
+            req.question_id, req.group_by, req.wave_id,
+        )
+        raise HTTPException(status_code=500, detail="Error interno.")
     finally:
         conn.close()
 
@@ -1496,12 +1485,8 @@ from chat import router as chat_router  # noqa: E402
 app.include_router(chat_router)
 
 
-# ---------------------------------------------------------------------------
-# Static frontend (production)
-# ---------------------------------------------------------------------------
-# When STATIC_DIR is set and points to a built Vite output (frontend/dist),
-# serve it at the root path. Must run AFTER all /api/* routes are registered
-# so they take precedence over the catch-all static mount.
+# Serve the built Vite frontend (frontend/dist) at the root path.
+# Must run AFTER all /api/* routes are registered
 STATIC_DIR = os.getenv("STATIC_DIR", "../frontend/dist")
 if os.path.isdir(STATIC_DIR):
     app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
