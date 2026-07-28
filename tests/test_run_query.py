@@ -187,6 +187,32 @@ def test_filter_reduces_total(categorical_qid):
     assert 0 < filtered <= full
 
 
+# ── year comparison: transparencia del crudo por año ────────────────────────
+def test_year_option_map_exposes_raw_per_year():
+    """La comparación por año alinea por opción canónica, pero `year_option_map`
+    conserva el código y etiqueta CRUDOS de cada ola (transparencia). sexo se
+    recodifica entre olas (2022 1/2 vs 2025 0/1) y se relabela
+    (Masculino/Hombre), así que debe haber al menos una opción con differs=True
+    y con option_id crudo no estable entre años."""
+    r = run_query(QueryRequest(question_id="cp2", group_by="year"))
+    # La vista Año ya no incluye id_respuesta: columnas = [Respuesta, ...años].
+    assert r["counts"]["columns"][0] == "Respuesta"
+    years = r["counts"]["columns"][1:]
+    yom = r.get("year_option_map")
+    assert yom, "comparación categórica por año debe incluir year_option_map"
+    # alineado 1:1 y en orden con los renglones de datos; la etiqueta es col 0
+    data_rows = [row for row in r["counts"]["rows"] if row[0] != "Total"]
+    assert len(yom) == len(data_rows)
+    for entry, row in zip(yom, data_rows):
+        assert entry["label"] == row[0]
+        assert set(entry["years"]) == set(years)
+    # sexo cambia código Y etiqueta entre años → la transparencia lo refleja
+    assert any(e["differs"] for e in yom)
+    hombre = next(e for e in yom if e["label"] == "Hombre")
+    raw_ids = {v["option_id"] for v in hombre["years"].values() if v}
+    assert len(raw_ids) > 1  # el código crudo NO es estable entre años
+
+
 # ── error handling ──────────────────────────────────────────────────────────
 def test_unknown_question_raises_404():
     with pytest.raises(main.HTTPException) as exc:

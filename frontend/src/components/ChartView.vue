@@ -50,7 +50,9 @@ const PIVOT_COLORS = [
 const pieGroupLabels = computed(() => {
   if (!props.data || props.data.format !== 'pivot') return []
   const cols = props.data.percentages?.columns || []
-  return cols.slice(2, -1)
+  // Vista Año: 1 columna de etiqueta y sin "Total" final. Otros pivotes: 2 + Total.
+  const year = props.data.group_by === 'year'
+  return year ? cols.slice(1) : cols.slice(2, -1)
 })
 
 function destroyMain() {
@@ -105,14 +107,20 @@ function buildFlat(data) {
 }
 
 function buildPivot(data) {
+  const year = data.group_by === 'year'
+  const labelCols = year ? 1 : 2
   const cols = data.percentages.columns
   const rows = data.percentages.rows.filter((r) => r[0] !== 'Total')
-  const groupLabels = cols.slice(2, -1)
-  const groupRange = groupLabels.map((_, i) => i + 2)
+  // La vista Año no lleva columna "Total" final; los demás pivotes sí.
+  const groupLabels = year ? cols.slice(labelCols) : cols.slice(labelCols, -1)
+  const groupRange = groupLabels.map((_, i) => i + labelCols)
 
   const datasets = rows.map((row, ri) => {
-    const label =
-      row[1] !== '' && row[1] != null ? String(row[1]) : String(row[0])
+    const label = year
+      ? String(row[0])
+      : row[1] !== '' && row[1] != null
+        ? String(row[1])
+        : String(row[0])
     return {
       label,
       data: groupRange.map((i) => Number(row[i]) || 0),
@@ -165,7 +173,9 @@ function buildPivot(data) {
 }
 
 function buildPie(data, groupIdx) {
-  const colIdx = groupIdx + 2
+  const year = data.group_by === 'year'
+  const labelCols = year ? 1 : 2
+  const colIdx = groupIdx + labelCols
   const rows = data.percentages.rows.filter((r) => r[0] !== 'Total')
   const labels = []
   const values = []
@@ -174,8 +184,11 @@ function buildPie(data, groupIdx) {
   rows.forEach((row, ri) => {
     const v = Number(row[colIdx]) || 0
     if (v <= 0) return
-    const label =
-      row[1] !== '' && row[1] != null ? String(row[1]) : String(row[0])
+    const label = year
+      ? String(row[0])
+      : row[1] !== '' && row[1] != null
+        ? String(row[1])
+        : String(row[0])
     labels.push(label)
     values.push(v)
     bg.push(PIVOT_COLORS[ri % PIVOT_COLORS.length] + 'CC')
