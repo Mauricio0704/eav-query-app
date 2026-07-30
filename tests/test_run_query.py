@@ -213,6 +213,19 @@ def test_year_option_map_exposes_raw_per_year():
     assert len(raw_ids) > 1  # el código crudo NO es estable entre años
 
 
+def test_year_numeric_empty_base_does_not_crash():
+    """Una pregunta-matriz (encabezado de batería) tiene concept_id pero 0 answers
+    en sus olas, así que `total_respondents` es None por año. La comparación
+    numérica por año no debe reventar sumando None; devuelve una tabla vacía
+    coherente con base 0. (Regresión: TypeError int += None en _year_comparison.)"""
+    r = run_query(QueryRequest(question_id="p95", group_by="year", wave_id="2021"))
+    assert r["format"] == "pivot"
+    assert r["total_respondents"] == 0
+    assert all(b["base"] == 0 for b in r["year_bases"])
+    base_row = next(row for row in r["counts"]["rows"] if row[0] == "Base (ponderada)")
+    assert all(cell == 0 for cell in base_row[1:])
+
+
 # ── error handling ──────────────────────────────────────────────────────────
 def test_unknown_question_raises_404():
     with pytest.raises(main.HTTPException) as exc:
