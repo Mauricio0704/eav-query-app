@@ -704,6 +704,23 @@ def _year_comparison(req: QueryRequest):
             )
         )
 
+    # La vista Año no es un solo statement: corre una consulta flat por ola y
+    # luego alinea las opciones por concepto EN PYTHON. En vez de esconder el SQL,
+    # se muestran las N consultas reales (una por año), con un encabezado que
+    # aclara que la alineación final no está en el SQL.
+    # Separadores como comentarios (no líneas en blanco): el visor del front
+    # colapsa las líneas vacías, así la separación entre bloques sobrevive.
+    year_sql = (
+        "-- La comparación por año NO es una sola consulta: se ejecuta una\n"
+        "-- consulta por ola y los resultados se alinean por concepto en la app.\n"
+        "-- A continuación, el SQL de cada año:\n--\n"
+        + "\n--\n".join(
+            f"-- ══ {w} · pregunta {qid_by_year[w]} ══\n"
+            + (per_year[w].get("sql") or "-- (sin datos en esta ola)")
+            for w in years
+        )
+    )
+
     base = {
         "format": "pivot",
         "question": {"q_id": req.question_id, "q_text": q_text, "q_type": concept_type},
@@ -711,6 +728,7 @@ def _year_comparison(req: QueryRequest):
         "group_by": "year",
         "concept": {"concept_id": concept_id, "label": concept_label},
         "year_texts": year_texts,
+        "sql": year_sql,
         # Base (universo) por año: cada ola es su propia población, así que se
         # muestran por separado en vez de sumarlas (la suma no tiene sentido).
         "year_bases": [

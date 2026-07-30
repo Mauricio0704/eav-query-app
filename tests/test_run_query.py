@@ -213,6 +213,18 @@ def test_year_option_map_exposes_raw_per_year():
     assert len(raw_ids) > 1  # el código crudo NO es estable entre años
 
 
+def test_year_sql_lists_one_query_per_wave():
+    """La vista Año no es un solo statement: expone el SQL de cada ola con un
+    encabezado que lo aclara, en vez de dejar el visor sin SQL. Debe incluir un
+    bloque por año miembro del concepto."""
+    r = run_query(QueryRequest(question_id="cp2", group_by="year"))
+    sql = r.get("sql")
+    assert sql and "NO es una sola consulta" in sql
+    years = r["counts"]["columns"][1:]
+    for w in years:
+        assert f"══ {w} ·" in sql  # un bloque rotulado por ola
+
+
 def test_year_numeric_empty_base_does_not_crash():
     """Una pregunta-matriz (encabezado de batería) tiene concept_id pero 0 answers
     en sus olas, así que `total_respondents` es None por año. La comparación
