@@ -1463,12 +1463,34 @@ def run_query(req: QueryRequest):
         conn.close()
 
 
+# Filas cuyo valor vacío es un estadístico NO calculable (media de 0 datos), no
+# "sin respondientes": ahí una celda vacía NO se rellena con 0 (sería inventar un
+# promedio). El resto de las celdas vacías de datos sí significan 0 respondientes.
+_CSV_STAT_ROWS = {"Promedio", "Promedio (media)"}
+
+
+def _csv_fill_empty(rows, label_cols):
+    """Rellena con 0 las celdas de datos vacías (grupos sin respondientes) para
+    el CSV. Deja intactas las columnas de etiqueta iniciales y las filas de
+    estadístico (media), donde vacío significa 'no calculable', no 0."""
+    out = []
+    for row in rows:
+        if row and row[0] in _CSV_STAT_ROWS:
+            out.append(row)
+            continue
+        out.append(
+            [0 if (i >= label_cols and c == "") else c for i, c in enumerate(row)]
+        )
+    return out
+
+
 @app.post("/api/query/csv")
 def export_csv(req: QueryRequest):
     """Same as /api/query but returns a CSV file download.
 
     Pivot mode emits two tables in a single CSV: a Conteos block and a
-    Porcentajes block, separated by a blank line.
+    Porcentajes block, separated by a blank line. Las celdas de grupos sin
+    respondientes se exportan como 0 (ver `_csv_fill_empty`).
     """
     data = run_query(req)
 
@@ -1476,14 +1498,17 @@ def export_csv(req: QueryRequest):
     writer = csv.writer(output)
 
     if data.get("format") == "pivot":
+        # 1 columna de etiqueta en la vista Año (Respuesta); 2 en los demás
+        # pivotes (id_respuesta + Respuesta).
+        label_cols = 1 if data.get("group_by") == "year" else 2
         writer.writerow(["Conteos"])
         writer.writerow(data["counts"]["columns"])
-        for row in data["counts"]["rows"]:
+        for row in _csv_fill_empty(data["counts"]["rows"], label_cols):
             writer.writerow(row)
         writer.writerow([])
         writer.writerow(["Porcentajes"])
         writer.writerow(data["percentages"]["columns"])
-        for row in data["percentages"]["rows"]:
+        for row in _csv_fill_empty(data["percentages"]["rows"], label_cols):
             writer.writerow(row)
     else:
         writer.writerow(data["column_labels"])
