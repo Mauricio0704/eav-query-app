@@ -1,6 +1,8 @@
 <script setup>
 import { ref, nextTick, watch } from 'vue'
 import { Send, Sparkles, RotateCw } from 'lucide-vue-next'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import {
   state,
   sendChatMessage,
@@ -11,6 +13,47 @@ import ResultView from './ResultView.vue'
 
 const input = ref('')
 const scroller = ref(null)
+
+// Markdown del asistente: negritas en cifras, listas cortas, `código` inline.
+// `breaks: true` → un salto de línea simple es <br> (natural en chat). Se
+// DESHABILITAN las tablas (el tokenizer devuelve undefined → caen a texto
+// plano) para que no compitan con la tabla real de ResultView.
+marked.use({ gfm: true, breaks: true, tokenizer: { table: () => undefined } })
+
+// Los enlaces (raros, pero por si acaso) abren en pestaña nueva y sin opener.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A') {
+    node.setAttribute('target', '_blank')
+    node.setAttribute('rel', 'noopener noreferrer')
+  }
+})
+
+// Whitelist estrecha: inline + listas + code. Sin tablas, encabezados, img ni
+// nada que ejecute. DOMPurify es defensa en profundidad aunque el texto venga
+// de nuestro propio modelo.
+function renderMarkdown(text) {
+  if (!text) return ''
+  const html = marked.parse(String(text), { async: false })
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p',
+      'br',
+      'strong',
+      'em',
+      'b',
+      'i',
+      'ul',
+      'ol',
+      'li',
+      'code',
+      'pre',
+      'a',
+      'blockquote',
+      'span',
+    ],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+  })
+}
 
 const suggestions = [
   '¿Qué porcentaje de personas se siente segura en su municipio?',
@@ -63,9 +106,7 @@ watch(
 </script>
 
 <template>
-  <div
-    class="flex-1 flex flex-col overflow-hidden bg-[#fcf0e4]"
-  >
+  <div class="flex-1 flex flex-col overflow-hidden bg-[#fcf0e4]">
     <!-- Messages -->
     <div ref="scroller" class="flex-1 overflow-auto p-8">
       <div class="max-w-4xl mx-auto space-y-6">
@@ -114,7 +155,7 @@ watch(
               class="max-w-[90%] bg-white border border-[#e2e8f0] rounded-2xl rounded-bl-sm px-4 py-3 text-sm leading-relaxed shadow-sm"
               :class="m.error ? 'text-[#b91c1c]' : 'text-[#1e293b]'"
             >
-              <p class="whitespace-pre-wrap">{{ m.text }}</p>
+              <div class="md" v-html="renderMarkdown(m.text)"></div>
               <p
                 v-if="m.toolCalls && m.toolCalls.length"
                 class="mt-2 pt-2 border-t border-[#f1f5f9] text-[11px] text-[#94a3b8] font-mono"
@@ -180,6 +221,74 @@ watch(
 </template>
 
 <style scoped>
+/* Markdown del asistente. Tailwind v4 no trae el plugin typography, así que se
+   estilan los elementos a mano. `:deep` porque el HTML viene de v-html. */
+.md {
+  white-space: normal;
+}
+.md :deep(p) {
+  margin: 0;
+}
+.md :deep(p + p) {
+  margin-top: 0.5rem;
+}
+.md :deep(strong),
+.md :deep(b) {
+  font-weight: 700;
+  color: #0f172a;
+}
+.md :deep(em),
+.md :deep(i) {
+  font-style: italic;
+}
+.md :deep(ul),
+.md :deep(ol) {
+  margin: 0.375rem 0;
+  padding-left: 1.25rem;
+}
+.md :deep(ul) {
+  list-style: disc;
+}
+.md :deep(ol) {
+  list-style: decimal;
+}
+.md :deep(li) {
+  margin: 0.125rem 0;
+}
+.md :deep(li::marker) {
+  color: #94a3b8;
+}
+.md :deep(code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: #f1f5f9;
+  color: #7e34c3;
+  padding: 0.1em 0.35em;
+  border-radius: 0.3rem;
+}
+.md :deep(pre) {
+  background: #f1f5f9;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+.md :deep(pre code) {
+  background: none;
+  color: #334155;
+  padding: 0;
+}
+.md :deep(a) {
+  color: #7e34c3;
+  text-decoration: underline;
+}
+.md :deep(blockquote) {
+  border-left: 3px solid #e2e8f0;
+  padding-left: 0.75rem;
+  color: #475569;
+  margin: 0.5rem 0;
+}
+
 .typing {
   display: flex;
   align-items: center;
