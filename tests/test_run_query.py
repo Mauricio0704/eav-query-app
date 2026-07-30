@@ -8,7 +8,7 @@ city-filter column narrowing, recode grouping, weighting, and sentinel handling.
 import pytest
 
 import main
-from main import run_query, QueryRequest
+from main import run_query, QueryRequest, _csv_fill_empty
 
 SENTINELS = {7777, 8888, 9999}
 
@@ -224,6 +224,30 @@ def test_year_numeric_empty_base_does_not_crash():
     assert all(b["base"] == 0 for b in r["year_bases"])
     base_row = next(row for row in r["counts"]["rows"] if row[0] == "Base (ponderada)")
     assert all(cell == 0 for cell in base_row[1:])
+
+
+# ── CSV: rellenar celdas sin respondientes con 0 ────────────────────────────
+def test_csv_fill_empty_zeroes_data_but_keeps_labels_and_stats():
+    """En el CSV, un grupo sin respondientes exporta 0 (no celda vacía). Pero
+    las columnas de etiqueta iniciales y la fila de estadístico (Promedio) NO se
+    tocan: un 0 ahí sería una etiqueta rota o un promedio inventado."""
+    rows = [
+        [11.0, "11.0", "", 146, ""],          # data: vacíos → 0
+        ["Total", "", 200, 146, ""],           # total: vacíos → 0
+        ["Promedio", "", "", 98.85, ""],       # estadístico: vacíos INTACTOS
+    ]
+    out = _csv_fill_empty(rows, label_cols=2)
+    assert out[0] == [11.0, "11.0", 0, 146, 0]
+    assert out[1] == ["Total", "", 200, 146, 0]
+    assert out[2] == ["Promedio", "", "", 98.85, ""]  # sin cambios
+
+
+def test_csv_fill_empty_year_view_uses_one_label_col():
+    """La vista Año tiene 1 sola columna de etiqueta (Respuesta)."""
+    rows = [["Hombre", "", 51.3], ["Promedio (media)", "", ""]]
+    out = _csv_fill_empty(rows, label_cols=1)
+    assert out[0] == ["Hombre", 0, 51.3]
+    assert out[1] == ["Promedio (media)", "", ""]  # estadístico intacto
 
 
 # ── error handling ──────────────────────────────────────────────────────────
