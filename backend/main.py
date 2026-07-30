@@ -714,7 +714,7 @@ def _year_comparison(req: QueryRequest):
         # Base (universo) por año: cada ola es su propia población, así que se
         # muestran por separado en vez de sumarlas (la suma no tiene sentido).
         "year_bases": [
-            {"year": w, "base": per_year[w]["total_respondents"]} for w in years
+            {"year": w, "base": per_year[w]["total_respondents"] or 0} for w in years
         ],
     }
     # Sin columna "Total": sumar respondientes de olas distintas no tiene
@@ -774,9 +774,11 @@ def _year_comparison(req: QueryRequest):
                     num += float(v) * c
                     den += c
             prom.append(round(num / den, 2) if den else "") # type: ignore
-            grand_n += per_year[w]["total_respondents"]
+            # total_respondents es None cuando la base de esa ola es vacía (p. ej.
+            # pregunta-matriz sin answers, o todos los valores son centinela).
+            grand_n += per_year[w]["total_respondents"] or 0
         n_row = ["Base (ponderada)"] + [
-            per_year[w]["total_respondents"] for w in years
+            per_year[w]["total_respondents"] or 0 for w in years
         ]
         counts_rows.extend([prom, n_row])
 
