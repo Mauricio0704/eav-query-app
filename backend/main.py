@@ -158,6 +158,21 @@ def _default_wave() -> str:
         conn.close()
 
 
+@lru_cache(maxsize=16)
+def _categorical_question_ids(wave: str) -> frozenset[str]:
+    """q_ids of categorical (non-numeric) questions in a wave. Used to validate
+    and build a cross-tab when `group_by` is another survey question."""
+    conn = get_conn()
+    try:
+        rows = conn.execute(
+            "SELECT q_id FROM questions WHERE wave_id = ? AND q_type != 'numerica'",
+            [wave],
+        ).fetchall()
+        return frozenset(r[0] for r in rows)
+    finally:
+        conn.close()
+
+
 def _resolve_wave(wave: str | None) -> str:
     """Validate an incoming wave_id (or fall back to the most recent wave)."""
     w = wave or _default_wave()
@@ -1012,6 +1027,22 @@ def _group_expr_sql(group_by: str, wave: str) -> str:
                   AND rg.attribute = '{recode_src}'
                 LIMIT 1
             )"""
+    if group_by in _categorical_question_ids(wave):
+        # Cross-tab por OTRA pregunta: la etiqueta de columna es la respuesta del
+        # respondiente a `group_by`. Correlacionada por respondent_id. `group_by` 
+        # viene del whitelist de q_ids categóricos, así que es seguro interpolarlo.
+        return f"""(
+                SELECT COALESCE(o2.option_label, 'Código ' || ab.option_id::TEXT)
+                FROM answers ab
+                LEFT JOIN options o2
+                  ON o2.wave_id     = '{wave}'
+                 AND o2.question_id = '{group_by}'
+                 AND o2.option_id   = ab.option_id
+                WHERE ab.wave_id = '{wave}'
+                  AND ab.question_id = '{group_by}'
+                  AND ab.respondent_id = r.respondent_id
+                LIMIT 1
+            )"""
     # `respondent_attributes` guarda el question_id de la encuesta (p. ej. 'cp2')
     # junto al nombre amigable del atributo ('sexo'). La etiqueta vive en `options`
     # keyeada por ese question_id + valor, NO por el nombre del atributo.
@@ -1108,10 +1139,30 @@ def run_query(req: QueryRequest):
                     status_code=400, detail=f"Unknown filter attribute: {attr}"
                 )
 
-        valid_group_by = {"answer", "city_id", "edad_anos"} | set(RECODES) | valid_attrs
+        cat_qids = _categorical_question_ids(wave)
+        valid_group_by = (
+            {"answer", "city_id", "edad_anos"} | set(RECODES) | valid_attrs | cat_qids
+        )
         if req.group_by not in valid_group_by:
+            # Distingue una pregunta NUMÉRICA (no soportada como group_by en v1) de
+            # una clave desconocida, para dar un mensaje claro en vez de "Unknown".
+            numeric_q = conn.execute(
+                "SELECT 1 FROM questions WHERE wave_id = ? AND q_id = ? AND q_type = 'numerica'",
+                [wave, req.group_by],
+            ).fetchone()
+            if numeric_q:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No se puede agrupar por una pregunta numérica.",
+                )
             raise HTTPException(
                 status_code=400, detail=f"Unknown group_by: {req.group_by}"
+            )
+        # Cruzar una pregunta consigo misma es degenerado (daría una diagonal).
+        if req.group_by in cat_qids and req.group_by == req.question_id:
+            raise HTTPException(
+                status_code=400,
+                detail="No se puede cruzar una pregunta consigo misma.",
             )
 
         # `initial_only` controls both the cohort and the weighting:
@@ -1257,6 +1308,11 @@ def run_query(req: QueryRequest):
         }
         grand_total_incl = sum(group_totals_raw.values())
 
+        # En un cruce pregunta×pregunta la base real de la tabla es A∩B (quien
+        # respondió AMBAS).
+        if req.group_by in cat_qids:
+            total_respondents = grand_total_incl
+
         # Para agrupaciones no-ciudad ya aplicamos aquí el orden canónico de
         # metadata. Para `city_id` conservamos los ids crudos por ahora; el
         # cell_map / stats se remapean a los buckets de metadata (11 ciudades AMM
@@ -1272,6 +1328,18 @@ def run_query(req: QueryRequest):
 
             if req.group_by in RECODES:
                 desired = RECODES[req.group_by].get("order")
+            elif req.group_by in cat_qids:
+                # Cross-tab por pregunta: ordena las columnas por option_id de la
+                # pregunta-desglose (mismo criterio que la vista plana), no
+                # alfabéticamente. Los centinelas (8888/9999) caen al final solos.
+                desired = [
+                    row[0]
+                    for row in conn.execute(
+                        "SELECT option_label FROM options "
+                        "WHERE wave_id = ? AND question_id = ? ORDER BY option_id",
+                        [wave, req.group_by],
+                    ).fetchall()
+                ]
             else:
                 order_key = _ATTRIBUTE_ORDER_KEY.get(req.group_by)
                 desired = DESIRED_ORDERS.get(order_key) if order_key else None

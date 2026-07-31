@@ -1,7 +1,12 @@
 <script setup>
 import { computed } from 'vue'
 import { Table2, BarChart3, Download } from 'lucide-vue-next'
-import { state, exportCurrentCSV, filterValueLabel } from '../store.js'
+import {
+  state,
+  exportCurrentCSV,
+  filterValueLabel,
+  questionPicker,
+} from '../store.js'
 import DataTable from './DataTable.vue'
 import PivotTables from './PivotTables.vue'
 import ChartView from './ChartView.vue'
@@ -30,6 +35,9 @@ const groupByLabel = computed(() => {
   if (attr) return attr.label || attr.attribute
   const recode = state.recodes.find((r) => r.key === g)
   if (recode) return recode.label
+  // Cross-tab by another question: show its code + text, not the raw q_id.
+  const q = questionPicker.value.byId.get(g)
+  if (q) return `${q.id} · ${q.main}`
   return g
 })
 
