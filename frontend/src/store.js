@@ -107,6 +107,7 @@ export const questionPicker = computed(() => {
       const meta = {
         id: q.q_id,
         main: q.q_text || q.q_id,
+        qType: q.q_type,
         sectionLabel,
         block,
         info,
@@ -147,6 +148,35 @@ export const questionPicker = computed(() => {
 
   return { sections, byId, groupOf, total: state.questions.length }
 })
+
+// group_by can be a question id (cross-tab). Distinguish it from the reserved
+// keys and from attribute/recode names, which are the other legal group_by values.
+const RESERVED_GROUP_BY = new Set(['answer', 'year', 'city_id'])
+
+export const isQuestionGroupBy = computed(() => {
+  const g = state.groupBy
+  if (!g || RESERVED_GROUP_BY.has(g)) return false
+  if (state.attributes.some((a) => a.attribute === g)) return false
+  if (state.recodes.some((r) => r.key === g)) return false
+  return questionPicker.value.byId.has(g) // a real question id
+})
+
+export const groupByQuestionMeta = computed(() =>
+  isQuestionGroupBy.value
+    ? questionPicker.value.byId.get(state.groupBy) || null
+    : null,
+)
+
+// Set/clear the breakdown question chosen for a cross-tab.
+export function setGroupByQuestion(id) {
+  state.groupBy = id
+  state.appliedPreset = ''
+}
+
+export function clearGroupByQuestion() {
+  state.groupBy = 'answer'
+  state.appliedPreset = ''
+}
 
 const attributeValueMap = computed(() => {
   const out = new Map()

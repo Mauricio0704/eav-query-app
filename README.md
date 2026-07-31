@@ -4,6 +4,12 @@ A query tool over the *Así Vamos* / Consejo Nuevo León survey: ~15,400 respond
 
 DuckDB (FastAPI backend) + Vue 3 frontend.
 
+> **Documentación técnica** (para el equipo, en español) en [`docs/`](docs/):
+> [arquitectura](docs/arquitectura.md) ·
+> [pipeline de datos](docs/pipeline-datos.md) ·
+> [conceptos / armonización entre años](docs/conceptos.md) ·
+> [desarrollo y deploy](docs/desarrollo.md).
+
 ---
 
 ## Stack
@@ -15,7 +21,7 @@ DuckDB (FastAPI backend) + Vue 3 frontend.
 | AI            | Google Gemini (`google-genai`) with tool use       |
 | Frontend      | Vue 3 (Composition API) · Vite · Tailwind CSS v4   |
 | Visualization | Chart.js                                           |
-| Tests         | pytest (FastAPI TestClient) — 31 tests             |
+| Tests         | pytest (FastAPI TestClient) — 138 tests            |
 | Deployment    | Render.com (`render.yaml`)                          |
 
 ---
@@ -37,17 +43,20 @@ DuckDB (FastAPI backend) + Vue 3 frontend.
 
 In production FastAPI also serves the built SPA as static files, so the whole app is a single service.
 
-### Data schema (EAV)
+### Data schema (EAV, multi-year)
+
+Every data table carries `wave_id` (survey year) as part of its PK, so waves
+2021–2025 coexist without colliding.
 
 ```sql
-answers               (respondent_id, question_id, option_id, value REAL)
-options               (question_id, option_id, option_label)
-questions             (q_id, q_text, q_section, q_type, q_notes)
-respondent_attributes (respondent_id, question_id, attribute, value)   -- value = option_id
-responses             (respondent_id, is_initial_respondent, nombre, factor_cvnl, city_id)
+answers               (wave_id, respondent_id, question_id, option_id, value)   -- no PK; ordered physically
+options               (wave_id, question_id, option_id) PK, option_label, concept_option_id
+questions             (wave_id, q_id) PK, q_text, q_section, q_type, q_notes, q_info, q_block, concept_id
+respondent_attributes (wave_id, respondent_id, attribute) PK, question_id, value
+responses             (wave_id, respondent_id) PK, is_initial_respondent, nombre, factor_cvnl, city_id
 ```
 
-The data is stored entity-attribute-value: each `(respondent, question)` pair is a row in `answers`, and demographic filters live in `respondent_attributes`, where `attribute` is a friendly name (`sexo`) keyed to a survey `question_id` and `value` is the `option_id` whose human label comes from `options`.
+The data is stored entity-attribute-value: each `(respondent, question)` pair is a row in `answers`, and demographic filters live in `respondent_attributes`, where `attribute` is a friendly name (`sexo`) keyed to a survey `question_id` and `value` is the `option_id` whose human label comes from `options`. A **concepts** layer (`questions.concept_id`, `concept_options`) harmonizes equivalent questions across waves so results can be compared year-over-year (`group_by="year"`).
 
 ---
 

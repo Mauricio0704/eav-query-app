@@ -164,6 +164,87 @@ def test_recode_group_by(numeric_qid):
     assert "Trabajo remunerado" in group_cols
 
 
+# ── cross-tab: group_by = another survey question ───────────────────────────
+def _cross_qids():
+    """(A, B): a small categorical question A and a categorical breakdown B,
+    both in the default wave, A != B. Prefers a binary Sí/No B for a clean table."""
+    qs = main.list_questions()
+    cats = [q for q in qs if q["q_type"] != "numerica" and q["options"]]
+    binary = next(
+        (q for q in cats if 2 <= len(q["options"]) <= 4 and len(q["options"]) <= 4),
+        cats[0],
+    )
+    a = next(q for q in cats if q["q_id"] != binary["q_id"])
+    return a["q_id"], binary["q_id"]
+
+
+def test_cross_tab_columns_are_breakdown_options():
+    """group_by=<q_id> pivots the main question by another question's options:
+    columns come from B's catalog (in option_id order), rows from A."""
+    a, b = _cross_qids()
+    r = run_query(QueryRequest(question_id=a, group_by=b))
+    assert r["format"] == "pivot"
+    b_labels = {o["label"] for o in next(
+        q for q in main.list_questions() if q["q_id"] == b)["options"]}
+    group_cols = set(r["counts"]["columns"][2:-1])
+    # every column label is one of B's option labels (Código N fallbacks aside)
+    assert group_cols <= b_labels | {c for c in group_cols if c.startswith("Código ")}
+    assert group_cols & b_labels  # at least some real B options present
+
+
+def test_cross_tab_n_matches_table_base():
+    """The reported n for a cross-tab is the A∩B base (respondents who answered
+    BOTH questions), so the header equals the table's Total row — not the larger
+    A-only base, which would overstate n when the breakdown has item non-response."""
+    a, b = _cross_qids()
+    r = run_query(QueryRequest(question_id=a, group_by=b))
+    table_total = next(row for row in r["counts"]["rows"] if row[0] == "Total")[-1]
+    assert r["total_respondents"] == table_total
+
+
+def test_cross_tab_each_column_sums_to_100():
+    """Percentages are column-normalised: within each B category the distribution
+    of A adds to ~100 (the crosstab reads 'within this B group, how A splits')."""
+    a, b = _cross_qids()
+    r = run_query(QueryRequest(question_id=a, group_by=b))
+    cols = r["percentages"]["columns"]
+    data = [row for row in r["percentages"]["rows"] if row[0] != "Total"]
+    for ci in range(2, len(cols) - 1):  # skip id/label cols and the Total col
+        s = sum(row[ci] for row in data if isinstance(row[ci], (int, float)))
+        if s:  # non-empty column
+            assert s == pytest.approx(100, abs=max(1.0, 0.06 * len(data)))
+
+
+def test_cross_tab_numeric_main_has_promedio_row():
+    """A numeric main question crossed by a categorical B still gets its weighted
+    Promedio row (the group expression is independent of the main q_type)."""
+    numeric = next(
+        q["q_id"] for q in main.list_questions() if q["q_type"] == "numerica")
+    _, b = _cross_qids()
+    r = run_query(QueryRequest(question_id=numeric, group_by=b))
+    assert r["format"] == "pivot"
+    assert "Promedio" in {row[0] for row in r["counts"]["rows"]}
+
+
+def test_cross_tab_self_raises_400():
+    _, b = _cross_qids()
+    with pytest.raises(main.HTTPException) as exc:
+        run_query(QueryRequest(question_id=b, group_by=b))
+    assert exc.value.status_code == 400
+
+
+def test_cross_tab_numeric_breakdown_raises_400():
+    """Numeric questions are not allowed as the breakdown variable (v1): they'd
+    explode into dozens of columns. Rejected with a clear message, not 'Unknown'."""
+    numeric = next(
+        q["q_id"] for q in main.list_questions() if q["q_type"] == "numerica")
+    a, _ = _cross_qids()
+    with pytest.raises(main.HTTPException) as exc:
+        run_query(QueryRequest(question_id=a, group_by=numeric))
+    assert exc.value.status_code == 400
+    assert "numérica" in exc.value.detail
+
+
 # ── weighting & filters ─────────────────────────────────────────────────────
 def test_weighting_projects_to_population(categorical_qid):
     weighted = run_query(
