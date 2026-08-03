@@ -166,29 +166,7 @@ function formatPercent(cell, ci) {
     </div>
   </div>
 
-  <!-- Nota al pie: cómo se preguntó cada año (solo vista "Año") -->
-  <div
-    v-if="isYear && data.year_texts?.length"
-    class="border border-[#e2e8f0] rounded-lg p-4 bg-[rgba(248,250,252,0.5)]"
-  >
-    <h4 class="text-xs font-bold text-[#64748b] uppercase tracking-wide mb-2">
-      Cómo se preguntó cada año
-    </h4>
-    <ul class="space-y-1">
-      <li
-        v-for="t in data.year_texts"
-        :key="t.year"
-        class="text-sm text-[#475569] flex gap-2"
-      >
-        <span class="font-semibold text-[#1e293b] shrink-0">{{ t.year }}</span>
-        <span
-          v-if="t.q_id"
-          class="shrink-0 font-mono text-xs text-[#0d9488] bg-[#f0fdfa] rounded px-1.5 py-0.5 self-start"
-          >{{ t.q_id }}</span
-        >
-        <span>{{ t.q_text }}</span>
-      </li>
-    </ul>
-  </div>
-
+  <!-- "Cómo se preguntó cada año" vive en ResultsPanel, debajo de la tarjeta:
+       es metadata de la consulta, no de la tabla, y así también se ve en la
+       pestaña Gráfica. -->
 </template>
