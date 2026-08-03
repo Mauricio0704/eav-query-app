@@ -16,7 +16,7 @@ export const state = reactive({
   initialOnly: true,
   appliedPreset: '',
   lastResult: null,
-  activeTab: 'table',
+  activeTab: 'chart',
   loading: false,
   error: null,
   queryMode: 'manual',
