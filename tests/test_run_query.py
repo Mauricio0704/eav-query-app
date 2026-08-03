@@ -319,6 +319,58 @@ def test_year_numeric_empty_base_does_not_crash():
     assert all(cell == 0 for cell in base_row[1:])
 
 
+# ── cruce autoritativo entre olas (db/concepts/concept_equivalences.csv) ────
+import csv as _csv
+from pathlib import Path as _Path
+
+_EQUIV = _Path(__file__).resolve().parents[1] / "db" / "concepts" / "concept_equivalences.csv"
+
+
+def _pairs(decision):
+    with open(_EQUIV) as f:
+        return [(r["wave_a"], r["q_a"], r["wave_b"], r["q_b"])
+                for r in _csv.DictReader(f) if r["decision"] == decision]
+
+
+def _concept_of(wave, qid):
+    row = main.get_conn().execute(
+        "SELECT concept_id FROM questions WHERE wave_id=? AND q_id=?", [wave, qid]
+    ).fetchone()
+    return row[0] if row else None
+
+
+def test_authoritative_pairs_share_a_concept():
+    """Cada par `comparable` de un cruce hecho a mano queda en un MISMO concepto que
+    abarca ambas olas → la pregunta se puede comparar por año. Es la garantía de los
+    cruces autoritativos sobre el emparejador por texto."""
+    pairs = _pairs("comparable")
+    assert len(pairs) > 200  # el cruce completo, no un csv truncado
+    bad = [(wa, a, wb, b) for wa, a, wb, b in pairs
+           if not (_concept_of(wa, a) and _concept_of(wa, a) == _concept_of(wb, b))]
+    assert bad == [], f"pares comparables sin concepto compartido: {bad[:10]}"
+
+
+def test_excluded_pairs_are_not_forced_comparable():
+    """Los pares excluidos (rediseños / códigos reasignados) NO deben terminar en el
+    mismo concepto: compararlos daría cifras engañosas."""
+    shared = [(wa, a, wb, b) for wa, a, wb, b in _pairs("exclude")
+              if _concept_of(wa, a) and _concept_of(wa, a) == _concept_of(wb, b)]
+    assert shared == [], f"pares excluidos quedaron comparables: {shared}"
+
+
+def test_year_comparison_recovers_bare_scale_rating():
+    """Una calificación 1..10 que 2024 guardó como categórica (valor en option_id) y
+    2025 como numérica se compara como concepto NUMÉRICO, con la columna 2024 llena
+    (la vista Año alinea por valor). Regresión del cruce autoritativo."""
+    r = run_query(QueryRequest(question_id="p62_1", group_by="year"))
+    assert r["question"]["q_type"] == "numerica"
+    cols = r["counts"]["columns"]
+    assert "2024" in cols and "2025" in cols
+    base = next(row for row in r["counts"]["rows"] if row[0] == "Base (ponderada)")
+    i24 = cols.index("2024")
+    assert isinstance(base[i24], (int, float)) and base[i24] > 0  # 2024 no queda vacío
+
+
 # ── CSV: rellenar celdas sin respondientes con 0 ────────────────────────────
 def test_csv_fill_empty_zeroes_data_but_keeps_labels_and_stats():
     """En el CSV, un grupo sin respondientes exporta 0 (no celda vacía). Pero

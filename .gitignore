@@ -12,3 +12,8 @@ pyrightconfig.json
 
 # PDFs fuente de las cifras publicadas (pesados; la cita vive en published_figures.csv)
 tests/*.pdf
+
+# Borrador de equivalencias de bootstrap_pairs.py: es una propuesta para revisar
+# a mano, no un insumo. Los INSUMOS (concept_equivalences / concept_recodes_approved
+# / db/overlays/*_approved.csv) sí se versionan; el build no genera ningún CSV.
+db/concepts/concept_equivalences.draft.csv

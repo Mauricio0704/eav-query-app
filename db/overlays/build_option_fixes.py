@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Capa B — genera `options_fixes_approved.csv` (overlay de etiquetas de opción).
 
-Cruza, por ola, el CUESTIONARIO original (`data/1. Cuestionario {año}.xlsx`) con
+Cruza, por ola, el CUESTIONARIO original (`data/source/{año}/Cuestionario {año}.xlsx`) con
 los códigos que aparecen en `answers` pero faltan en el catálogo `options`
 (huecos que, sin reparar, obligan al motor a mostrarlos como "Código N"). Para
 cada hueco decide una etiqueta:
@@ -16,7 +16,7 @@ cada hueco decide una etiqueta:
 El resultado lo consume `db/build_db.py::apply_option_fixes` con semántica upsert,
 SIN tocar las fuentes crudas. Regenerar tras cambiar un cuestionario o un SPECIAL:
 
-    .venv/bin/python db/concepts/build_option_fixes.py
+    .venv/bin/python db/overlays/build_option_fixes.py
 
 Notas de formato del cuestionario (difiere por año):
   - 2021: q_id en col 8; opciones como "Respuestas N: <código>. <texto>". OJO:
@@ -36,8 +36,8 @@ import openpyxl
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 DB = ROOT / "data" / "encuesta_multianual.duckdb"       # answers (crudas)
-SRC_2025 = ROOT / "data" / "encuesta.duckdb"            # catálogo crudo 2025
-WAVES_DIR = ROOT / "db" / "waves"                        # catálogo crudo 2021-2024
+WAVES_DIR = ROOT / "data" / "waves"                      # catálogo crudo por ola
+SRC_2025 = WAVES_DIR / "2025" / "encuesta.duckdb"       # catálogo crudo 2025
 OUT = HERE / "options_fixes_approved.csv"
 
 SENT_2021 = {8: "No sabe", 9: "No contesta", 88: "No sabe",
@@ -81,7 +81,7 @@ def parse_questionnaire(wave):
     OTRO = set de qids que traen una opción "Otro" SIN numerar (su código real lo
     auto-asigna el ETL a un número pasado del máximo -> se etiqueta 'Otro')."""
     qc, oc, low, style, _ = WAVE_CFG[wave]
-    xlsx = ROOT / "data" / f"1. Cuestionario {wave}.xlsx"
+    xlsx = ROOT / "data" / "source" / wave / f"Cuestionario {wave}.xlsx"
     Q = defaultdict(dict)
     OTRO = set()
     if style is None or not xlsx.exists():
@@ -121,8 +121,8 @@ def parse_questionnaire(wave):
 
 def raw_catalog():
     """Catálogo CRUDO por (wave,q) -> {code} desde las fuentes (no la BD ya
-    construida, que trae el overlay). 2021-2024: db/waves/*/options.csv; 2025:
-    data/encuesta.duckdb."""
+    construida, que trae el overlay). 2021-2024: data/waves/*/options.csv; 2025:
+    data/waves/2025/encuesta.duckdb."""
     cat = defaultdict(set)
     for wave in ["2021", "2022", "2023", "2024"]:
         f = WAVES_DIR / wave / "options.csv"
