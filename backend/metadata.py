@@ -235,6 +235,15 @@ PRESETS: list = [
         "group_by": "edad_anos",
         "filters": [],
     },
+    {
+        "key": "respuesta_por_ano",
+        "label": "Respuesta por año",
+        "group_by": "year",
+        "filters": [],
+        # Sólo aplica a preguntas con `concept_id`; la UI lo oculta cuando la
+        # pregunta seleccionada no tiene equivalencia entre olas.
+        "requires_concept": True,
+    },
 ]
 
 

@@ -126,6 +126,12 @@ watch(canCompareYears, (ok) => {
     state.appliedPreset = ''
   }
 })
+
+// Los presets marcados `requires_concept` (agrupar por año) sólo se ofrecen si
+// la pregunta tiene equivalencia entre olas; si no, la consulta daría 400.
+const availablePresets = computed(() =>
+  state.presets.filter((p) => !p.requires_concept || canCompareYears.value),
+)
 </script>
 
 <template>
@@ -245,7 +251,7 @@ watch(canCompareYears, (ok) => {
               class="w-full bg-[#f1f5f9] border border-gray-300 rounded-4xl px-3 py-2.5 text-sm text-[#334155] font-medium appearance-none cursor-pointer"
             >
               <option value="">— Ninguno (configura manualmente) —</option>
-              <option v-for="p in state.presets" :key="p.key" :value="p.key">
+              <option v-for="p in availablePresets" :key="p.key" :value="p.key">
                 {{ p.label }}
               </option>
             </select>
@@ -451,7 +457,10 @@ watch(canCompareYears, (ok) => {
               :key="i"
               class="inline-flex items-center gap-1 bg-[#f0fdfa] text-[#0d9488] text-xs font-medium px-2 py-1 rounded"
             >
-              <span>{{ attributeLabel(f.attribute) }}: {{ filterValueLabel(f) }}</span>
+              <span
+                >{{ attributeLabel(f.attribute) }}:
+                {{ filterValueLabel(f) }}</span
+              >
               <button
                 @click="removeFilter(i)"
                 class="hover:text-[#00685f]"
