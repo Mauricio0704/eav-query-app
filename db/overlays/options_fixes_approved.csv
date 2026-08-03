@@ -29,6 +29,8 @@ wave_id,question_id,option_id,option_label
 2021,p102,7,Porque tenía COVID
 2021,p102,8,Otro
 2021,p102,9,Otro
+2021,p107,0,No
+2021,p107,1,Sí
 2021,p109,5,Los gobernantes son poco efectivos para resolver los problemas de la ciudad / estado.
 2021,p109,6,Otro
 2021,p109,7,Otro
