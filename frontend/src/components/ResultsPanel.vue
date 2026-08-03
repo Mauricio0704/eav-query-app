@@ -24,6 +24,7 @@ const totalRespondents = computed(
 )
 const isYear = computed(() => state.lastResult?.group_by === 'year')
 const yearBases = computed(() => state.lastResult?.year_bases ?? [])
+const yearTexts = computed(() => state.lastResult?.year_texts ?? [])
 const appliedFilters = computed(() => state.lastResult?.filters_applied ?? [])
 const fmtNum = (n) => (n == null ? '—' : Number(n).toLocaleString('es-MX'))
 const groupByLabel = computed(() => {
@@ -47,9 +48,7 @@ function setTab(t) {
 </script>
 
 <template>
-  <div
-    class="flex-1 overflow-auto p-8 bg-[#fcf0e4]"
-  >
+  <div class="flex-1 overflow-auto p-8 bg-[#fcf0e4]">
     <!-- Loading -->
     <div
       v-if="state.loading"
@@ -211,81 +210,6 @@ function setTab(t) {
 
     <!-- Results -->
     <div v-else class="max-w-7xl mx-auto space-y-8">
-      <!-- Info strip (metadata compacta de la consulta) -->
-      <div
-        class="bg-white border border-[#e2e8f0] rounded-lg px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"
-      >
-        <!-- Pregunta -->
-        <span class="inline-flex items-center gap-2">
-          <span
-            class="font-mono text-xs bg-[#f0fdfa] text-[#0d9488] px-2 py-0.5 rounded font-bold"
-            >{{ state.lastResult.question.q_id }}</span
-          >
-          <span class="text-[#64748b]">{{
-            state.lastResult.question.q_type
-          }}</span>
-        </span>
-
-        <span class="w-px h-4 bg-[#e2e8f0]"></span>
-
-        <!-- Año / comparación -->
-        <span v-if="!isYear">
-          <span class="text-[#94a3b8]">Año</span>
-          <span class="font-semibold text-[#334155] ml-1">{{
-            state.lastResult.wave_id ?? '—'
-          }}</span>
-        </span>
-        <span v-else class="font-semibold text-[#334155]"
-          >Comparación por año</span
-        >
-
-        <span class="w-px h-4 bg-[#e2e8f0]"></span>
-
-        <!-- Agrupación -->
-        <span>
-          <span class="text-[#94a3b8]">Agrupado por</span>
-          <span class="font-semibold text-[#334155] ml-1">{{
-            groupByLabel
-          }}</span>
-        </span>
-
-        <span class="w-px h-4 bg-[#e2e8f0]"></span>
-
-        <!-- Universo -->
-        <span v-if="!isYear">
-          <span class="text-[#94a3b8]">Universo</span>
-          <span class="font-semibold text-[#334155] ml-1"
-            >{{ totalRespondents }} personas</span
-          >
-        </span>
-        <span v-else class="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span class="text-[#94a3b8]">Universo por año</span>
-          <span
-            v-for="yb in yearBases"
-            :key="yb.year"
-            class="font-semibold text-[#334155]"
-          >
-            <span class="text-[#64748b] font-normal">{{ yb.year }}:</span>
-            {{ fmtNum(yb.base) }}
-          </span>
-        </span>
-
-        <!-- Filtros -->
-        <template v-if="appliedFilters.length">
-          <span class="w-px h-4 bg-[#e2e8f0]"></span>
-          <span class="inline-flex flex-wrap items-center gap-1.5">
-            <span class="text-[#94a3b8]">Filtros</span>
-            <span
-              v-for="(f, i) in appliedFilters"
-              :key="i"
-              class="bg-[#f0fdfa] text-[#0d9488] text-xs font-medium px-2 py-0.5 rounded"
-            >
-              {{ attributeLabel(f.attribute) }}: {{ filterValueLabel(f) }}
-            </span>
-          </span>
-        </template>
-      </div>
-
       <!-- Data Visualization Card -->
       <div
         class="bg-white rounded-lg border border-[#e2e8f0] shadow-sm overflow-hidden"
@@ -340,6 +264,118 @@ function setTab(t) {
             :data="state.lastResult"
             :active="state.activeTab === 'chart'"
           />
+        </div>
+      </div>
+
+      <!-- Metadata de la consulta. Una sola tarjeta: la franja compacta y el
+           redactado por año son lo mismo (contexto del resultado), así que van
+           juntos y separados sólo por una divisoria interna. Vive aquí y no en
+           PivotTables para que también se vea en la pestaña Gráfica. -->
+      <div
+        class="bg-white border border-[#e2e8f0] rounded-lg text-sm overflow-hidden"
+      >
+        <div class="px-5 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <!-- Pregunta -->
+          <span class="inline-flex items-center gap-2">
+            <span
+              class="font-mono text-xs bg-[#f0fdfa] text-[#0d9488] px-2 py-0.5 rounded font-bold"
+              >{{ state.lastResult.question.q_id }}</span
+            >
+            <span class="text-[#64748b]">{{
+              state.lastResult.question.q_type
+            }}</span>
+          </span>
+
+          <span class="w-px h-4 bg-[#e2e8f0]"></span>
+
+          <!-- Año / comparación -->
+          <span v-if="!isYear">
+            <span class="text-[#94a3b8]">Año</span>
+            <span class="font-semibold text-[#334155] ml-1">{{
+              state.lastResult.wave_id ?? '—'
+            }}</span>
+          </span>
+          <span v-else class="font-semibold text-[#334155]"
+            >Comparación por año</span
+          >
+
+          <span class="w-px h-4 bg-[#e2e8f0]"></span>
+
+          <!-- Agrupación -->
+          <span>
+            <span class="text-[#94a3b8]">Agrupado por</span>
+            <span class="font-semibold text-[#334155] ml-1">{{
+              groupByLabel
+            }}</span>
+          </span>
+
+          <span class="w-px h-4 bg-[#e2e8f0]"></span>
+
+          <!-- Universo -->
+          <span v-if="!isYear">
+            <span class="text-[#94a3b8]">Universo</span>
+            <span class="font-semibold text-[#334155] ml-1"
+              >{{ totalRespondents }} personas</span
+            >
+          </span>
+          <span
+            v-else
+            class="inline-flex flex-wrap items-center gap-x-2 gap-y-1"
+          >
+            <span class="text-[#94a3b8]">Universo por año</span>
+            <span
+              v-for="yb in yearBases"
+              :key="yb.year"
+              class="font-semibold text-[#334155]"
+            >
+              <span class="text-[#64748b] font-normal">{{ yb.year }}:</span>
+              {{ fmtNum(yb.base) }}
+            </span>
+          </span>
+
+          <!-- Filtros -->
+          <template v-if="appliedFilters.length">
+            <span class="w-px h-4 bg-[#e2e8f0]"></span>
+            <span class="inline-flex flex-wrap items-center gap-1.5">
+              <span class="text-[#94a3b8]">Filtros</span>
+              <span
+                v-for="(f, i) in appliedFilters"
+                :key="i"
+                class="bg-[#f0fdfa] text-[#0d9488] text-xs font-medium px-2 py-0.5 rounded"
+              >
+                {{ attributeLabel(f.attribute) }}: {{ filterValueLabel(f) }}
+              </span>
+            </span>
+          </template>
+        </div>
+
+        <!-- Cómo se preguntó cada año (sólo en la comparación por año) -->
+        <div
+          v-if="isYear && yearTexts.length"
+          class="border-t border-[#f1f5f9] px-5 py-3"
+        >
+          <h4
+            class="text-xs font-bold text-[#64748b] uppercase tracking-wide mb-2"
+          >
+            Cómo se preguntó cada año
+          </h4>
+          <ul class="space-y-1">
+            <li
+              v-for="t in yearTexts"
+              :key="t.year"
+              class="text-[#475569] flex gap-2"
+            >
+              <span class="font-semibold text-[#1e293b] shrink-0">{{
+                t.year
+              }}</span>
+              <span
+                v-if="t.q_id"
+                class="shrink-0 font-mono text-xs text-[#0d9488] bg-[#f0fdfa] rounded px-1.5 py-0.5 self-start"
+                >{{ t.q_id }}</span
+              >
+              <span>{{ t.q_text }}</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
