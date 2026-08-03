@@ -1,4 +1,5 @@
 wave_id,question_id,q_type,reason
+2021,p107,categorica,"si/no codificado 0/1 que la fuente tipo numerico; equivalente a p105/2022, p120/2023, p129/2024, p137/2025 (todas categoricas)"
 2021,p9_2,categorica,"colonia de destino (identificador codificado, no numerico)"
 2021,p10_b,categorica,"ruta de camion (identificador codificado, no numerico)"
 2021,p11_b_1,categorica,"ruta de camion (identificador codificado, no numerico)"
