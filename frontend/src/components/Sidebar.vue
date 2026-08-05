@@ -573,7 +573,15 @@ const availablePresets = computed(() =>
               <MessageSquare class="size-4 shrink-0" />
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium truncate">{{ c.title }}</p>
-                <p class="text-[10px] text-[#94a3b8]">
+                <!-- La respuesta llega a la conversación desde la que se
+                     preguntó, aunque el usuario se haya cambiado de chat. -->
+                <p
+                  v-if="state.pendingChats.includes(c.id)"
+                  class="text-[10px] text-[#7e34c3] animate-pulse"
+                >
+                  Respondiendo…
+                </p>
+                <p v-else class="text-[10px] text-[#94a3b8]">
                   {{ relativeTime(c.updatedAt) }}
                 </p>
               </div>

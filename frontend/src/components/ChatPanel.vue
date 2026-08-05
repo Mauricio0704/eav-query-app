@@ -5,6 +5,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import {
   state,
+  chatLoading,
   sendChatMessage,
   retryLastMessage,
   filterValueLabel,
@@ -63,13 +64,13 @@ const suggestions = [
 
 async function submit() {
   const text = input.value
-  if (!text.trim() || state.chatLoading) return
+  if (!text.trim() || chatLoading.value) return
   input.value = ''
   await sendChatMessage(text)
 }
 
 function useSuggestion(s) {
-  if (state.chatLoading) return
+  if (chatLoading.value) return
   input.value = s
   submit()
 }
@@ -97,7 +98,7 @@ function toolSummary(calls) {
 
 // Autoscroll on new messages / loading state.
 watch(
-  () => [state.chatMessages.length, state.chatLoading],
+  () => [state.chatMessages.length, chatLoading.value],
   async () => {
     await nextTick()
     if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight
@@ -163,7 +164,7 @@ watch(
                 {{ toolSummary(m.toolCalls) }}
               </p>
               <button
-                v-if="m.error && !state.chatLoading"
+                v-if="m.error && !chatLoading"
                 @click="retryLastMessage"
                 class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[#b91c1c] hover:text-[#7f1d1d] transition-colors"
               >
@@ -182,7 +183,7 @@ watch(
           </div>
         </template>
 
-        <div v-if="state.chatLoading" class="flex flex-col gap-1.5">
+        <div v-if="chatLoading" class="flex flex-col gap-1.5">
           <div
             class="w-fit bg-white border border-[#e2e8f0] rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm"
           >
@@ -210,7 +211,7 @@ watch(
         ></textarea>
         <button
           type="submit"
-          :disabled="!input.trim() || state.chatLoading"
+          :disabled="!input.trim() || chatLoading"
           class="bg-[#7e34c3] hover:bg-[#5e2494] disabled:opacity-45 disabled:cursor-not-allowed text-white rounded-2xl px-5 py-3 flex items-center gap-2 font-bold shadow-lg shadow-[#7e34c3]/20 transition-colors shrink-0"
         >
           <Send class="size-4 justify-center" />
