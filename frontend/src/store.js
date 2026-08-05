@@ -21,7 +21,7 @@ export const state = reactive({
   error: null,
   queryMode: 'manual',
   chatMessages: [],
-  chatLoading: false,
+  pendingChats: [], // Ids de las conversaciones con una petición activa.
   conversations: [],
   currentConversationId: null,
 })
@@ -31,6 +31,11 @@ const MAX_CONVERSATIONS = 5
 
 export const selectedQuestion = computed(
   () => state.questions.find((q) => q.q_id === state.questionId) || null,
+)
+
+// La conversación en pantalla está esperando respuesta.
+export const chatLoading = computed(() =>
+  state.pendingChats.includes(state.currentConversationId),
 )
 
 const SECTION_LABELS = {
@@ -245,7 +250,8 @@ export async function init() {
       api.fetchRecodes(),
     ])
     state.waves = waves
-    state.waveId = (waves.find((w) => w.is_default) || waves[0] || {}).wave_id || ''
+    state.waveId =
+      (waves.find((w) => w.is_default) || waves[0] || {}).wave_id || ''
     state.recodes = recodes
     await loadCatalog()
     loadConversations()
@@ -434,20 +440,45 @@ export function deleteConversation(id) {
   persistConversations()
 }
 
+// Agrega un mensaje al historial de `convId`.
+function appendToConversation(convId, message) {
+  const conv = state.conversations.find((c) => c.id === convId)
+
+  // Si borraron la conversación, descartar mensaje.
+  if (!conv) return
+
+  if (state.currentConversationId === convId) {
+    // Si es la conversación activa, agregar el mensaje al chat.
+    state.chatMessages.push(message)
+    syncCurrentConversation()
+    return
+  }
+
+  // Si no es la conversación activa, guardar el mensaje en el historial.
+  conv.messages.push(JSON.parse(JSON.stringify(message)))
+  conv.updatedAt = Date.now()
+  persistConversations()
+}
+
 export async function sendChatMessage(text) {
   const msg = (text || '').trim()
-  if (!msg || state.chatLoading) return
-  // History = prior turns (text only) before this new message.
+  if (!msg || chatLoading.value) return
+
+  // Tomar el historial de previos turnos (solo texto). Sirve como
+  // contexto para futuras peticiones
   const history = state.chatMessages.map((m) => ({
     role: m.role,
     text: m.text,
   }))
   state.chatMessages.push({ id: msgId(), role: 'user', text: msg })
   syncCurrentConversation() // surface the conversation in the list right away
-  state.chatLoading = true
+  
+  // Se fija el convId desde el cual se hizo la petición.
+  const convId = state.currentConversationId
+  state.pendingChats.push(convId)
   try {
     const res = await api.chat({ message: msg, history })
-    state.chatMessages.push({
+    appendToConversation(convId, {
       id: msgId(),
       role: 'assistant',
       text: res.reply,
@@ -455,20 +486,20 @@ export async function sendChatMessage(text) {
       toolCalls: res.tool_calls || [],
     })
   } catch (e) {
-    state.chatMessages.push({
+    appendToConversation(convId, {
       id: msgId(),
       role: 'assistant',
       text: `Lo siento, ocurrió un error: ${e.message}`,
       error: true,
     })
   } finally {
-    state.chatLoading = false
-    syncCurrentConversation()
+    const i = state.pendingChats.indexOf(convId)
+    if (i !== -1) state.pendingChats.splice(i, 1)
   }
 }
 
 export async function retryLastMessage() {
-  if (state.chatLoading) return
+  if (chatLoading.value) return
   const msgs = state.chatMessages
   if (msgs.length && msgs[msgs.length - 1].role === 'assistant') msgs.pop()
   if (!msgs.length || msgs[msgs.length - 1].role !== 'user') return
