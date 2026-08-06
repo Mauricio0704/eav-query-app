@@ -426,7 +426,21 @@ def load_concepts(con: duckdb.DuckDBPyConnection) -> None:
             continue
         for oid, coid in rs:
             if coid not in known_options:
-                warnings.append(f"recode hacia una opción canónica inexistente: {coid}")
+                # Opción SIN equivalente en las otras olas (p. ej. "Todos los
+                # anteriores", que sólo existió en 2024). El recode le declara un
+                # id propio y aquí entra al catálogo con su etiqueta real: sin
+                # esto el motor cae al fallback `{cid}:{código}` y la funde con la
+                # opción que use ese MISMO código en otra ola, aunque signifiquen
+                # cosas distintas. Si la ola tampoco tiene esa opción, entonces sí
+                # es un id mal escrito y se avisa como antes.
+                label = opts.get((wave, qid), {}).get(oid)
+                if label is None:
+                    warnings.append(
+                        f"recode hacia una opción canónica inexistente: {coid}"
+                    )
+                else:
+                    catalog.append((cid, coid, label, oid))
+                    known_options.add(coid)
             opt_map.append((wave, qid, oid, coid))
 
     # --- avisos de integridad -------------------------------------------------
