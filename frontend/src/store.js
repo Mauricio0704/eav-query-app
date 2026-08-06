@@ -472,7 +472,7 @@ export async function sendChatMessage(text) {
   }))
   state.chatMessages.push({ id: msgId(), role: 'user', text: msg })
   syncCurrentConversation() // surface the conversation in the list right away
-  
+
   // Se fija el convId desde el cual se hizo la petición.
   const convId = state.currentConversationId
   state.pendingChats.push(convId)
