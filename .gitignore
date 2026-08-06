@@ -17,3 +17,6 @@ tests/*.pdf
 # a mano, no un insumo. Los INSUMOS (concept_equivalences / concept_recodes_approved
 # / db/overlays/*_approved.csv) sí se versionan; el build no genera ningún CSV.
 db/concepts/concept_equivalences.draft.csv
+
+db/concepts/export_equivalencias.py
+db/concepts/equivalencias.xlsx
