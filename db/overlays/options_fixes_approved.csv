@@ -26,6 +26,8 @@ wave_id,question_id,option_id,option_label
 2021,p1,10,Otro
 2021,p1,11,Otro
 2021,p1,12,Otro
+2021,p101,0,No
+2021,p101,1,Sí
 2021,p102,7,Porque tenía COVID
 2021,p102,8,Otro
 2021,p102,9,Otro
@@ -98,6 +100,8 @@ wave_id,question_id,option_id,option_label
 2021,p21_9,99,NO APLICA
 2021,p22,10,10
 2021,p22,99,NO SABE
+2021,p27,0,No
+2021,p27,1,Sí
 2021,p28,8,No se andar en bicicleta
 2021,p28,9,Otro
 2021,p28,10,Otro
@@ -293,6 +297,11 @@ wave_id,question_id,option_id,option_label
 2022,p11,999,No contesta
 2022,p124,8,"6-7 SM ($31,116 - $36,302)"
 2022,p124,8888,No sabe
+2022,p31_0,0,No
+2022,p31_0,1,Sí
+2022,p31_0,7777,No aplica
+2022,p31_0,8888,No sabe
+2022,p31_0,9999,No contesta
 2022,p35,999,No contesta
 2022,p37,888,No sabe
 2022,p37,999,No contesta
@@ -313,6 +322,10 @@ wave_id,question_id,option_id,option_label
 2022,p45_6,999,No contesta
 2022,p59,8888,No sabe
 2022,p59,9999,No contesta
+2022,p69_15,0,No
+2022,p69_15,1,Sí
+2022,p69_15,8888,No sabe
+2022,p69_15,9999,No contesta
 2022,p83,888,No sabe
 2022,p84,8,Otro
 2022,p86,10,Otro
