@@ -9,7 +9,8 @@ agrupa las preguntas equivalentes a través de las olas, de modo que
 - `concept_options (concept_option_id)` es el catálogo canónico de opciones;
   `options.concept_option_id` mapea la opción de cada ola a la canónica, para que
   códigos recodificados se alineen entre años.
-- **Estado actual:** 320 conceptos (237 categóricos, 83 numéricos), olas 2021–2025.
+- **Estado actual:** 311 conceptos (235 categóricos, 76 numéricos), 1,397 opciones
+  canónicas, olas 2021–2025.
 
 ## Todo se declara a mano, en dos archivos
 
@@ -52,6 +53,16 @@ Regla: una ola cubierta por un recode aporta **exactamente** las equivalencias
 declaradas y nada más (por eso el código 3 "No binario" de 2021, que no está en
 el recode, queda sin mapear en vez de inventar una opción canónica).
 
+También sirve para el caso inverso: una opción **sin equivalente** en las demás
+olas. Si el `concept_option_id` declarado no existe todavía en el catálogo pero la
+ola sí tiene esa opción, entra al catálogo con su etiqueta real en vez de avisar.
+Hace falta porque el motor, ante una opción sin mapeo, cae al fallback
+`{concept_id}:{código}` y la fundiría con la opción que use ese **mismo código** en
+otra ola aunque signifiquen cosas distintas. Por la regla de arriba el recode
+debe ser **exhaustivo** para esa ola — lo que se omita cae en el fallback y vuelve
+a colisionar.
+
+
 ## Cómo se construye (`db/build_db.py::load_concepts`)
 
 1. **Encadenar** los pares `comparable` con union-find → grupos de preguntas.
@@ -76,7 +87,9 @@ El build no falla, pero **avisa** (y conviene revisar los avisos al agregar una 
   que agregó o quitó opciones — la unión lo maneja, pero vale confirmar que no es
   una **reasignación** de códigos (eso sería `exclude`);
 - par `exclude` que terminó en el mismo concepto por **transitividad**;
-- recode que apunta a un concepto o a una opción canónica inexistente.
+- recode que apunta a un concepto inexistente, o a una opción canónica inexistente
+  **que la ola tampoco tiene** (si la tiene, no es error: es una opción sin
+  equivalente y se agrega al catálogo, ver arriba).
 
 ## Agregar una ola nueva
 
