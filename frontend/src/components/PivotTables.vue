@@ -6,65 +6,69 @@ const props = defineProps({
   data: { type: Object, required: true },
 })
 
-// Absolutos y relativos son la MISMA tabla con otra presentación, así que se
-// muestra una sola y se alterna. Abre en relativos: es la lectura habitual de
-// una encuesta. 'abs' | 'pct'.
+// Indica la presentación de la tabla (abs | pct).
 const mode = ref('pct')
 
-// Vista "Año": redactado exacto de la pregunta por ola (nota al pie).
+// Devuelve True si es agrupación por año
 const isYear = computed(() => props.data.group_by === 'year')
 
-// Columnas de etiqueta antes de los datos: en la vista Año hay 1 (Respuesta);
-// en los demás pivotes hay 2 (id_respuesta + Respuesta).
+// Columnas de respuestas: En año hay 1 (Respuesta), en los demás pivotes hay 2 (id_respuesta + Respuesta).
 const labelCols = computed(() => (isYear.value ? 1 : 2))
 
 const columns = computed(() => props.data.counts.columns)
 
-// Filas que SÓLO existen en la tabla de conteos (Promedio, Base ponderada): son
-// magnitudes en unidades originales, no porcentajes. Se muestran también en modo
-// relativo —formateadas como conteo— para no perder el promedio al alternar.
+// Obtener las filas de counts cuyos labels no existen en percentages (Promedio, Base ponderada).
 const statRows = computed(() => {
-  const pct = new Set(props.data.percentages.rows.map((r) => r[0]))
-  return props.data.counts.rows.filter((r) => !pct.has(r[0]))
+  const percentageLabels = new Set(
+    props.data.percentages.rows.map((row) => row[0]),
+  )
+
+  return props.data.counts.rows.filter((row) => !percentageLabels.has(row[0]))
 })
 
 const statLabels = computed(() => new Set(statRows.value.map((r) => r[0])))
 
-// Filas a pintar. En 'abs' los estadísticos ya vienen dentro de counts.rows, así
-// que se marcan igual en ambos modos (mismo formato y mismo estilo de fila).
+// Filas a pintar con flag de stat.
 const displayRows = computed(() => {
   const base =
     mode.value === 'abs' ? props.data.counts.rows : props.data.percentages.rows
+
   const out = base.map((cells) => ({
     cells,
     stat: statLabels.value.has(cells[0]),
   }))
-  if (mode.value === 'pct') {
-    for (const cells of statRows.value) out.push({ cells, stat: true })
+
+  if (mode.value !== 'pct') return out
+
+  for (const cells of statRows.value) {
+    out.push({ cells, stat: true })
   }
+
   return out
 })
 
-// Etiquetas distintas que tuvo esta opción a lo largo de los años (dedup, en
-// orden de aparición). p. ej. ["Hombre", "Masculino"].
+// Etiquetas distintas que tuvo esta opción a lo largo de los años, en orden de aparición.
 function distinctLabels(entry) {
   const seen = []
   for (const v of Object.values(entry.years)) {
-    if (v && v.label && !seen.includes(v.label)) seen.push(v.label)
+    if (v && v.label && !seen.includes(v.label)) {
+      // TODO: Normalizar texto de respuesta (ej. "NO" debería ser lo mismo que "No").
+      seen.push(v.label)
+    }
   }
   return seen
 }
-// Tooltip: solo los distintos tipos de respuesta, p. ej. "Hombre / Masculino".
+
+// Tooltip de los distintos tipos de respuesta (ej. "Hombre | Masculino").
 function rawTooltip(entry) {
-  return distinctLabels(entry).join(' / ')
+  return distinctLabels(entry).join(' | ')
 }
-// Marcador en la columna Respuesta (col 0 en la vista Año), solo cuando la
-// etiqueta varió entre años (>1 tipo de respuesta). year_option_map está
-// alineado EN ORDEN con las filas de datos (Total al final).
+
+// Marcador en la columna Respuesta cuando la etiqueta varió entre años.
 function diffEntry(ri, row, ci) {
   if (!isYear.value || ci !== 0 || isTotalRow(row)) return null
   const e = (props.data.year_option_map ?? [])[ri]
-  return e && distinctLabels(e).length > 1 ? e : null
+  return (e && distinctLabels(e).length) > 1 ? e : null
 }
 
 function isNumeric(cell, ci) {
@@ -88,10 +92,9 @@ function formatPercent(cell, ci) {
   return `${cell}%`
 }
 
-// Los estadísticos se formatean siempre como conteo, aunque estemos en relativo.
 function formatCell(cell, row, ci, stat) {
   return mode.value === 'abs' || stat
-    ? formatCount(cell, row, ci)
+    ? formatCount(cell, row, ci) // Los estadísticos se formatean siempre como conteo
     : formatPercent(cell, ci)
 }
 </script>
@@ -174,8 +177,4 @@ function formatCell(cell, row, ci, stat) {
       </table>
     </div>
   </div>
-
-  <!-- "Cómo se preguntó cada año" vive en ResultsPanel, debajo de la tarjeta:
-       es metadata de la consulta, no de la tabla, y así también se ve en la
-       pestaña Gráfica. -->
 </template>
