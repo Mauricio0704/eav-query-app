@@ -616,12 +616,12 @@ def _year_comparison(req: QueryRequest):
                 detail="Esta pregunta no tiene equivalencia entre años.",
             )
         crow = conn.execute(
-            "SELECT label, q_type, comparable FROM concepts WHERE concept_id = ?",
+            "SELECT label, q_type FROM concepts WHERE concept_id = ?",
             [concept_id],
         ).fetchone()
-        if not crow or not crow[2]:
+        if not crow:
             raise HTTPException(
-                status_code=400, detail="Concepto no comparable entre años."
+                status_code=400, detail="Concepto no encontrado para esta pregunta."
             )
         concept_label, concept_type = crow[0], crow[1]
         members = conn.execute(

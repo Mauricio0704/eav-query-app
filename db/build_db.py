@@ -3,21 +3,9 @@
 Construye la base de datos multi-año `data/encuesta_multianual.duckdb`.
 
 Cada ola se carga desde su propia fuente en `data/waves/<año>/` y se inserta con
-su `wave_id`:
+su `wave_id`.
 
-  * 2025 — desde la BD original `data/waves/2025/encuesta.duckdb` (una sola ola,
-    READ_ONLY, queda INTACTA).
-  * 2021-2024 — desde los CSV en `data/waves/<año>/`, producidos por el ETL
-    `encuesta-asi-vamos-etl` (formato ancho → largo). Ver db/README.md.
-
-`answers` se ordena FÍSICAMENTE por (question_id, option_id, respondent_id)
-dentro de cada ola; como cada ola se inserta de corrido, el archivo queda
-agrupado por (wave_id, question_id) → DuckDB poda por zone-maps.
-
-Es idempotente: reconstruye la BD nueva desde cero en cada corrida (write-once).
-
-Uso (desde la raíz del repo o desde db/):
-    .venv/bin/python db/build_db.py
+Reconstruye la BD nueva desde cero en cada ejecución.
 """
 
 import csv
@@ -30,8 +18,7 @@ import duckdb
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-# Insumos: una carpeta por ola en data/waves/. La 2025 es la BD original de una
-# sola ola (queda INTACTA); 2021-2024 son los CSV del ETL.
+
 WAVES_DIR = ROOT / "data" / "waves"
 SRC_2025 = WAVES_DIR / "2025" / "encuesta.duckdb"  # original (intacta)
 DST = ROOT / "data" / "encuesta_multianual.duckdb"  # salida (multi-año)
@@ -56,7 +43,7 @@ def load_wave_2025(con: duckdb.DuckDBPyConnection) -> None:
     print(f"\n▶ Cargando ola '{wave}' desde {SRC_2025.name} ...")
     con.execute("""
         INSERT INTO waves (wave_id, year, label, n_respondents)
-        SELECT '2025', 2025, 'Encuesta 2025', (SELECT COUNT(*) FROM src.responses)
+        SELECT '2025', 2025, 'Así Vamos 2025', (SELECT COUNT(*) FROM src.responses)
         """)
     con.execute(f"""
         INSERT INTO responses
@@ -136,20 +123,18 @@ def load_wave_csv(
 
 
 # ---------------------------------------------------------------------------
-# Capa B — reparación del catálogo de opciones (overlay curado a mano)
+# Aplicar reparación del catálogo de opciones (overlay curado a mano)
 # ---------------------------------------------------------------------------
 def apply_option_fixes(con: duckdb.DuckDBPyConnection) -> None:
     """Upsert de db/overlays/options_fixes_approved.csv sobre `options`.
 
-    Las fuentes crudas (CSV de olas / BD 2025) a veces no traen etiqueta para
-    códigos que sí aparecen en `answers`. Este overlay,
-    revisado contra el cuestionario original, agrega/corrige esas etiquetas
-    SIN tocar las fuentes crudas. Semántica: si (wave, q, option) existe, se
-    reemplaza la etiqueta; si no, se inserta."""
+    Las fuentes a veces no traen etiqueta para códigos que sí aparecen en `answers`. 
+    Este overlay agrega/corrige esas etiquetas SIN tocar las fuentes crudas. 
+    Regla: si (wave, q, option) existe, se reemplaza la etiqueta; si no, se inserta."""
 
     fixes_file = HERE / "overlays" / "options_fixes_approved.csv"
     if not fixes_file.exists():
-        print("\n(∅ sin options_fixes_approved.csv — se omite Capa B)")
+        print("\n(sin options_fixes_approved.csv — se omite reparación de etiquetas)")
         return
     con.execute(f"""
         CREATE TEMP TABLE _ofix AS
@@ -172,24 +157,22 @@ def apply_option_fixes(con: duckdb.DuckDBPyConnection) -> None:
         """)
     n = con.execute("SELECT COUNT(*) FROM _ofix").fetchone()[0]  # type: ignore
     con.execute("DROP TABLE _ofix")
-    print(f"\n▶ Capa B: {n} etiquetas de opción reparadas desde {fixes_file.name}")
+    print(f"\n▶ {n} etiquetas de opción reparadas desde {fixes_file.name}")
 
 
 def apply_question_type_fixes(con: duckdb.DuckDBPyConnection) -> None:
     """Re-tipa preguntas desde db/overlays/question_type_fixes_approved.csv.
 
     Algunas preguntas vienen catalogadas como `numerica` en la fuente pero son
-    en realidad IDENTIFICADORES codificados (colonia de destino, ruta de camión):
-    sus valores son códigos, no cantidades, así que promediarlos no tiene sentido.
-    Este overlay corrige `q_type` SIN tocar las fuentes crudas, para que el motor
-    las trate como categóricas.
+    en realidad IDENTIFICADORES (colonia de destino, ruta de camión).
+    
+    Este overlay corrige `q_type` SIN tocar las fuentes crudas.
 
-    Como venían tipadas numéricas, sus respuestas se cargaron en `answers.value`
-    (con `option_id` NULO); el motor categórico agrupa por `option_id`, así que
-    aquí también se migra el código `value → option_id` para esas preguntas."""
+    Aquí también se migra el código `value → option_id` para esas preguntas."""
+
     fixes_file = HERE / "overlays" / "question_type_fixes_approved.csv"
     if not fixes_file.exists():
-        print("\n(∅ sin question_type_fixes_approved.csv — se omite re-tipado)")
+        print("\n(sin question_type_fixes_approved.csv — se omite re-tipado)")
         return
     con.execute(f"""
         CREATE TEMP TABLE _tfix AS
@@ -209,8 +192,9 @@ def apply_question_type_fixes(con: duckdb.DuckDBPyConnection) -> None:
         JOIN questions q ON q.wave_id = f.wave_id AND q.q_id = f.question_id
                         AND q.q_type = f.q_type
         """).fetchone()[0]  # type: ignore
+    
     # Migrar el código de `value` a `option_id` sólo para las re-tipadas a
-    # categórica (sus respuestas se cargaron como numéricas).
+    # categórica.
     con.execute("""
         UPDATE answers a
         SET option_id = CAST(a.value AS BIGINT), value = NULL
@@ -227,27 +211,20 @@ def apply_question_type_fixes(con: duckdb.DuckDBPyConnection) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Conceptos — armonización entre años
+# Armonización entre años
 # ---------------------------------------------------------------------------
-# Un CONCEPTO agrupa la misma pregunta a través de las encuestas de varios años,
-# de modo que `group_by="year"` pueda compararla en el tiempo.
+# Un CONCEPTO agrupa la misma pregunta a través los años años, de modo que 
+# `group_by="year"` pueda compararla en el tiempo.
 #
-# TODO el insumo es HECHO A MANO y vive en dos CSV:
+# Todo el insumo es HECHO A MANO y vive en dos CSV:
 #
 #   concept_equivalences.csv
 #       Un renglón por PAR de preguntas equivalentes entre dos olas. Los pares se
-#       encadenan de forma transitiva (2021↔2022, 2022↔2023, … → un concepto de
-#       varias olas), así que agregar una ola nueva es agregar RENGLONES, nunca
-#       tocar código. `decision`=comparable|exclude; `ctype`=numerica|categorica;
-#       `concept_id` opcional fija el id (se usa para los `attr_*`, que
-#       concept_recodes_approved.csv referencia por nombre); `source` distingue
-#       los pares verificados por el equipo de los congelados del viejo
-#       emparejador difuso (auditar/corregir a mano según se revisen).
+#       encadenan de forma transitiva.
 #
 #   concept_recodes_approved.csv
-#       Sólo para opciones RECODIFICADAS entre olas (p. ej. sexo 1/2 en 2021-22 vs
-#       0/1 en 2023-25), que los pares no pueden expresar. Una ola cubierta por un
-#       recode aporta EXACTAMENTE las equivalencias declaradas y nada más.
+#       Sólo para opciones RECODIFICADAS entre olas.
+
 SENT_CODES = {7777, 8888, 9999}  # No aplica / No sabe / No contesta
 SENT_LABEL_RE = re.compile(r"no\s*(sabe|contest|aplica|respond)", re.I)
 SENT_CANON = {
@@ -271,6 +248,7 @@ def load_concepts(con: duckdb.DuckDBPyConnection) -> None:
     concepts_dir = HERE / "concepts"
     equivalences_dir = concepts_dir / "concept_equivalences.csv"
     recodes_dir = concepts_dir / "concept_recodes_approved.csv"
+
     if not equivalences_dir.exists():
         print(
             f"\n⚠️  SIN CONCEPTOS: falta {equivalences_dir.relative_to(ROOT)}."
@@ -365,7 +343,6 @@ def load_concepts(con: duckdb.DuckDBPyConnection) -> None:
             "concept_id": cid,
             "label": label[:80],
             "q_type": ctype,
-            "comparable": True,
         }
         members[cid] = nodes
 
@@ -456,11 +433,8 @@ def load_concepts(con: duckdb.DuckDBPyConnection) -> None:
 
     # --- escribir a la BD -----------------------------------------------------
     con.executemany(
-        "INSERT INTO concepts (concept_id, label, q_type, comparable) VALUES (?,?,?,?)",
-        [
-            (c["concept_id"], c["label"], c["q_type"], c["comparable"])
-            for c in concepts.values()
-        ],
+        "INSERT INTO concepts (concept_id, label, q_type) VALUES (?,?,?)",
+        [(c["concept_id"], c["label"], c["q_type"]) for c in concepts.values()],
     )
     con.executemany(
         "UPDATE questions SET concept_id = ? WHERE wave_id = ? AND q_id = ?",
@@ -528,7 +502,7 @@ def _validate(con: duckdb.DuckDBPyConnection) -> None:
         ).fetchone()[ # type: ignore
             0
         ]  # type: ignore
-        # Integridad EAV: exactamente uno de (option_id, value).
+        # Integridad: exactamente uno de (option_id, value).
         bad = con.execute(
             """
             SELECT COUNT(*) FROM answers WHERE wave_id = ?
@@ -570,10 +544,10 @@ def main() -> None:
         load_wave_2025(con)
         con.execute("DETACH src")
 
-        load_wave_csv(con, "2024", 2024, "Encuesta 2024")
-        load_wave_csv(con, "2023", 2023, "Encuesta 2023")
-        load_wave_csv(con, "2022", 2022, "Encuesta 2022")
-        load_wave_csv(con, "2021", 2021, "Encuesta 2021")
+        load_wave_csv(con, "2024", 2024, "Así Vamos 2024")
+        load_wave_csv(con, "2023", 2023, "Así Vamos 2023")
+        load_wave_csv(con, "2022", 2022, "Así Vamos 2022")
+        load_wave_csv(con, "2021", 2021, "Así Vamos 2021")
 
         apply_option_fixes(con)
         apply_question_type_fixes(con)
