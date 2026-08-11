@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
-import { Calendar } from 'lucide-vue-next'
-import { state, selectedQuestion, setWave } from '../store.js'
+import { Calendar, PanelLeft } from 'lucide-vue-next'
+import { state, selectedQuestion, setWave, toggleSidebar } from '../store.js'
 
 const questionText = computed(() =>
   state.queryMode === 'ai'
@@ -20,9 +20,14 @@ function onWaveChange(e) {
     class="bg-white border-b border-[#e2e8f0] px-8 py-4 flex items-center justify-between gap-6"
   >
     <div class="flex items-center gap-2 min-w-0">
-      <div class="rounded-full shrink-0">
-        <img src="/minilogo.webp" class="size-8 max-w-none" />
-      </div>
+      <button
+        v-if="!state.sidebarOpen"
+        @click="toggleSidebar"
+        title="Mostrar panel"
+        class="shrink-0 p-2 rounded-lg text-[#64748b] hover:text-[#fb7e50] hover:bg-[#f8fafc] transition-colors cursor-pointer"
+      >
+        <PanelLeft class="size-5" />
+      </button>
       <h2
         class="font-['Poppins'] text-lg whitespace-nowrap overflow-x-auto min-w-0 uppercase text-[#fb7e50] font-extrabold"
       >

@@ -20,6 +20,7 @@ export const state = reactive({
   loading: false,
   error: null,
   queryMode: 'manual',
+  sidebarOpen: true,
   chatMessages: [],
   pendingChats: [], // Ids de las conversaciones con una petición activa.
   conversations: [],
@@ -359,6 +360,10 @@ export async function runCurrentQuery() {
 
 export function setQueryMode(mode) {
   state.queryMode = mode
+}
+
+export function toggleSidebar() {
+  state.sidebarOpen = !state.sidebarOpen
 }
 
 // ── Chat history (localStorage) ────────────────────────────────────────────
