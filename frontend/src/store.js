@@ -227,33 +227,42 @@ export const sqlPreview = computed(() => {
 
 export const canRun = computed(() => !!state.questionId && !state.loading)
 
+// Trae los catálogos de una ola.
+// Sin `waveId` el servidor responde con la ola marcada por `is_default`.
+async function fetchCatalog(waveId) {
+  const [questions, attributes, cities, presets] = await Promise.all([
+    api.fetchQuestions(waveId),
+    api.fetchAttributes(waveId),
+    api.fetchCities(waveId),
+    api.fetchPresets(waveId),
+  ])
+  return { questions, attributes, cities, presets }
+}
+
+function applyCatalog(catalog) {
+  state.questions = catalog.questions
+  state.attributes = catalog.attributes
+  state.cities = catalog.cities
+  state.presets = catalog.presets
+}
+
 // Load the wave-scoped catalogs (questions/attributes/cities) for state.waveId.
 async function loadCatalog() {
-  // Presets are wave-scoped: their filter values (e.g. sexo) are recoded per
-  // wave so "MUJERES por unidad geográfica" filters women in every wave.
-  const [qs, attrs, cities, presets] = await Promise.all([
-    api.fetchQuestions(state.waveId),
-    api.fetchAttributes(state.waveId),
-    api.fetchCities(state.waveId),
-    api.fetchPresets(state.waveId),
-  ])
-  state.questions = qs
-  state.attributes = attrs
-  state.cities = cities
-  state.presets = presets
+  applyCatalog(await fetchCatalog(state.waveId))
 }
 
 export async function init() {
   try {
-    const [waves, recodes] = await Promise.all([
+    const [waves, recodes, catalog] = await Promise.all([
       api.fetchWaves(),
       api.fetchRecodes(),
+      fetchCatalog(),
     ])
     state.waves = waves
     state.waveId =
       (waves.find((w) => w.is_default) || waves[0] || {}).wave_id || ''
     state.recodes = recodes
-    await loadCatalog()
+    applyCatalog(catalog)
     loadConversations()
   } catch (e) {
     state.error = 'Error conectando al servidor'
