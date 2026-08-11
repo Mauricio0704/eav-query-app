@@ -37,13 +37,13 @@ Cada tabla de datos lleva `wave_id` (año de la ola) como parte de la PK, así q
 varias olas coexisten sin colisionar. Ver `db/schema.sql`.
 
 ```sql
-waves                 (wave_id PK, year, label, period, n_respondents, notes)
+waves                 (wave_id PK, year, label, n_respondents, notes)
 answers               (wave_id, respondent_id, question_id, option_id, value)
 options               (wave_id, question_id, option_id) PK, option_label, concept_option_id
 questions             (wave_id, q_id) PK, q_text, q_section, q_type, q_notes, q_info, q_block, concept_id
 respondent_attributes (wave_id, respondent_id, attribute) PK, question_id, value
 responses             (wave_id, respondent_id) PK, is_initial_respondent, nombre, factor_cvnl, city_id
-concepts              (concept_id PK, label, q_type, comparable)
+concepts              (concept_id PK, label, q_type)
 concept_options       (concept_id, concept_option_id PK, label, sort_order)
 ```
 
@@ -56,6 +56,24 @@ La etiqueta legible de un `option_id` vive en `options`. Los filtros
 demográficos viven en `respondent_attributes`, donde `attribute` es un nombre
 amigable (`sexo`) keyeado a un `question_id` de la encuesta, y `value` es el
 `option_id` cuya etiqueta está en `options`.
+
+### Por qué `answers` no tiene PK ni FK
+
+Las dos ausencias son deliberadas y parecen errores si no se documentan — no las
+"arregles" sin leer esto:
+
+- **Sin PRIMARY KEY.** `option_id` es NULL en las preguntas numéricas, así que no
+  puede formar parte de una PK. Además un índice ART sobre 1.1M+ renglones no
+  ayuda a los scans/agregados que hace el motor (DuckDB es columnar y poda por
+  zone-maps) y engorda el archivo. La unicidad de
+  `(wave_id, respondent_id, question_id)` se valida en `build_db.py`, no en el
+  esquema.
+- **Sin FOREIGN KEY.** Existen ~76 referencias `(question_id, option_id)` sin
+  fila correspondiente en `options`; el backend ya las maneja con `LEFT JOIN`.
+  Una FK las rechazaría y el build fallaría.
+
+`answers` además se ordena **físicamente** al cargar (ver `build_db.py`) para que
+DuckDB pode por zone-maps al filtrar por pregunta.
 
 
 ## Motor de consultas (`backend/main.py`)
