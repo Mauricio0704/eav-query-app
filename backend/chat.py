@@ -311,13 +311,14 @@ def _exec_query(args: dict) -> tuple[dict | None, dict[str, Any], dict[str, Any]
 
     `effective_query_for_ui` describe la consulta que REALMENTE se ejecutó
     (q_id ya traducido a la ola pedida + año), para que la tarjeta del chat no
-    muestre el q_id del catálogo (p. ej. p111 de 2025) cuando en realidad se
-    consultó otra ola (p93 de 2023)."""
+    muestre el q_id del año default cuando en realidad se consultó otro."""
     from main import run_query, QueryRequest, _default_wave
 
     group_by = args.get("group_by") or "answer"
     wave_id = args.get("wave_id") or None
     question_id = args.get("question_id")
+    if question_id is None:
+        raise ValueError("Falta el identificador de la pregunta.")
     year_label = (
         "comparación entre años" if group_by == "year" else (wave_id or _default_wave())
     )
