@@ -503,7 +503,7 @@ export async function sendChatMessage(text) {
     appendToConversation(convId, {
       id: msgId(),
       role: 'assistant',
-      text: `Lo siento, ocurrió un error: ${e.message}`,
+      text: `Lo siento, ocurrió un error.`,
       error: true,
     })
   } finally {
