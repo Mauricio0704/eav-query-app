@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modo IA: el ciclo de tool use</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Rubik:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #fcefe4;
+      --color-ink:     #161616;
+      --color-muted:   #6b6663;
+      --color-accent:  #fc6656;
+      --font-sans:     'Rubik', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Secuencia · modo IA</p>
+    <h1>El modelo sólo actúa llamando a la herramienta</h1>
+
+    <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="seqia-title seqia-desc">
+      <title id="seqia-title">Modo IA: el ciclo de tool use</title>
+      <desc id="seqia-desc">Secuencia de una pregunta en lenguaje natural: el router aplica el límite de abuso antes de gastar cuota, el ciclo de tool use alterna entre Gemini y el motor de consultas hasta cuatro rondas, y el modelo redacta la respuesta sólo con las filas que devolvió run_query, sin emitir SQL en ningún momento.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6b6663"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#fc6656"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#7e33c3"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#fcefe4"/>
+
+      <!-- ============ FRAGMENTO LOOP (antes que líneas de vida) ============ -->
+      <rect x="608" y="296" width="568" height="168" rx="4" fill="rgba(22,22,22,0.02)" stroke="rgba(22,22,22,0.22)" stroke-width="1"/>
+      <rect x="608" y="296" width="40" height="16" rx="2" fill="#fcefe4" stroke="rgba(22,22,22,0.22)" stroke-width="1"/>
+      <text x="628" y="308" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">LOOP</text>
+      <text x="620" y="328" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.04em">[mientras pida datos · máx 4 rondas]</text>
+
+      <!-- ============ LÍNEAS DE VIDA ============ -->
+      <line x1="136" y1="128" x2="136" y2="592" stroke="rgba(22,22,22,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="388" y1="128" x2="388" y2="592" stroke="rgba(22,22,22,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="640" y1="128" x2="640" y2="592" stroke="rgba(22,22,22,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="892" y1="128" x2="892" y2="592" stroke="rgba(22,22,22,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="1144" y1="128" x2="1144" y2="592" stroke="rgba(22,22,22,0.20)" stroke-width="1" stroke-dasharray="3,3"/>
+
+      <!-- ============ BARRAS DE ACTIVACIÓN ============ -->
+      <rect x="384" y="176" width="8" height="384" fill="rgba(22,22,22,0.06)" stroke="#6b6663" stroke-width="0.8"/>
+      <rect x="636" y="272" width="8" height="256" fill="rgba(22,22,22,0.06)" stroke="#6b6663" stroke-width="0.8"/>
+      <rect x="888" y="352" width="8" height="32" fill="rgba(22,22,22,0.06)" stroke="#6b6663" stroke-width="0.8"/>
+      <rect x="1140" y="416" width="8" height="32" fill="rgba(22,22,22,0.06)" stroke="#6b6663" stroke-width="0.8"/>
+
+      <!-- ============ MENSAJES ============ -->
+
+      <!-- 1. pregunta del usuario -->
+      <line x1="136" y1="176" x2="384" y2="176" stroke="#6b6663" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="224" y="156" width="76" height="12" rx="2" fill="#fcefe4"/>
+      <text x="262" y="167" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">POST /API/CHAT</text>
+
+      <!-- 2. límite de abuso, antes de gastar cuota -->
+      <path d="M392,208 H428 Q436,208 436,216 V232 Q436,240 428,240 H396" fill="none" stroke="#6b6663" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="444" y="218" width="56" height="12" rx="2" fill="#fcefe4"/>
+      <text x="448" y="228" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.06em">RATE LIMIT</text>
+
+      <!-- 3. el SDK bloquea: fuera del event loop -->
+      <line x1="392" y1="272" x2="636" y2="272" stroke="#6b6663" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="486" y="252" width="56" height="12" rx="2" fill="#fcefe4"/>
+      <text x="514" y="263" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">THREADPOOL</text>
+
+      <!-- 4. prompt + declaración de la herramienta -->
+      <line x1="644" y1="352" x2="888" y2="352" stroke="#7e33c3" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="728" y="332" width="76" height="12" rx="2" fill="#fcefe4"/>
+      <text x="766" y="343" fill="#7e33c3" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PROMPT + TOOLS</text>
+
+      <!-- 5. el modelo pide datos: nunca SQL -->
+      <line x1="888" y1="384" x2="644" y2="384" stroke="#7e33c3" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+      <rect x="730" y="364" width="72" height="12" rx="2" fill="#fcefe4"/>
+      <text x="766" y="375" fill="#7e33c3" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FUNCTION_CALL</text>
+
+      <!-- 6. la misma función que llama la UI manual -->
+      <line x1="644" y1="416" x2="1140" y2="416" stroke="#6b6663" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="740" y="396" width="52" height="12" rx="2" fill="#fcefe4"/>
+      <text x="766" y="407" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RUN_QUERY</text>
+
+      <!-- 7. resumen de filas ponderadas -->
+      <line x1="1140" y1="448" x2="644" y2="448" stroke="#6b6663" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <rect x="734" y="428" width="64" height="12" rx="2" fill="#fcefe4"/>
+      <text x="766" y="439" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FILAS + BASE</text>
+
+      <!-- 8. ronda sin function_call: el modelo redacta -->
+      <line x1="892" y1="496" x2="644" y2="496" stroke="#7e33c3" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow-link)"/>
+      <rect x="736" y="476" width="60" height="12" rx="2" fill="#fcefe4"/>
+      <text x="766" y="487" fill="#7e33c3" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TEXTO FINAL</text>
+
+      <!-- 9. respuesta + las consultas efectivas -->
+      <line x1="636" y1="528" x2="392" y2="528" stroke="#6b6663" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+      <rect x="482" y="508" width="64" height="12" rx="2" fill="#fcefe4"/>
+      <text x="514" y="519" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REPLY + DATA</text>
+
+      <!-- 10. respuesta al navegador -->
+      <line x1="384" y1="560" x2="140" y2="560" stroke="#fc6656" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <rect x="234" y="540" width="56" height="12" rx="2" fill="#fcefe4"/>
+      <text x="262" y="551" fill="#fc6656" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">200 · JSON</text>
+
+      <!-- ============ ACTORES ============ -->
+
+      <!-- ChatPanel -->
+      <rect x="40" y="56" width="192" height="72" rx="6" fill="#fcefe4"/>
+      <rect x="40" y="56" width="192" height="72" rx="6" fill="rgba(107,102,99,0.10)" stroke="#7d7873" stroke-width="1"/>
+      <rect x="48" y="62" width="24" height="12" rx="2" fill="transparent" stroke="rgba(125,120,115,0.40)" stroke-width="0.8"/>
+      <text x="60" y="71" fill="#6b6663" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">UI</text>
+      <text x="136" y="100" fill="#161616" font-size="12" font-weight="600" font-family="'Rubik', sans-serif" text-anchor="middle">ChatPanel</text>
+      <text x="136" y="116" fill="#6b6663" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">navegador</text>
+
+      <!-- Router de chat -->
+      <rect x="292" y="56" width="192" height="72" rx="6" fill="#fcefe4"/>
+      <rect x="292" y="56" width="192" height="72" rx="6" fill="#ffffff" stroke="#161616" stroke-width="1"/>
+      <rect x="300" y="62" width="32" height="12" rx="2" fill="transparent" stroke="rgba(22,22,22,0.40)" stroke-width="0.8"/>
+      <text x="316" y="71" fill="#161616" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HTTP</text>
+      <text x="388" y="100" fill="#161616" font-size="12" font-weight="600" font-family="'Rubik', sans-serif" text-anchor="middle">Router de chat</text>
+      <text x="388" y="116" fill="#6b6663" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">routers/chat.py</text>
+
+      <!-- Ciclo de tool use -->
+      <rect x="544" y="56" width="192" height="72" rx="6" fill="#fcefe4"/>
+      <rect x="544" y="56" width="192" height="72" rx="6" fill="#ffffff" stroke="#161616" stroke-width="1"/>
+      <rect x="552" y="62" width="32" height="12" rx="2" fill="transparent" stroke="rgba(22,22,22,0.40)" stroke-width="0.8"/>
+      <text x="568" y="71" fill="#161616" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LOOP</text>
+      <text x="640" y="100" fill="#161616" font-size="12" font-weight="600" font-family="'Rubik', sans-serif" text-anchor="middle">Ciclo de tool use</text>
+      <text x="640" y="116" fill="#6b6663" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">conversation.py</text>
+
+      <!-- Gemini -->
+      <rect x="796" y="56" width="192" height="72" rx="6" fill="#fcefe4"/>
+      <rect x="796" y="56" width="192" height="72" rx="6" fill="rgba(22,22,22,0.03)" stroke="rgba(22,22,22,0.30)" stroke-width="1"/>
+      <rect x="804" y="62" width="28" height="12" rx="2" fill="transparent" stroke="rgba(22,22,22,0.30)" stroke-width="0.8"/>
+      <text x="818" y="71" fill="#6b6663" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LLM</text>
+      <text x="892" y="100" fill="#161616" font-size="12" font-weight="600" font-family="'Rubik', sans-serif" text-anchor="middle">Gemini</text>
+      <text x="892" y="116" fill="#6b6663" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">gemini-2.5-flash</text>
+
+      <!-- Motor de consultas (FOCAL) -->
+      <rect x="1048" y="56" width="192" height="72" rx="6" fill="#fcefe4"/>
+      <rect x="1048" y="56" width="192" height="72" rx="6" fill="rgba(252,102,86,0.08)" stroke="#fc6656" stroke-width="1.2"/>
+      <rect x="1056" y="62" width="40" height="12" rx="2" fill="transparent" stroke="rgba(252,102,86,0.40)" stroke-width="0.8"/>
+      <text x="1076" y="71" fill="#fc6656" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">MOTOR</text>
+      <text x="1144" y="100" fill="#161616" font-size="12" font-weight="600" font-family="'Rubik', sans-serif" text-anchor="middle">Motor de consultas</text>
+      <text x="1144" y="116" fill="#6b6663" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">run_query · DuckDB</text>
+
+      <!-- ============ LEYENDA ============ -->
+      <line x1="40" y1="628" x2="1240" y2="628" stroke="rgba(22,22,22,0.10)" stroke-width="0.8"/>
+      <text x="40" y="644" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEYENDA</text>
+
+      <line x1="152" y1="638" x2="176" y2="638" stroke="#6b6663" stroke-width="1.2"/>
+      <text x="184" y="642" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace">llamada</text>
+
+      <line x1="340" y1="638" x2="364" y2="638" stroke="#6b6663" stroke-width="1" stroke-dasharray="5,4"/>
+      <text x="372" y="642" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace">retorno</text>
+
+      <line x1="528" y1="638" x2="552" y2="638" stroke="#7e33c3" stroke-width="1.2"/>
+      <text x="560" y="642" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace">API externa</text>
+
+      <line x1="760" y1="638" x2="784" y2="638" stroke="#fc6656" stroke-width="1.2"/>
+      <text x="792" y="642" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace">respuesta final</text>
+
+      <rect x="1000" y="632" width="12" height="12" rx="2" fill="rgba(252,102,86,0.08)" stroke="#fc6656" stroke-width="0.8"/>
+      <text x="1020" y="642" fill="#6b6663" font-size="8" font-family="'Geist Mono', monospace">camino validado</text>
+    </svg>
+  </div>
+</body>
+</html>
