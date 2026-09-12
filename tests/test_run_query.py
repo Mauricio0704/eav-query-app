@@ -312,11 +312,12 @@ def test_year_sql_lists_one_query_per_wave():
 
 
 def test_year_numeric_empty_base_does_not_crash():
-    """Una pregunta-matriz (encabezado de batería) tiene concept_id pero 0 answers
-    en sus olas, así que `total_respondents` es None por año. La comparación
-    numérica por año no debe reventar sumando None; devuelve una tabla vacía
-    coherente con base 0. (Regresión: TypeError int += None en _year_comparison.)"""
-    r = run_query(QueryRequest(question_id="p95", group_by="year", wave_id="2021"))
+    """`2021 cp3_a1` tiene concept_id (c2025_cp4_2) pero ninguna de sus olas
+    aporta un respondiente inicial, así que `total_respondents` es None por año.
+    La comparación numérica por año no debe reventar sumando None; devuelve una
+    tabla vacía coherente con base 0. (Regresión: TypeError int += None en
+    year_comparison.)"""
+    r = run_query(QueryRequest(question_id="cp3_a1", group_by="year", wave_id="2021"))
     assert r["format"] == "pivot"
     assert r["total_respondents"] == 0
     assert all(b["base"] == 0 for b in r["year_bases"])

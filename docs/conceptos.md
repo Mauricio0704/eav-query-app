@@ -111,7 +111,7 @@ que nadie carga hasta revisarlo. Cada renglón trae `sim` para priorizar.
 
 ## Cómo lo consume el motor
 
-`_year_comparison()` en `backend/main.py`:
+`_year_comparison()` en `backend/query_engine.py`:
 1. Resuelve el `concept_id` de la pregunta seleccionada.
 2. Para cada ola miembro, corre el camino plano (ponderado por el `factor_cvnl`
    de esa ola).
@@ -129,6 +129,9 @@ por cada opción, `{año: {option_id, label}}`. La UI usa esto para marcar (con 
 tooltip) las opciones cuya **etiqueta** varió entre años, mostrando los distintos
 nombres que tuvo (p. ej. "Hombre / Masculino"). Así la comparación queda alineada
 sin esconder que la respuesta se llamó distinto según el año. No va al CSV.
+
+La bitácora del trabajo de armonización —qué se propuso, qué se verificó y qué
+se descartó, eslabón por eslabón— vive en [crosswalk/](crosswalk/README.md).
 
 Ver también: [arquitectura.md](arquitectura.md) ·
 [pipeline-datos.md](pipeline-datos.md) · [desarrollo.md](desarrollo.md).
