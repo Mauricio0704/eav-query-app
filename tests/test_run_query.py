@@ -1,4 +1,4 @@
-"""Tests for the core query engine (main.run_query).
+"""Tests for the core query engine (services.query.runner.run_query).
 
 Covers the four shapes (flat/pivot × numeric/categorical) plus the behaviours
 that previously broke: numeric frequency breakdown, single 'Promedio' stat row,
@@ -7,8 +7,13 @@ city-filter column narrowing, recode grouping, weighting, and sentinel handling.
 
 import pytest
 
-import main
-from main import run_query, QueryRequest, _csv_fill_empty
+from fastapi import HTTPException
+
+from services.catalog_service import get_questions
+from csv_export import _csv_fill_empty
+from db_runtime import get_conn
+from services.query.models import QueryRequest
+from services.query.runner import run_query
 
 SENTINELS = {7777, 8888, 9999}
 
@@ -49,7 +54,7 @@ def _flat_base(r):
 
 
 def _raw_weighted_total(wave, qid):
-    return main.get_conn().execute(
+    return get_conn().execute(
         """
         SELECT ROUND(SUM(r.factor_cvnl))::BIGINT
         FROM answers a
@@ -59,7 +64,7 @@ def _raw_weighted_total(wave, qid):
           AND r.is_initial_respondent = 1
         """,
         [wave, qid],
-    ).fetchone()[0]
+    ).fetchone()[0] # type: ignore
 
 
 def test_flat_categorical_base_equals_raw_total(categorical_qid):
@@ -79,7 +84,7 @@ def test_flat_categorical_uncatalogued_surfaces_as_codigo():
     sin etiqueta aflora como 'Código N' y se cuenta — no desaparece. Busca una
     pregunta con hueco dinámicamente; si ya no queda ninguna (Capa B completa en
     todas las olas), se omite."""
-    hit = main.get_conn().execute(
+    hit = get_conn().execute(
         """
         SELECT a.wave_id, a.question_id
         FROM answers a
@@ -168,7 +173,7 @@ def test_recode_group_by(numeric_qid):
 def _cross_qids():
     """(A, B): a small categorical question A and a categorical breakdown B,
     both in the default wave, A != B. Prefers a binary Sí/No B for a clean table."""
-    qs = main.list_questions()
+    qs = get_questions()
     cats = [q for q in qs if q["q_type"] != "numerica" and q["options"]]
     binary = next(
         (q for q in cats if 2 <= len(q["options"]) <= 4 and len(q["options"]) <= 4),
@@ -185,7 +190,7 @@ def test_cross_tab_columns_are_breakdown_options():
     r = run_query(QueryRequest(question_id=a, group_by=b))
     assert r["format"] == "pivot"
     b_labels = {o["label"] for o in next(
-        q for q in main.list_questions() if q["q_id"] == b)["options"]}
+        q for q in get_questions() if q["q_id"] == b)["options"]}
     group_cols = set(r["counts"]["columns"][2:-1])
     # every column label is one of B's option labels (Código N fallbacks aside)
     assert group_cols <= b_labels | {c for c in group_cols if c.startswith("Código ")}
@@ -219,7 +224,7 @@ def test_cross_tab_numeric_main_has_promedio_row():
     """A numeric main question crossed by a categorical B still gets its weighted
     Promedio row (the group expression is independent of the main q_type)."""
     numeric = next(
-        q["q_id"] for q in main.list_questions() if q["q_type"] == "numerica")
+        q["q_id"] for q in get_questions() if q["q_type"] == "numerica")
     _, b = _cross_qids()
     r = run_query(QueryRequest(question_id=numeric, group_by=b))
     assert r["format"] == "pivot"
@@ -228,7 +233,7 @@ def test_cross_tab_numeric_main_has_promedio_row():
 
 def test_cross_tab_self_raises_400():
     _, b = _cross_qids()
-    with pytest.raises(main.HTTPException) as exc:
+    with pytest.raises(HTTPException) as exc:
         run_query(QueryRequest(question_id=b, group_by=b))
     assert exc.value.status_code == 400
 
@@ -237,9 +242,9 @@ def test_cross_tab_numeric_breakdown_raises_400():
     """Numeric questions are not allowed as the breakdown variable (v1): they'd
     explode into dozens of columns. Rejected with a clear message, not 'Unknown'."""
     numeric = next(
-        q["q_id"] for q in main.list_questions() if q["q_type"] == "numerica")
+        q["q_id"] for q in get_questions() if q["q_type"] == "numerica")
     a, _ = _cross_qids()
-    with pytest.raises(main.HTTPException) as exc:
+    with pytest.raises(HTTPException) as exc:
         run_query(QueryRequest(question_id=a, group_by=numeric))
     assert exc.value.status_code == 400
     assert "numérica" in exc.value.detail
@@ -333,7 +338,7 @@ def _pairs(decision):
 
 
 def _concept_of(wave, qid):
-    row = main.get_conn().execute(
+    row = get_conn().execute(
         "SELECT concept_id FROM questions WHERE wave_id=? AND q_id=?", [wave, qid]
     ).fetchone()
     return row[0] if row else None
@@ -397,20 +402,20 @@ def test_csv_fill_empty_year_view_uses_one_label_col():
 
 # ── error handling ──────────────────────────────────────────────────────────
 def test_unknown_question_raises_404():
-    with pytest.raises(main.HTTPException) as exc:
+    with pytest.raises(HTTPException) as exc:
         run_query(QueryRequest(question_id="__does_not_exist__"))
     assert exc.value.status_code == 404
 
 
 # ── SQL-injection guard (allow-list validation) ─────────────────────────────
 def test_unknown_group_by_raises_400(categorical_qid):
-    with pytest.raises(main.HTTPException) as exc:
+    with pytest.raises(HTTPException) as exc:
         run_query(QueryRequest(question_id=categorical_qid, group_by="sexo'; DROP--"))
     assert exc.value.status_code == 400
 
 
 def test_unknown_filter_attribute_raises_400(categorical_qid):
-    with pytest.raises(main.HTTPException) as exc:
+    with pytest.raises(HTTPException) as exc:
         run_query(
             QueryRequest(
                 question_id=categorical_qid,

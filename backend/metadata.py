@@ -89,6 +89,18 @@ ATTRIBUTE_LABELS = {
     "tipo_trabajo": "Tipo de trabajo",
 }
 
+# Qué orden de `DESIRED_ORDERS` usa cada atributo cuando es el group_by del
+# pivote. Varios atributos comparten un mismo orden (los dos de escolaridad).
+ATTRIBUTE_TO_ORDER_KEY = {
+    "sexo": "sexo",
+    "ingreso": "ingreso",
+    "edad_anos": "edad",
+    "tipo_escuela": "tipo_escuela",
+    "tipo_trabajo": "tipo_trabajo",
+    "nivel_max_estudios": "estudios",
+    "nivel_actual_estudios": "estudios",
+}
+
 DESIRED_ORDERS = {
     "sexo": [
         "Hombre",
@@ -244,37 +256,4 @@ PRESETS: list = [
         # pregunta seleccionada no tiene equivalencia entre olas.
         "requires_concept": True,
     },
-]
-
-
-DERIVED_NEXT: list[tuple[str, str]] = [
-    ("tiempo_trabajo", "p3_1"),
-    ("prestaciones", "p5_1"),
-    ("trabajo_formal", "p5_1"),
-    ("quehaceres_hogar", "p7_1"),
-    ("cuidados_personas", "p8_1"),
-    ("total_min_trabajo_rem_y_norem", "p1"),
-    ("ocio", "p9_1"),
-    ("tiempo_espera_consulta", "p103_1"),
-    ("al_menos_un_problema_mental", "p107_1"),
-    ("tiempo_espera", "p21_1"),
-    ("costo_total_viaje_redondo", "p24"),
-    ("tiempo_ida", "p27_1"),
-    ("tiempo_regreso", "p28_1"),
-    ("tiempo_total_traslado", "tiempo_ida"),
-    ("usa_transporte_publico", "p17"),
-    ("usa_metro", "p17"),
-    ("victima_tp", "p39_1"),
-    ("tiempo_camina", "p20_1"),
-    ("num_discriminaciones", "p89_1"),
-    ("al_menos_una_discriminacion", "p89_1"),
-    ("num_acciones_pc", "p161_1"),
-    ("al_menos_una_accion_pc", "p161_1"),
-    ("p56_ultimos_5_anios", "p55"),
-    ("p57_ultimos_5_anios", "p55"),
-    ("p58_ultimos_5_anios", "p55"),
-    ("p56_ultimos_10_anios", "p55"),
-    ("p57_ultimos_10_anios", "p55"),
-    ("p58_ultimos_10_anios", "p55"),
-    ("al_menos_un_problema_agua", "p66"),
 ]

@@ -88,8 +88,13 @@ Flujo típico:
 ```
 eav-queries/
 ├── backend/
-│   ├── main.py          # FastAPI, motor de consultas, builder SQL seguro
-│   ├── chat.py          # Integración Gemini
+│   ├── main.py          # Arma la app FastAPI (middleware, routers, static)
+│   ├── routers/         # Capa HTTP: endpoints delgados
+│   ├── services/        # Reglas de negocio, orquestación y cachés
+│   ├── services/query/  # Motor de consultas, builder SQL seguro
+│   ├── repositories/    # Único lugar con texto SQL fijo
+│   ├── db_runtime.py    # Conexión DuckDB de solo lectura
+│   ├── services/chat/   # Modo IA: prompts, SDK, tool use
 │   ├── metadata.py      # Rollups geográficos, recodes, presets, órdenes
 │   └── ratelimit.py     # Rate limiting del modo IA
 ├── frontend/

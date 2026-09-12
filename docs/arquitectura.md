@@ -76,7 +76,74 @@ Las dos ausencias son deliberadas y parecen errores si no se documentan — no l
 DuckDB pode por zone-maps al filtrar por pregunta.
 
 
-## Motor de consultas (`backend/main.py`)
+## Organización del backend
+
+`backend/main.py` sigue siendo el punto de entrada (`uvicorn main:app`), pero
+sólo **arma la app**: middleware, routers y el mount del front. No define
+endpoints ni lógica. Debajo hay tres capas:
+
+```
+routers/      → services/      → repositories/ → db_runtime
+(HTTP)          (reglas+caché)   (SQL fijo)      (conexión)
+```
+
+- `routers/` — endpoints delgados, cero lógica: `catalog.py` (preguntas,
+  atributos, ciudades, olas, recodes, presets), `query.py` (`/api/query` y la
+  descarga CSV) y `health.py` (diagnóstico).
+- `services/` — orquestación, reglas de negocio y **los `lru_cache`**:
+  `catalog_service.py` (arma el catálogo, traduce presets entre olas),
+  `wave_service.py` (resolución/validación de olas) y `ordering.py` (funciones
+  puras de ordenamiento, no tocan la base).
+- `repositories/` — **el único lugar donde vive texto SQL fijo**:
+  `survey_repository.py` (olas, preguntas, opciones) y
+  `responses_repository.py` (atributos demográficos, ciudades). Reciben un
+  `conn` abierto y devuelven filas crudas; no cachean ni validan.
+- `db_runtime.py` — dueño de la conexión DuckDB de solo lectura (`get_conn()`,
+  usable con `with`).
+- `config.py` carga `.env` y expone rutas de runtime como `DB_PATH` y
+  `STATIC_DIR`.
+- `csv_export.py` serializa el resultado del motor a CSV (`query_result_to_csv`)
+  y normaliza las celdas vacías.
+- `services/query/` **es** el motor, repartido por responsabilidad:
+  `models.py` (`QueryRequest`), `runner.py` (`run_query` y las cuatro formas),
+  `year_comparison.py` (la vista Año), `sql_builder.py` (los fragmentos de SQL
+  que se componen), `sentinels.py` (qué códigos son No sabe/No contesta) y
+  `pivot.py` (armado de las tablas y cubetas geográficas).
+- `services/chat/` es el modo IA: `prompts.py` (el texto que se le da al
+  modelo), `gemini.py` (lo único que sabe que el proveedor es Gemini),
+  `query_tool.py` (la herramienta `query`, que llama al motor) y
+  `conversation.py` (el ciclo de tool use). Sus endpoints están en
+  `routers/chat.py` como los demás.
+
+**Qué significa aquí “repositorio”.** Es *dónde vive el SQL*, no una costura
+para intercambiar la persistencia: la base es un archivo de solo lectura
+horneado en build, los tests corren contra datos reales a propósito y no hay
+escrituras. Interfaces/ABCs o un método de repositorio por endpoint serían
+ceremonia pura. Regla práctica: un servicio que sólo hace
+`return repo.x(conn, wave)` sobra — que el router llame al repositorio.
+
+`services/query/` es el único subsistema que **compone SQL en tiempo de
+ejecución** (el builder seguro), así que sus consultas armadas no pasan por
+`repositories/`, cuyas consultas son fijas y parametrizadas. Las consultas fijas
+que el motor traía adentro —tipo de pregunta, miembros de un concepto, catálogos
+de opciones, el barrido de centinelas— sí se movieron a repositorios.
+
+Dos decisiones que conviene conocer antes de tocarlo:
+
+- `runner` arma un `QueryContext` una sola vez (ola, pregunta, ponderación, SQL
+  de filtros, exclusión de centinelas) y cada forma de salida lee de ahí. Por eso
+  los armadores reciben un contexto y no diez parámetros sueltos.
+- `year_comparison` recibe `run_query` **como parámetro** en vez de importarlo:
+  el motor llama a la vista Año y la vista Año vuelve a llamar al motor, así que
+  inyectarlo deja la dependencia en un solo sentido y a la vista.
+
+Las dependencias van en **un solo sentido** —`routers`/`chat` → `services`
+(incluido `services/query`) → `repositories` → `db_runtime`— así que no hay imports diferidos ni
+orden de carga significativo: cualquier módulo se puede importar aislado.
+**Nada re-exporta**: cada consumidor —los tests incluidos— importa del módulo
+dueño del símbolo, así que `main` sólo contiene lo que de verdad es suyo (`app`).
+
+## Motor de consultas (`backend/query_engine.py`)
 
 Todo pasa por `run_query()` (`POST /api/query`). Según `group_by` y el tipo de
 pregunta hay **cuatro formas** más la comparación entre años:
@@ -124,7 +191,12 @@ pregunta y reutiliza el camino plano en cada ola, alineando opciones por
   **excluyen** de estadísticos numéricos (promedios). Además, la "regla de techo"
   detecta centinelas no estándar por pregunta numérica (ver
   `_extra_numeric_sentinels`): un código sospechoso (p. ej. 99, 999) sólo cuenta
-  como centinela si **excede** el valor real máximo de esa pregunta.
+  como centinela si **excede** el valor real máximo de esa pregunta. Esa regla
+  filtra `q_type='numerica'`, así que no ve las escalas que una ola guardó como
+  `categorica`; para ésas la vista Año descarta el valor cuando la **etiqueta**
+  de la opción es centinela (`_is_sentinel_label`). El criterio es por etiqueta
+  y **nunca por magnitud**: hay categorías sustantivas con código alto
+  (`2024 p52_5` código 6666) que un filtro a ciegas borraría.
 - **Modo IA por tool-use, no text-to-SQL.** El modelo no emite SQL: se le dan las
   **mismas** funciones de consulta que usa la UI y solo puede actuar
   invocándolas, así toda respuesta de IA corre por el mismo camino validado y

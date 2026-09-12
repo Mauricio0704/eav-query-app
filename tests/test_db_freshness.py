@@ -36,9 +36,9 @@ def _rows(path):
 
 @pytest.fixture(scope="module")
 def conn():
-    import main
+    import db_runtime
 
-    c = main.get_conn()
+    c = db_runtime.get_conn()
     yield c
     c.close()
 

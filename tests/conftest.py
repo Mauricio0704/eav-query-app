@@ -19,7 +19,8 @@ sys.path.insert(0, str(BACKEND))
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-import main # noqa: E402
+import main  # noqa: E402  (la app FastAPI vive aquí)
+from services.catalog_service import get_questions  # noqa: E402
 
 
 @pytest.fixture(scope="session")
@@ -29,7 +30,7 @@ def client():
 
 @pytest.fixture(scope="session")
 def questions():
-    return main.list_questions()
+    return get_questions()
 
 
 @pytest.fixture(scope="session")

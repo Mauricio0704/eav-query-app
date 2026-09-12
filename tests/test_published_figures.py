@@ -33,7 +33,8 @@ from pathlib import Path
 
 import pytest
 
-from main import run_query, QueryRequest
+from services.query.models import QueryRequest
+from services.query.runner import run_query
 
 FIXTURES = Path(__file__).parent / "published_figures.csv"
 
