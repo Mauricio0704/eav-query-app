@@ -54,12 +54,13 @@ Idempotente: **borra y reconstruye** la BD desde cero en cada corrida
 2. **`load_wave_2025`** — `ATTACH` de la BD original (solo lectura) e inserta la
    ola 2025 con su `wave_id`. La original nunca se modifica.
 3. **`load_wave_csv`** × 2024/2023/2022/2021 — inserta cada ola desde sus CSVs.
-4. **`apply_option_fixes`** — overlay Capa B (ver abajo).
-5. **`apply_question_type_fixes`** — overlay de re-tipado (ver abajo).
-6. **`load_concepts`** — arma la capa de conceptos EN MEMORIA desde
+4. **`apply_question_fixes`** — overlay de reparación de `questions` (ver abajo).
+5. **`apply_option_fixes`** — overlay Capa B (ver abajo).
+6. **`apply_question_type_fixes`** — overlay de re-tipado (ver abajo).
+7. **`load_concepts`** — arma la capa de conceptos EN MEMORIA desde
    `db/concepts/concept_equivalences.csv` (ver [conceptos.md](conceptos.md)).
    No lee ni escribe CSVs generados.
-7. **`_validate`** — chequeos de integridad.
+8. **`_validate`** — chequeos de integridad.
 
 
 ```bash
@@ -72,8 +73,54 @@ Idempotente: **borra y reconstruye** la BD desde cero en cada corrida
 El camino categórico usa `LEFT JOIN options`: las respuestas cuyo
 `option_id` no está en el catálogo **igual se cuentan** (como
 `"Código N"`). Si fuera `INNER JOIN`, esas respuestas se caerían, la base se
-encogería y todos los porcentajes se inflarían. Vive en `backend/main.py`, no en
+encogería y todos los porcentajes se inflarían. Vive en `backend/query_engine.py`, no en
 el build. Hay tests de regresión (`test_flat_categorical_base_equals_raw_total`).
+
+### Reparación del catálogo de preguntas
+**Archivo:** `db/overlays/question_fixes_approved.csv`
+**Función:** `apply_question_fixes(con)`
+
+El ETL de 2024 dejó **19 `q_id` que aparecen en `answers` pero no tienen renglón
+en `questions`**: 68,327 respuestas invisibles para la app y para la capa de
+conceptos. La causa está en el instrumento — la columna *Código* del
+`Cuestionario 2024.xlsx` viene **vacía** en esos reactivos —, y el ETL reaccionó
+de dos maneras: o escribió el catálogo bajo un nombre y las respuestas bajo otro
+(`p1081` contra `p108_1`, `p139_P` contra `p139`, `p55` contra `p55_1`), o no
+escribió el renglón en absoluto (`p7_1`, `p61_2`, `p8_2`).
+
+Esto no es sólo una pregunta que falta en el selector: **un par de
+`concept_equivalences.csv` que nombre un `q_id` sin renglón se ignora en
+silencio** —no falla, no crea concepto, no avisa— y uno que apunte al renglón
+vacío publica una columna en blanco en la vista Año.
+
+Tres acciones, aplicadas en ese orden:
+
+| acción | qué hace |
+|---|---|
+| `drop` | borra las respuestas de un `q_id` (duplicados exactos del ETL) |
+| `rename` | unifica bajo un solo nombre las dos mitades de una pregunta partida; toca `questions`, `options`, `answers` y `respondent_attributes` |
+| `insert` | da de alta la pregunta que no tiene ninguna mitad |
+
+```csv
+wave_id,action,question_id,target,q_text,q_section,q_type,reason
+2024,rename,p1081,p108_1,,,,"typo del ETL: falta el guion bajo"
+2024,insert,p7_1,,P 7 1 Vacaciones,economia_y_trabajo,categorica,"..."
+```
+
+Como el nombre destino nunca existe en la tabla que se renombra, un choque de PK
+sería un error de declaración y **revienta el build**.
+
+Al final, toda pregunta del overlay que quede `numerica` y traiga su dato en
+`answers.option_id` se **migra a `answers.value`** — el espejo de lo que hace el
+re-tipado de abajo en la dirección contraria. Eran cuatro (`p8_2`, `p9_2`,
+`p20_1`, `p20_2`: minutos y horas que el ETL cargó como si fueran códigos de
+opción, 11,442 respuestas).
+
+Las etiquetas que le falten a una pregunta dada de alta aquí van, como
+cualquier otra, en `options_fixes_approved.csv`.
+
+`tests/test_db_freshness.py::test_sin_q_id_huerfanos_en_2024` es el guard: falla
+si vuelve a aparecer un `q_id` huérfano en esa ola.
 
 ### Capa B — reparación del catálogo de opciones
 **Archivo:** `db/overlays/options_fixes_approved.csv`

@@ -123,6 +123,113 @@ def load_wave_csv(
 
 
 # ---------------------------------------------------------------------------
+# Reparar el catálogo de PREGUNTAS (overlay curado a mano)
+# ---------------------------------------------------------------------------
+def apply_question_fixes(con: duckdb.DuckDBPyConnection) -> None:
+    """Repara `questions` desde db/overlays/question_fixes_approved.csv.
+
+    El ETL de 2024 dejó 19 `q_id` que aparecen en `answers` pero no tienen
+    renglón en `questions` (68,327 respuestas inalcanzables). La causa es que la
+    columna *Código* del cuestionario viene vacía en esos reactivos: el ETL
+    escribió el catálogo bajo un nombre y las respuestas bajo otro, o no escribió
+    el renglón en absoluto. Sin renglón en `questions` la pregunta es invisible
+    para la app y cualquier par de `concept_equivalences` que la nombre se ignora
+    **en silencio**.
+
+    Tres acciones, en este orden:
+
+    ``drop``    borra las respuestas de un `q_id` (duplicados del ETL).
+    ``rename``  unifica bajo un solo nombre las dos mitades de una pregunta
+                partida entre `questions`/`options` y `answers`. Se aplica a las
+                cuatro tablas; como el nombre destino nunca existe en la tabla
+                que se renombra, un choque de PK sería un error de declaración y
+                revienta el build.
+    ``insert``  da de alta la pregunta que no tiene ninguna mitad.
+
+    Al final, toda pregunta del overlay que quede `numerica` y traiga su dato en
+    `answers.option_id` se migra a `answers.value` — el espejo de lo que
+    `apply_question_type_fixes` hace en la dirección contraria. Las etiquetas de
+    opción que falten se agregan aparte, en `options_fixes_approved.csv`."""
+
+    fixes_file = HERE / "overlays" / "question_fixes_approved.csv"
+    if not fixes_file.exists():
+        print("\n(sin question_fixes_approved.csv — se omite reparación de preguntas)")
+        return
+
+    with fixes_file.open(newline="", encoding="utf-8") as fh:
+        fixes = [r for r in csv.DictReader(fh) if r.get("wave_id")]
+
+    n_drop = n_ren = n_ins = 0
+    for r in fixes:
+        wave, action = r["wave_id"], r["action"]
+        qid, target = r["question_id"], r["target"]
+        if action == "drop":
+            con.execute(
+                "DELETE FROM answers WHERE wave_id = ? AND question_id = ?", [wave, qid]
+            )
+            con.execute(
+                "DELETE FROM options WHERE wave_id = ? AND question_id = ?", [wave, qid]
+            )
+            con.execute(
+                "DELETE FROM questions WHERE wave_id = ? AND q_id = ?", [wave, qid]
+            )
+            n_drop += 1
+        elif action == "rename":
+            con.execute(
+                "UPDATE questions SET q_id = ? WHERE wave_id = ? AND q_id = ?",
+                [target, wave, qid],
+            )
+            for table in ("options", "answers", "respondent_attributes"):
+                con.execute(
+                    f"UPDATE {table} SET question_id = ? "
+                    "WHERE wave_id = ? AND question_id = ?",
+                    [target, wave, qid],
+                )
+            n_ren += 1
+        elif action == "insert":
+            con.execute(
+                "INSERT INTO questions (wave_id, q_id, q_text, q_section, q_type) "
+                "VALUES (?, ?, ?, ?, ?)",
+                [wave, qid, r["q_text"], r["q_section"], r["q_type"]],
+            )
+            n_ins += 1
+        else:
+            sys.exit(f"ERROR: acción desconocida en {fixes_file.name}: {action!r}")
+
+    # Los reactivos numéricos traen sus minutos/horas en `option_id` porque el
+    # ETL no sabía su tipo. Ahí no sirven: los agregados numéricos leen `value`.
+    finales = {(r["wave_id"], r["target"] or r["question_id"]) for r in fixes}
+    n_mig = 0
+    for wave, qid in sorted(finales):
+        moved = con.execute(
+            """
+            UPDATE answers a SET value = CAST(a.option_id AS DOUBLE), option_id = NULL
+            FROM questions q
+            WHERE q.wave_id = a.wave_id AND q.q_id = a.question_id
+              AND a.wave_id = ? AND a.question_id = ?
+              AND q.q_type = 'numerica'
+              AND a.value IS NULL AND a.option_id IS NOT NULL
+            """,
+            [wave, qid],
+        ).fetchone()[0]  # type: ignore
+        n_mig += moved or 0
+
+    huerfanos = con.execute(
+        """
+        SELECT COUNT(*) FROM answers a
+        LEFT JOIN questions q ON q.wave_id = a.wave_id AND q.q_id = a.question_id
+        WHERE q.q_id IS NULL
+        """
+    ).fetchone()[0]  # type: ignore
+    print(
+        f"\n▶ Preguntas reparadas desde {fixes_file.name}: {n_ren} renombradas,"
+        f" {n_ins} dadas de alta, {n_drop} borradas"
+        f" ({n_mig:,} respuestas numéricas migradas option_id→value)"
+    )
+    print(f"  Respuestas sin renglón en questions: {huerfanos:,}")
+
+
+# ---------------------------------------------------------------------------
 # Aplicar reparación del catálogo de opciones (overlay curado a mano)
 # ---------------------------------------------------------------------------
 def apply_option_fixes(con: duckdb.DuckDBPyConnection) -> None:
@@ -549,6 +656,7 @@ def main() -> None:
         load_wave_csv(con, "2022", 2022, "Así Vamos 2022")
         load_wave_csv(con, "2021", 2021, "Así Vamos 2021")
 
+        apply_question_fixes(con)
         apply_option_fixes(con)
         apply_question_type_fixes(con)
         load_concepts(con)

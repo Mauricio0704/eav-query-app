@@ -25,6 +25,7 @@ EQUIV = ROOT / "db" / "concepts" / "concept_equivalences.csv"
 RECODES = ROOT / "db" / "concepts" / "concept_recodes_approved.csv"
 OVERLAY_TYPES = ROOT / "db" / "overlays" / "question_type_fixes_approved.csv"
 OVERLAY_LABELS = ROOT / "db" / "overlays" / "options_fixes_approved.csv"
+OVERLAY_QUESTIONS = ROOT / "db" / "overlays" / "question_fixes_approved.csv"
 
 REBUILD = "La BD está desactualizada respecto a sus insumos. Corre: .venv/bin/python db/build_db.py"
 
@@ -110,6 +111,78 @@ def test_question_type_overlay_applied(conn):
         if row and row[0] != r["q_type"]:
             bad.append((r["wave_id"], r["question_id"], r["q_type"], row[0]))
     assert not bad, f"{REBUILD}\n  re-tipados sin aplicar (ola, q, esperado, real): {bad[:5]}"
+
+
+def test_question_overlay_applied(conn):
+    """Cada renglón de question_fixes_approved.csv está reflejado en `questions`.
+
+    El overlay repara los `q_id` que el ETL dejó sin renglón: `rename` unifica
+    las dos mitades de una pregunta partida, `insert` da de alta la que no tenía
+    ninguna e `drop` borra los duplicados. Se comprueba el estado final —el
+    nombre viejo no existe en ninguna tabla y el nuevo sí— porque un `q_id` sin
+    renglón en `questions` hace que cualquier par de `concept_equivalences` que
+    lo nombre se ignore **en silencio**."""
+    bad = []
+    for r in _rows(OVERLAY_QUESTIONS):
+        wave, action, qid, target = (
+            r["wave_id"], r["action"], r["question_id"], r["target"],
+        )
+        if action == "drop":
+            n = conn.execute(
+                "SELECT COUNT(*) FROM answers WHERE wave_id = ? AND question_id = ?",
+                [wave, qid],
+            ).fetchone()[0]
+            if n:
+                bad.append((wave, qid, "drop", f"quedan {n} respuestas"))
+            continue
+
+        final = target or qid
+        row = conn.execute(
+            "SELECT q_type FROM questions WHERE wave_id = ? AND q_id = ?",
+            [wave, final],
+        ).fetchone()
+        if row is None:
+            bad.append((wave, final, action, "sin renglón en questions"))
+        elif action == "insert" and row[0] != r["q_type"]:
+            bad.append((wave, final, action, f"q_type {row[0]} != {r['q_type']}"))
+
+        if action == "rename":
+            n = conn.execute(
+                "SELECT COUNT(*) FROM answers WHERE wave_id = ? AND question_id = ?",
+                [wave, qid],
+            ).fetchone()[0]
+            if n:
+                bad.append((wave, qid, "rename", f"el nombre viejo sigue con {n} respuestas"))
+
+        # Los reactivos numéricos del overlay traían su dato en `option_id`.
+        if row and row[0] == "numerica":
+            n = conn.execute(
+                "SELECT COUNT(*) FROM answers "
+                "WHERE wave_id = ? AND question_id = ? AND option_id IS NOT NULL",
+                [wave, final],
+            ).fetchone()[0]
+            if n:
+                bad.append((wave, final, action, f"{n} respuestas sin migrar a value"))
+
+    assert not bad, f"{REBUILD}\n  preguntas sin reparar (ola, q, acción, qué): {bad[:5]}"
+
+
+def test_sin_q_id_huerfanos_en_2024(conn):
+    """Ninguna respuesta de 2024 apunta a un `q_id` sin renglón en `questions`.
+
+    El ETL de 2024 dejó 19 así (68,327 respuestas invisibles para la app y para
+    la capa de conceptos); `question_fixes_approved.csv` los repara. Si vuelven
+    a aparecer, algún par de `concept_equivalences` está siendo ignorado sin
+    aviso."""
+    huerfanos = conn.execute(
+        """
+        SELECT a.question_id, COUNT(*) FROM answers a
+        LEFT JOIN questions q ON q.wave_id = a.wave_id AND q.q_id = a.question_id
+        WHERE a.wave_id = '2024' AND q.q_id IS NULL
+        GROUP BY 1 ORDER BY 2 DESC
+        """
+    ).fetchall()
+    assert not huerfanos, f"{REBUILD}\n  q_id huérfanos en 2024: {huerfanos[:5]}"
 
 
 def test_option_label_overlay_applied(conn):
