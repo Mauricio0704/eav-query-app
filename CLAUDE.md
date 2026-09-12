@@ -58,17 +58,30 @@ cd frontend && npm run build           # → frontend/dist, served by FastAPI in
 .venv/bin/python db/concepts/bootstrap_pairs.py --new 2026
 ```
 
-`data/encuesta_multianual.duckdb` is a **committed binary** that the app reads
-directly — there is no live migration path. Any change to `db/schema.sql`,
-`db/build_db.py`, wave CSVs, or the concepts CSVs requires rebuilding it and
-committing the result; Render deploys straight from that file.
+`data/encuesta_multianual.duckdb` is **gitignored** — it used to be committed,
+but git can't delta a binary and the history grew ~57 MB per rebuild. A fresh
+clone therefore has **no DB**: run `db/build_db.py` before starting the app or
+the tests. Everything the build consumes (`data/waves/`, the overlay and
+concept CSVs) *is* committed, so a clean checkout can rebuild it. There
+is no live migration path: any change to `db/schema.sql`, `db/build_db.py`, wave
+CSVs, or the concepts CSVs means rebuilding the file.
+
+The deploy side of that move is **unfinished** — `render.yaml` still points
+`DB_PATH` at `data/` with no step that fetches the DB, and `docs/desarrollo.md`
+still describes the DB as committed. Ask before touching the deploy path.
+
+Two more paths are gitignored on purpose and nothing in the build touches them:
+`drafts/etl<year>/` (self-contained, in-progress ETLs for waves 2016–2019 that
+only emit CSVs — those waves are **not** loaded) and
+`db/concepts/export_equivalencias.py` + `equivalencias.xlsx` (a review export of
+the concept pairs, not an input).
 
 ## Architecture
 
 ```
 Vue 3 SPA (Vite, Tailwind v4, Chart.js)  ──/api/*──►  FastAPI (main.py)
   manual mode + chat mode                 ◄─JSON/CSV─  query engine, safe SQL builder
-                                                        Gemini tool-use (chat.py)
+                                                        Gemini tool-use (services/chat/)
                                                               │ read-only
                                                         DuckDB file (EAV, multi-year)
 ```
@@ -109,16 +122,74 @@ missing option labels. `source/2019/` exists with no matching wave (raw material
 kept, wave not loaded); `source/2025/` doesn't exist (that wave came from the
 original DB, not the ETL).
 
-### Query engine (`backend/main.py`)
+### Backend layering
+
+`backend/` is layered and the dependency graph is a DAG, so there are no
+deferred imports and no load-order significance:
+
+```
+routers/       HTTP only: thin endpoints, zero logic   (catalog, query, health)
+services/      reglas, orquestación y los lru_cache    (catalog_service, wave_service, ordering)
+services/query/  el motor de consultas (ver abajo)
+services/chat/   el modo IA (ver abajo)
+repositories/  el único lugar con texto SQL FIJO       (survey, responses, concepts, answers)
+db_runtime     get_conn() — dueño de la conexión, soporta `with`
+```
+
+`main.py` only wires the app (middleware, routers, static mount) and defines no
+endpoints. **A repository here means "where SQL literals live", not a swappable
+persistence seam** — the DB is a read-only file baked at build time, tests run
+against real data on purpose, and there are no writes, so interfaces/ABCs or a
+repo method per endpoint would be pure ceremony. A service that is just
+`return repo.x(conn, wave)` should be deleted and the router should call the
+repo.
+
+`services/query/` is the one subsystem that **composes SQL at runtime**, so its
+own queries don't go through `repositories/` (whose queries are fixed and
+parameterized). The fixed lookups it used to inline — question type, concept
+members, option catalogs, the sentinel scan — *were* moved to repositories;
+what stayed is only the SQL that's assembled per request.
+
+Nothing re-exports: tests import each symbol from its owning module
+(`services.query.runner.run_query`, `services.query.models.QueryRequest`,
+`services.catalog_service.get_questions`, `db_runtime.get_conn`,
+`csv_export._csv_fill_empty`), with only `main.app` coming from `main`.
+
+### Query engine (`backend/services/query/`)
+
+```
+models.py           QueryRequest — the input contract
+runner.py           run_query: validation + the four output shapes
+year_comparison.py  the fifth shape, group_by="year"
+sql_builder.py      composed SQL fragments (scope, group expression, filters)
+sentinels.py        which codes mean "No sabe/No contesta" instead of data
+pivot.py            counts/percentage table assembly + city bucket collapsing
+```
+
+`runner` builds a `QueryContext` once (wave, question, weighting, filter SQL,
+sentinel exclusion) and every shape reads from it — that's why the shape
+builders take a context instead of ten positional arguments. `year_comparison`
+receives `run_query` as a **parameter** rather than importing it: the engine
+calls the year view and the year view calls the engine back, and injection
+keeps that dependency one-way and explicit.
 
 Everything routes through `run_query()`. `group_by` selects one of four output
 shapes (flat / pivot × categorical / numeric) plus a fifth, `group_by="year"`,
 which only works for questions with a populated `concept_id` and is handled
-separately by `_year_comparison()`. Shared helpers worth knowing before
-touching this file: `_base_from_where` (common FROM/JOIN/WHERE), `_group_expr_sql`
-(pivot column expression), `_collapse_city_cells` (raw `city_id` → AMM
-municipality buckets from `metadata.py`), `_pivot_count_pct_rows` (assembles
-counts + percentages + Total, shared by numeric and categorical paths).
+separately by `year_comparison.compare_across_waves()`. Shared helpers worth knowing before
+touching it: `sql_builder.answer_scope_sql` (common FROM/JOIN/WHERE — every
+shape starts there, so the base is identical across shapes),
+`sql_builder.group_expression_sql` (pivot column expression),
+`pivot.collapse_cities_into_buckets` (raw `city_id` → AMM municipality buckets
+from `metadata.py`), `pivot.build_counts_and_percentage_rows` (counts +
+percentages + Total, shared by the numeric and categorical paths).
+
+`metadata.py` is the hand-maintained lookup layer those helpers read: city
+rollups (`AMM_ID`, `PERIFERIA_ID`, `ID_TO_CITY_NAME`), age bins, label and
+sort-order overrides (`DESIRED_ORDERS`, `ATTRIBUTE_TO_ORDER_KEY`), `RECODES` (derived group-by attributes
+that bucket an existing attribute's option codes — served by `/api/recodes`,
+compiled by `_recode_case_sql`), and `PRESETS` (canned breakdowns the sidebar
+offers). New buckets/orderings belong here, not in query code.
 
 Every user-supplied identifier (`question_id`, `group_by`, filter
 `attribute`s) is validated against an allowlist derived from the DB itself
@@ -126,9 +197,18 @@ before any SQL string is built — this is a hand-rolled safe-SQL-builder
 pattern, not an ORM, and it's why there's no parametrization gap to watch for
 when extending query params. `initial_only` (default true) restricts to
 initial respondents and weights by `factor_cvnl` for population estimates.
-Sentinels `7777`/`8888`/`9999` (N/A · Don't know · No answer) stay in
-counts/percentages but are excluded from numeric aggregates. Metadata
-endpoints (`list_questions`, `list_attributes`, `list_cities`, etc.) are
+Sentinels `7777`/`8888`/`9999` (N/A · Don't know · No answer, plus `5555` in
+the year view) stay in counts/percentages but are excluded from numeric
+aggregates; older waves also use non-standard codes there, so
+`sentinels.out_of_range_sentinels_by_question()` treats a suspicious code (`88`,
+`99`, `999`…) as a sentinel **only** when it exceeds that question's real maximum — an age of 88
+survives, "99 days a week" doesn't. That rule filters `q_type='numerica'`, so it
+misses scales a wave stored as `categorica`; in the year view those are caught by
+`sentinels.is_sentinel_label` (same regex as `build_db._is_sentinel`,
+deliberately reimplemented). The test is always the **label**, never the magnitude — real
+categories carry high codes (`2024 p52_5` code 6666 = "no garbage service") and a
+blind threshold would delete them. Metadata endpoints (`list_questions`,
+`list_attributes`, `list_cities`, etc.) are
 `lru_cache`d per-wave — they're safe to cache because the DB file never
 mutates at runtime.
 
@@ -163,12 +243,30 @@ candidate pairs by text similarity when a new wave lands, writing a separate
 draft file that nothing loads until rows are moved over by hand. See
 [docs/conceptos.md](docs/conceptos.md).
 
-### AI chat mode (`backend/chat.py`, `backend/ratelimit.py`)
+### AI chat mode (`backend/services/chat/`, `backend/ratelimit.py`)
 
-The model is given the *same* query functions the manual UI calls (Gemini tool
-use) and can only act by invoking them — it never emits raw SQL, so chat
+The model is given the *same* query function the manual UI calls (Gemini tool
+use) and can only act by invoking it — it never emits raw SQL, so chat
 answers run through the identical validated/weighted path as the manual UI.
 Fully optional: without `GEMINI_API_KEY` the app just runs in manual mode.
+
+```
+routers/chat.py        endpoints, rate limiting, Gemini error → HTTP status
+services/chat/
+  prompts.py           the text given to the model — CONTENT, not logic
+  gemini.py            the only module that knows the provider is Gemini
+  query_tool.py        the `query` tool: declaration, execution, summary
+  conversation.py      the tool-use loop (MAX_TOOL_ROUNDS)
+```
+
+`prompts.py` is ~40% of the subsystem and is where a new wave or a tone change
+lands, so it's kept away from the loop and the SDK — different change rates.
+The `google.genai` imports are deferred **inside** functions on purpose (the SDK
+is an optional dependency and the app must boot without it); confining them to
+`gemini.py` and `query_tool.py` is what lets nothing else care. There is
+deliberately **no `LLMProvider` interface**: one provider, so an abstraction over
+it would be ceremony — `gemini.py` *is* the seam.
+
 `ratelimit.py` enforces per-IP and global daily caps (`CHAT_RATE_PER_MIN`,
 `CHAT_DAILY_GLOBAL`, etc. — free-tier defaults live in `render.yaml`).
 
@@ -185,12 +283,20 @@ via `marked` + `dompurify`).
 
 ## Tests (`tests/`)
 
-`conftest.py` pins `DB_PATH` to the committed DB with an absolute path and adds
-`backend/` to `sys.path` *before* importing `main` — tests always run against
-real data, not fixtures/mocks. Suites: `test_run_query.py` (query engine
-shapes + invariants — base-count regressions, sentinel handling, weighting,
-city collapsing, injection guards, year comparison), `test_endpoints.py`,
-`test_chat_helpers.py`, `test_ratelimit.py`, and `test_published_figures.py`
-(cross-checks live query results against figures published in the annual
-report, cited in `tests/published_figures.csv`; run standalone with
-`-m published`).
+`conftest.py` pins `DB_PATH` to `data/encuesta_multianual.duckdb` with an
+absolute path and adds `backend/` to `sys.path` *before* importing `main` —
+tests always run against real data, not fixtures/mocks, so collection fails
+outright if the DB hasn't been built. Suites (171 tests):
+`test_run_query.py` (query engine shapes + invariants — base-count regressions,
+sentinel handling, weighting, city collapsing, injection guards, year
+comparison), `test_endpoints.py`, `test_chat_helpers.py`, `test_ratelimit.py`,
+`test_db_freshness.py`, and `test_published_figures.py` (cross-checks live
+query results against figures published in the annual report, cited in
+`tests/published_figures.csv`; run standalone with `-m published`).
+
+`test_db_freshness.py` is the guard against the repo's easiest mistake: editing
+an input CSV and forgetting to rebuild. It compares DB *content* against
+`concept_equivalences.csv`, `concept_recodes_approved.csv` and the three overlays
+(not mtimes — git doesn't preserve those). A failure there almost always means
+`.venv/bin/python db/build_db.py`, not a data bug — and a stale DB is also what
+makes unrelated suites fail with misleading messages.

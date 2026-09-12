@@ -8,14 +8,11 @@ dist/
 .mypy_cache
 .DS_Store
 .vscode
+.env
+crosswalk
 pyrightconfig.json
 
-# PDFs fuente de las cifras publicadas (pesados; la cita vive en published_figures.csv)
 tests/*.pdf
-
-# Borrador de equivalencias de bootstrap_pairs.py: es una propuesta para revisar
-# a mano, no un insumo. Los INSUMOS (concept_equivalences / concept_recodes_approved
-# / db/overlays/*_approved.csv) sí se versionan; el build no genera ningún CSV.
 db/concepts/concept_equivalences.draft.csv
 
 db/concepts/export_equivalencias.py
@@ -30,3 +27,5 @@ docs/*-interna.md
 # build (ver docs/desarrollo.md). Se reconstruye con:
 #   .venv/bin/python db/build_db.py
 data/encuesta_multianual.duckdb
+
+drafts/
