@@ -334,6 +334,15 @@ def apply_question_type_fixes(con: duckdb.DuckDBPyConnection) -> None:
 
 SENT_CODES = {7777, 8888, 9999}  # No aplica / No sabe / No contesta
 SENT_LABEL_RE = re.compile(r"no\s*(sabe|contest|aplica|respond)", re.I)
+# La ola 2021 etiqueta sus centinelas con SIGLAS: NS en el código 8 (144
+# preguntas), NC en el 9 (141) y NA en el 99 (3), más 'NS/NC' en 11 preguntas.
+# Ninguna otra ola las usa. Sin esto entraban al catálogo canónico como
+# categorías sustantivas y COLISIONABAN con la opción que usa ese mismo código
+# en la otra ola (p. ej. 2021 p33 código 8 = 'NS' contra 2022 p39 código 8 =
+# 'Otro'). Se ancla a la etiqueta COMPLETA para no capturar palabras que
+# casualmente contengan esas letras.
+SENT_ABBR_RE = re.compile(r"^\s*(NS\s*/\s*NC|NS|NC|NA)\s*$", re.I)
+SENT_ABBR_KIND = {"NS": "ns", "NC": "nc", "NA": "na", "NS/NC": "ns"}
 SENT_CANON = {
     "ns": (8888, "No sabe"),
     "nc": (9999, "No contesta"),
@@ -342,12 +351,23 @@ SENT_CANON = {
 
 
 def _is_sentinel(option_id: int, label: str) -> bool:
-    """Centinela por CÓDIGO estándar o por ETIQUETA."""
-    return option_id in SENT_CODES or bool(SENT_LABEL_RE.search(str(label or "")))
+    """Centinela por CÓDIGO estándar, por ETIQUETA o por SIGLA."""
+    text = str(label or "")
+    return (
+        option_id in SENT_CODES
+        or bool(SENT_LABEL_RE.search(text))
+        or bool(SENT_ABBR_RE.match(text))
+    )
 
 
 def _sentinel_kind(label: str) -> str:
-    low = str(label or "").lower()
+    text = str(label or "")
+    # La sigla se resuelve PRIMERO: decidir por subcadena mandaría 'NS' al
+    # caso por defecto ('nc') porque no contiene 'sabe' ni 'aplica'.
+    m = SENT_ABBR_RE.match(text)
+    if m:
+        return SENT_ABBR_KIND[re.sub(r"\s+", "", m.group(1)).upper()]
+    low = text.lower()
     return "ns" if "sabe" in low else "na" if "aplica" in low else "nc"
 
 
