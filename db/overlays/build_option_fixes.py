@@ -13,6 +13,9 @@ cada hueco decide una etiqueta:
   5. code > máx opción real       -> "Otro" (specs de "Otro*" auto-numeradas)
   6. resto                        -> "Otro"
 
+Además emite RELABEL: etiquetas que YA existen en `options` y se corrigen a mano
+(no son huecos), por lo que no sobrevivirían si sólo se escribieran en el CSV.
+
 El resultado lo consume `db/build_db.py::apply_option_fixes` con semántica upsert,
 SIN tocar las fuentes crudas. Regenerar tras cambiar un cuestionario o un SPECIAL:
 
@@ -59,6 +62,25 @@ SPECIAL = {  # (wave,q,code) -> etiqueta a mano (fuente corrupta / sin código e
     ("2024", "p68", 2): "Mayor consumo de electricidad",
     ("2024", "p112_2", 1): "Sí",
     ("2022", "p124", 8): "6-7 SM ($31,116 - $36,302)",
+}
+
+RELABEL = {  # (wave,q,code) -> etiqueta que CORRIGE una ya existente (no es un hueco)
+    # "No sabe qué hacer en esos casos" es una respuesta sustantiva (225 casos,
+    # 7.55 % ponderado: qué hace la gente ante la mala calidad del aire), pero la
+    # regla de centinela por etiqueta —`no\s*(sabe|contest|aplica|respond)`, en
+    # db/build_db.py::_is_sentinel y en services/query/sentinels.py— la leería como
+    # "No sabe" y la normalizaría a 8888. Hoy es inocuo porque 2025 p75 no tiene
+    # concepto; el día que se declare el par, esos 225 casos desaparecerían del
+    # promedio sin que nada avise. Se corrige la etiqueta ANTES de declarar el par.
+    ("2025", "p75", 4): "No tiene claro qué hacer",
+    # Categoría sustantiva con código 6666 dentro de una escala 1-10 que 2024
+    # guardó como `categorica`: la vista Año toma el option_id COMO VALOR, así que
+    # ese único caso (ponderado 667) subía la media de 2024 de 8.22 a 9.21 en
+    # c2025_p62_5. No es un "no sabe" y ningún filtro por magnitud debe tocarlo
+    # (el techo de escala es inconfiable), así que el arreglo es la etiqueta: con
+    # "No aplica" delante, year_comparison.is_sentinel_label lo saca del promedio
+    # y lo deja visible como renglón en los conteos.
+    ("2024", "p52_5", 6666): "No aplica: no cuenta con servicio de recolección de residuos",
 }
 
 # (qid_col, opt_col, lower_qid, style); style "respuestas" vs "qidcol"
@@ -186,6 +208,11 @@ def main():
             else:
                 lab = "Otro"
             rows.append((wave, q, code, lab))
+
+    # Correcciones a mano de etiquetas que SÍ existen (no son huecos): sobreescriben
+    # lo que haya salido arriba y se emiten aunque el código no esté en `gaps`.
+    rows = [r for r in rows if (r[0], r[1], r[2]) not in RELABEL]
+    rows.extend((w, q, c, lab) for (w, q, c), lab in RELABEL.items())
 
     rows.sort(key=lambda r: (r[0], r[1], r[2]))
     with open(OUT, "w", newline="") as f:

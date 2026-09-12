@@ -1,4 +1,5 @@
 wave_id,question_id,option_id,option_label
+2021,cp4_1,10,Otro
 2021,cp4_1,11,Otro
 2021,cp4_1,12,Otro
 2021,cp4_1,13,Otro
@@ -7,7 +8,14 @@ wave_id,question_id,option_id,option_label
 2021,cp4_1,16,Otro
 2021,cp4_1,17,Otro
 2021,cp4_1,18,Otro
+2021,cp4_1,19,Otro
+2021,cp4_1,20,Otro
 2021,cp4_1,21,Otro
+2021,cp4_1,22,Otro
+2021,cp4_1,23,Otro
+2021,cp4_1,24,Otro
+2021,cp4_1,25,Otro
+2021,cp4_1,26,Otro
 2021,cp4_1,27,Otro
 2021,cp6_1_1,10,Doctorado
 2021,cp6_1_1,96,NS/NC
@@ -82,9 +90,10 @@ wave_id,question_id,option_id,option_label
 2021,p122,26,Otro
 2021,p122,27,Otro
 2021,p122,28,Otro
+2021,p126,3,Mismo gobierno
 2021,p126,4,Otro
 2021,p126,5,Otro
-2021,p126,8,Otro
+2021,p126,8,NS
 2021,p128,10,"8-9 SM (34,008 - 38,258)"
 2021,p128,11,"9-10 SM (38,259 - 42,509)"
 2021,p128,12,"10 o más SM (42,510 o más)"
@@ -217,6 +226,14 @@ wave_id,question_id,option_id,option_label
 2021,p77_1_1,99,NS/NC
 2021,p77_2_1,99,NS/NC
 2021,p77_3_1,99,NS/NC
+2021,p79_1,0,No
+2021,p79_1,1,Sí
+2021,p79_1,8,NS
+2021,p79_1,9,NC
+2021,p79_2,0,No
+2021,p79_2,1,Sí
+2021,p79_2,8,NS
+2021,p79_2,9,NC
 2021,p8,1,1
 2021,p8,2,2
 2021,p8,3,3
@@ -352,6 +369,24 @@ wave_id,question_id,option_id,option_label
 2024,p38,11,Otro
 2024,p49,10,"García, NL"
 2024,p49,11,"Guadalupe, NL"
+2024,p52_5,6666,No aplica: no cuenta con servicio de recolección de residuos
+2024,p59,0,Nada preocupado
+2024,p59,1,Algo preocupado
+2024,p59,2,Muy preocupado
+2024,p59,9999,No contesta
+2024,p61_2,0,No
+2024,p61_2,1,Sí
+2024,p61_2,8888,No sabe
+2024,p61_2,9999,No contesta
 2024,p68,2,Mayor consumo de electricidad
 2024,p72,8,Otro
+2024,p77_16_otro,0,No
+2024,p77_16_otro,1,Sí
+2024,p77_16_otro,8888,No sabe
+2024,p77_16_otro,9999,No contesta
+2024,p7_1,0,No
+2024,p7_1,1,Sí
+2024,p7_1,8888,No sabe
+2024,p7_1,9999,No contesta
 2025,cp10_b,7777,No aplica
+2025,p75,4,No tiene claro qué hacer

@@ -18,3 +18,7 @@ wave_id,question_id,q_type,reason
 2023,al_menos_una_discriminacion,categorica,"si/no codificado 0/1 que la fuente tipo numerico; ya tiene opciones 0=No/1=Si en options, y la misma variable es categorica en 2024 y 2025"
 2023,p15,categorica,"colonia de destino (identificador codificado, no numerico)"
 2024,p17,categorica,"colonia de destino (identificador codificado, no numerico)"
+2021,p79_1,categorica,"si/no codificado 0/1 con 8/9 (NS/NC) dentro del campo de valor; equivalente a p2/2022, p1/2023 y p1/2024 (todas categoricas). Etiquetas 0=No/1=Si/8=NS/9=NC en options_fixes"
+2021,p79_2,categorica,"si/no codificado 0/1 con 8/9 (NS/NC) dentro del campo de valor; equivalente a p3/2022 y p2/2023 (categoricas). Etiquetas 0=No/1=Si/8=NS/9=NC en options_fixes"
+2022,cp1,numerica,"conteo de personas del hogar; los datos ya viven en answers.value (option_id NULL en las 4,410 respuestas) y la unica opcion del catalogo ('Nombre de cada integrante') es basura del ETL. Como categorica la pregunta era inconsultable y su columna en la vista Ano salia vacia"
+2023,cp1,numerica,"idem 2022 cp1 (4,950 respuestas en answers.value)"
