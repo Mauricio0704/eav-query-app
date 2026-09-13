@@ -74,12 +74,13 @@ Ver [conceptos.md](conceptos.md).
 ## Deploy (Render.com)
 
 `render.yaml` es un Blueprint: Render hace **auto-deploy** al hacer push a la
-rama `main`. El servicio compila el frontend, instala deps de Python y arranca
-uvicorn, sirviendo la BD DuckDB **commiteada** en `data/`.
+rama `main`. El servicio instala deps de Python, **construye la BD** con
+`db/build_db.py` (la BD no se versiona; sus insumos sí, y tarda unos segundos),
+compila el frontend y arranca uvicorn.
 
 Flujo típico:
-1. Hacer cambios y correr tests localmente.
-2. Si cambió la BD, reconstruirla y commitear el `.duckdb`.
+1. Hacer cambios, reconstruir la BD y correr tests localmente.
+2. Commitear los insumos que cambiaron (CSVs de olas, overlays, conceptos) — nunca el `.duckdb`.
 3. `git push` a `main` → Render redeploya solo (o hacer redeploy manual al último commit).
 4. `GEMINI_API_KEY` se configura en el dashboard de Render.
 

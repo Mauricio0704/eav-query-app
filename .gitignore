@@ -23,8 +23,8 @@ docs/*-interna.md
 
 # La base construida ya NO se versiona: git guarda una copia íntegra en cada
 # reconstrucción (no sabe hacer deltas de un binario), y el historial crecía
-# ~57 MB por rebuild. Se publica como Release de GitHub y se descarga en el
-# build (ver docs/desarrollo.md). Se reconstruye con:
+# ~57 MB por rebuild. Render la construye en su build a partir de los insumos
+# versionados (ver render.yaml y docs/desarrollo.md). Se reconstruye con:
 #   .venv/bin/python db/build_db.py
 data/encuesta_multianual.duckdb
 

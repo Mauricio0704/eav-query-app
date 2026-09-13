@@ -66,9 +66,9 @@ concept CSVs) *is* committed, so a clean checkout can rebuild it. There
 is no live migration path: any change to `db/schema.sql`, `db/build_db.py`, wave
 CSVs, or the concepts CSVs means rebuilding the file.
 
-The deploy side of that move is **unfinished** — `render.yaml` still points
-`DB_PATH` at `data/` with no step that fetches the DB, and `docs/desarrollo.md`
-still describes the DB as committed. Ask before touching the deploy path.
+Render does the same: `render.yaml`'s `buildCommand` runs `db/build_db.py`
+before building the frontend, writing the DB where `DB_PATH` points. Ask before
+touching the deploy path.
 
 Two more paths are gitignored on purpose and nothing in the build touches them:
 `drafts/etl<year>/` (self-contained, in-progress ETLs for waves 2016–2019 that
